@@ -1,0 +1,50 @@
+#---------------开发环境-------------
+server:
+  port: 8081
+
+spring:
+  application:
+    name: efreight-hrs
+  # 配置中心
+  cloud:
+    config:
+      fail-fast: true
+      name: ${spring.application.name}
+      profile: dev
+      discovery:
+        enabled: true
+        service-id: efreight-config
+  main:
+    allow-bean-definition-overriding: true
+# 注册中心配置
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone:  http://127.0.0.1:9001/eureka/
+---
+
+#---------------测试环境-------------
+spring:
+  # 配置中心
+  cloud:
+    config:
+      profile: ${spring.profiles.active}
+  profiles: dev
+eureka:
+  client:
+    service-url:
+      defaultZone: http://10.66.178.186:9001/eureka/
+---
+#---------------生产环境-------------
+spring:
+  # 配置中心
+  cloud:
+    config:
+      profile: ${spring.profiles.active}
+  profiles: prod
+eureka:
+  client:
+    service-url:
+      defaultZone: http://10.66.204.44:9001/eureka/

@@ -1,0 +1,84 @@
+spring:
+  cloud:
+    gateway:
+      locator:
+        enabled: true
+      routes:
+        # 认证中心
+        - id: efreight-oauth
+          uri: lb://efreight-oauth
+          predicates:
+            - Path=/auth/**
+          filters:
+            # 前端密码解密
+            - PasswordDecoderFilter
+        #HRS模块
+        - id: efreight-hrs
+          uri: lb://efreight-hrs
+          predicates:
+            - Path=/hrs/**
+          filters:
+            # 限流配置
+            - name: RequestRateLimiter
+              args:
+                key-resolver: '#{@remoteAddrKeyResolver}'
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+              # 降级配置
+            - name: Hystrix
+              args:
+                name: default
+                fallbackUri: 'forward:/fallback'
+        #SC模块
+        - id: efreight-sc
+          uri: lb://efreight-sc
+          predicates:
+            - Path=/sc/**
+          filters:
+            # 限流配置
+            - name: RequestRateLimiter
+              args:
+                key-resolver: '#{@remoteAddrKeyResolver}'
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+              # 降级配置
+            - name: Hystrix
+              args:
+                name: default
+                fallbackUri: 'forward:/fallback'
+        # PRM模块
+        - id: efreight-prm
+          uri: lb://efreight-prm
+          predicates:
+            - Path=/prm/**
+          filters:
+            # 限流配置
+            - name: RequestRateLimiter
+              args:
+                key-resolver: '#{@remoteAddrKeyResolver}'
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+              # 降级配置
+            - name: Hystrix
+              args:
+                name: default
+                fallbackUri: 'forward:/fallback'
+        # AF模块
+        - id: efreight-afbase
+          uri: lb://efreight-afbase
+          predicates:
+            - Path=/afbase/**
+
+
+security:
+  encode:
+    # 前端密码密钥，必须16位
+    key: 'thanksefreightud'
+
+# 不校验验证码终端
+ignore:
+  clients:
+    - test
+    
+    
+    

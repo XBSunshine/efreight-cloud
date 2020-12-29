@@ -1,0 +1,60 @@
+package com.efreight.hrs.utils;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.generator.AutoGenerator;
+import com.baomidou.mybatisplus.generator.config.DataSourceConfig;
+import com.baomidou.mybatisplus.generator.config.FileOutConfig;
+import com.baomidou.mybatisplus.generator.config.GlobalConfig;
+import com.baomidou.mybatisplus.generator.config.PackageConfig;
+import com.baomidou.mybatisplus.generator.config.StrategyConfig;
+import com.baomidou.mybatisplus.generator.config.TemplateConfig;
+import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
+import com.baomidou.mybatisplus.generator.engine.VelocityTemplateEngine;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MpGenerator {
+	public static void main(String[] args) {
+      AutoGenerator mpg = new AutoGenerator();
+      GlobalConfig gc = new GlobalConfig();
+      String projectPath = "C:\\Users\\efreight\\eclipse-workspace/efreight-cloud/efreight-hrs";
+      gc.setOutputDir(projectPath + "/src/main/java");
+      gc.setAuthor("zhanghw");
+      gc.setOpen(false);
+      gc.setFileOverride(false);
+      gc.setIdType(IdType.AUTO);
+      gc.setServiceName("%sService");
+      gc.setServiceImplName("%sServiceImpl");
+      gc.setControllerName("%sController");
+      mpg.setGlobalConfig(gc);
+      DataSourceConfig dsc = new DataSourceConfig();
+      dsc.setUrl("jdbc:mysql://42.96.134.205:3306/dbcargo?characterEncoding=utf8&allowMultiQueries=true");
+      dsc.setDriverName("com.mysql.jdbc.Driver");
+      dsc.setUsername("cargouser1");
+      dsc.setPassword("20190528eFtCargouser1");
+      mpg.setDataSource(dsc);
+      PackageConfig pc = (new PackageConfig()).setParent("com.efreight").setModuleName("hrs").setController("controller").setEntity("entity").setMapper("dao").setXml("dao");
+      mpg.setPackageInfo(pc);
+      
+      String templatePath = "/templates/mapper.xml.vm";
+      List<FileOutConfig> focList = new ArrayList();
+    
+      TemplateConfig templateConfig = new TemplateConfig();
+      templateConfig.setXml((String)null);
+      mpg.setTemplate(templateConfig);
+      StrategyConfig strategy = new StrategyConfig();
+      strategy.setTablePrefix(new String[] { "hrs_" });
+      strategy.setNaming(NamingStrategy.underline_to_camel);
+      strategy.setColumnNaming(NamingStrategy.underline_to_camel);
+      strategy.setEntityLombokModel(true);
+      strategy.setRestControllerStyle(true);
+     // strategy.setSuperControllerClass("com.zz.oms.common.BaseController");
+    //  strategy.setInclude(new String[]{"hrs_user"});
+      strategy.setSuperEntityColumns(new String[]{"id"});
+      strategy.setControllerMappingHyphenStyle(true);
+      strategy.setTablePrefix(new String[]{pc.getModuleName() + "_"});
+      mpg.setStrategy(strategy);
+      mpg.setTemplateEngine(new VelocityTemplateEngine());
+      mpg.execute();
+   }
+}

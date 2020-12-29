@@ -1,0 +1,35 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: efreight-config
+  profiles:
+    active: native
+  # 配置中心
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config/
+
+# 注册中心配置
+eureka:
+  instance:
+#    ip-address: 101.200.170.232
+    prefer-ip-address: true
+  client:
+    service-url:
+      #本地开发
+      defaultZone: http://127.0.0.1:9001/eureka/
+      #测试
+#     defaultZone: http://10.66.178.186:9001/eureka/
+      #生产
+#     defaultZone: http://10.66.204.44:9001/eureka/
+
+# 暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'

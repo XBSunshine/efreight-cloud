@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopContactsDao">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.CoopContactsBean">
+
+    </resultMap>
+    <sql id="Base_Column_List">
+          contacts_id,coop_id,contacts_type,contacts_name,
+          phone_number,email,dept_name,job_position,
+          tel_number,creator_id,create_time,editor_id,
+          edit_time,org_id,dept_id,contacts_status
+    </sql>
+    <select id="queryCoopContactsList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_contacts
+        where coop_id =#{coop_id,jdbcType=INTEGER} and contacts_status not in (-1) 
+        <if test="org_id != null and org_id != '' ">
+            AND org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+        <if test="contacts_status != null and contacts_status != '' ">
+            AND contacts_status = #{contacts_status,jdbcType=INTEGER}
+        </if>
+        <if test="contacts_type != null and contacts_type != '' ">
+            AND contacts_type = #{contacts_type,jdbcType=VARCHAR}
+        </if>
+        <if test="contacts_name != null and contacts_name != '' ">
+            AND contacts_name like "%"#{contacts_name,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="phone_number != null and phone_number != '' ">
+            AND phone_number = #{phone_number,jdbcType=VARCHAR}
+        </if>
+
+        order by contacts_id desc
+
+    </select>
+    <select id="queryList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_contacts
+        where 1=1
+        <if test="org_id != null and org_id != '' ">
+            AND org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+        <if test="contacts_status != null and contacts_status != '' ">
+            AND contacts_status = #{contacts_status,jdbcType=INTEGER}
+        </if>
+        <if test="coop_id != null and coop_id != '' ">
+            AND coop_id = #{coop_id,jdbcType=INTEGER}
+        </if>
+        <if test="contacts_type != null and contacts_type != '' ">
+            AND contacts_type = #{contacts_type,jdbcType=VARCHAR}
+        </if>
+        <if test="contacts_name != null and contacts_name != '' ">
+            AND contacts_name like "%"#{contacts_name,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="phone_number != null and phone_number != '' ">
+            AND phone_number = #{phone_number,jdbcType=VARCHAR}
+        </if>
+
+        order by contacts_id desc
+
+    </select>
+    <select id="viewCoopContacts" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_contacts
+        where 1=1
+        and contacts_id = #{contacts_id}
+        <if test="org_id != null and org_id != '' ">
+            AND org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+
+    </select>
+    <select id="queryContactsIsValidByCoopId" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_contacts
+        where 1=1
+        and coop_id = #{coopId} and contacts_status = 1
+        <if test="orgId != null and orgId != '' ">
+            AND org_id = #{orgId,jdbcType=INTEGER}
+        </if>
+
+    </select>
+
+    <select id="queryContactsIsValidByCoopId1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_contacts
+        where 1=1
+        and coop_id = #{coopId} and contacts_id!= #{contactsId} and contacts_status = 1
+        <if test="orgId != null and orgId != '' ">
+            AND org_id = #{orgId,jdbcType=INTEGER}
+        </if>
+
+    </select>
+
+    <insert id="saveCoopContacts" parameterType="com.efreight.prm.entity.CoopContactsBean">
+ 	insert into prm_coop_contacts
+	(
+	   contacts_id,coop_id,contacts_type,contacts_name,
+          phone_number,email,dept_name,job_position,
+          tel_number,creator_id,create_time,editor_id,
+          edit_time,org_id,dept_id,contacts_status
+	)
+	values(
+	#{contacts_id},
+	#{coop_id},
+	#{contacts_type},
+	#{contacts_name},
+	#{phone_number},
+	#{email},
+	#{dept_name},
+	#{job_position},
+	#{tel_number},
+	#{creator_id},
+	#{create_time},
+	#{editor_id},
+	#{edit_time},
+	#{org_id},
+	#{dept_id},
+	#{contacts_status}
+	)
+ 	</insert>
+
+    <insert id="saveCoopContacts1" parameterType="com.efreight.prm.entity.CoopContactsBean" useGeneratedKeys="true"
+            keyProperty="contacts_id">
+    insert into prm_coop_contacts
+    (
+    contacts_id,coop_id,contacts_type,contacts_name,
+    phone_number,email,dept_name,job_position,
+    tel_number,creator_id,create_time,editor_id,
+    edit_time,org_id,dept_id,contacts_status
+    )
+    values(
+    #{contacts_id},
+    #{coop_id},
+    '对账',
+    #{contacts_name},
+    #{phone_number},
+    #{email},
+    #{dept_name},
+    #{job_position},
+    #{tel_number},
+    #{creator_id},
+    #{create_time},
+    #{editor_id},
+    #{edit_time},
+    #{org_id},
+    #{dept_id},
+    '1'
+    )
+    </insert>
+
+    <update id="modifyCoopContacts" parameterType="com.efreight.prm.entity.CoopContactsBean">
+ 	update prm_coop_contacts
+	set
+	  contacts_type     = #{contacts_type},
+	  contacts_name     = #{contacts_name},
+	  phone_number      = #{phone_number},
+	  email             = #{email},
+	  dept_name         = #{dept_name},
+	  job_position      = #{job_position},
+	  tel_number        = #{tel_number},
+	  editor_id         = #{editor_id},
+	  edit_time         = #{edit_time},
+	  contacts_status   = #{contacts_status}
+	where contacts_id = #{contacts_id}
+
+ 	</update>
+
+
+</mapper>

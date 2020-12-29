@@ -1,0 +1,1050 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopDao">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.Coop">
+        <id column="coop_id" property="coop_id" jdbcType="INTEGER"/>
+        <result column="coop_code" property="coop_code" jdbcType="VARCHAR"/>
+        <result column="create_time" property="create_time" jdbcType="DATE"/>
+        <result column="coop_name" property="coop_name" jdbcType="VARCHAR"/>
+    </resultMap>
+    <resultMap id="BaseResultMap1" type="com.efreight.prm.entity.CoopDetail">
+        <id column="coop_id" property="coop_id" jdbcType="INTEGER"/>
+        <result column="coop_code" property="coop_code" jdbcType="VARCHAR"/>
+        <result column="create_time" property="create_time" jdbcType="DATE"/>
+        <result column="coop_name" property="coop_name" jdbcType="VARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        coop_id,coop_code,coop_type,coop_mnemonic,coop_name,
+	short_name,coop_ename,short_ename,social_credit_code,
+	bank_name,bank_number,phone_number,coop_address,
+	coop_remark,lock_date,lock_reason,blacklist_date,
+	blacklist_reason,whitelist_date,whitelist_reason,
+	creator_id,create_time,editor_id,edit_time,org_id,
+	dept_id,coop_status,black_valid,white_valid,group_type,transactor_id
+    </sql>
+    <select id="queryCoopList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid
+        ,a.white_valid
+        ,a.group_type
+        ,b.credit_level
+        FROM prm_coop AS a
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        GROUP BY s.coop_id
+        ) AS b ON a.coop_id=b.coop_id
+        where 1=1
+        AND (
+        (a.group_type = 'group' AND LENGTH(a.coop_code)=3)
+        OR
+        (a.group_type = 'file' AND LENGTH(a.coop_code)=3)
+        )
+        <if test="coop_code != null and coop_code != '' ">
+            AND (a.coop_code  like "%"#{coop_code,jdbcType=VARCHAR}"%" or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.coop_code  like "%"#{coop_code,jdbcType=VARCHAR}"%"))
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND (a.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"))
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND (a.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%"))
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%"))
+        </if>
+        <if test="coop_status != null">
+            AND (a.coop_status = #{coop_status} or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.coop_status = #{coop_status}))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND (a.black_valid is null or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.black_valid is null))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND (a.black_valid=#{black_valid} or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.black_valid = #{black_valid}))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND (a.white_valid is null or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.white_valid is null))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND (a.white_valid=#{white_valid} or a.coop_code in (select distinct left(coop_code,3) from prm_coop p where p.white_valid = #{white_valid}))
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND (b.credit_level  like "%"#{credit_level,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(bb.coop_code,3) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" ))
+        </if>
+        order by a.coop_id desc
+
+    </select>
+
+    <select id="queryCoopListByPage" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid
+        ,a.white_valid
+        ,a.transactor_id
+        ,a.group_type
+        ,b.credit_level
+        ,u.user_name as 'transactor_user'
+        ,b.business_scope
+        FROM prm_coop AS a
+        LEFT JOIN (
+            SELECT hu.user_name, hu.user_id FROM hrs_user hu WHERE hu.org_id = #{org_id}
+        ) AS u ON a.transactor_id = u.user_id
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level,GROUP_CONCAT(s.business_scope) AS business_scope
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        <if test="business_scope != null and business_scope != '' ">
+            AND s.business_scope in
+            <foreach item="item" index="index" collection="business_scope" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY s.coop_id
+        ) AS b ON a.coop_id=b.coop_id
+        where 1=1
+
+        <if test="coop_code != null and coop_code != '' ">
+            AND (upper(a.coop_code)  like "%"#{coop_code,jdbcType=VARCHAR}"%" or upper(a.coop_mnemonic)  like "%"#{coop_code,jdbcType=VARCHAR}"%" or upper(a.social_credit_code)  like "%"#{coop_code,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.short_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.coop_ename  like "%"#{coop_name,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="coop_status != null">
+            AND a.coop_status = #{coop_status}
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND a.black_valid is null
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND a.black_valid=#{black_valid}
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND a.white_valid is null
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND a.white_valid=#{white_valid}
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND b.credit_level  like "%"#{credit_level,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_type != null and coop_type != '' ">
+            AND a.coop_type IN
+            <foreach item="item" index="index" collection="coop_type" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="transactor_user != null and transactor_user != ''">
+            AND u.user_name LIKE "%"#{transactor_user}"%"
+        </if>
+        <if test="lock_valid != null and lock_valid.toString()=='0'.toString()">
+            AND a.lock_date is null
+        </if>
+        <if test="lock_valid != null and lock_valid.toString()=='1'.toString()">
+            AND a.lock_date is not null
+        </if>
+        <if test="business_scope != null and business_scope != '' ">
+            AND b.business_scope is not null
+        </if>
+
+
+        order by a.create_time desc
+
+    </select>
+
+    <select id="queryCoopChildList1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid
+        ,a.white_valid
+        ,a.group_type
+        ,b.credit_level
+        FROM prm_coop AS a
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        GROUP BY s.coop_id
+        ) AS b ON a.coop_id=b.coop_id
+        where 1=1
+        and a.coop_code like concat(#{coop_code},'___')
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND (a.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND (a.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="coop_status != null">
+            AND (a.coop_status = #{coop_status}
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_status  = #{coop_status} and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_status  = #{coop_status} and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.coop_status  = #{coop_status} and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND (a.black_valid is null
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.black_valid  is null and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.black_valid  is null and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.black_valid  is null and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND (a.black_valid = #{black_valid}
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.black_valid  = #{black_valid} and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.black_valid  = #{black_valid} and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.black_valid  = #{black_valid} and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND (a.white_valid is null
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.white_valid  is null and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.white_valid  is null and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.white_valid  is null and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND (a.white_valid = #{white_valid}
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.white_valid  = #{white_valid} and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.white_valid  = #{white_valid} and LENGTH(p.coop_code)=12)
+            or a.coop_code in (select distinct left(coop_code,6) from prm_coop p where p.white_valid  = #{white_valid} and LENGTH(p.coop_code)=9))
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND (b.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%"
+
+            or a.coop_code in (select distinct left(bb.coop_code,6) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" and LENGTH(bb.coop_code)=15)
+
+            or a.coop_code in (select distinct left(bb.coop_code,6) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" and LENGTH(bb.coop_code)=12)
+
+            or a.coop_code in (select distinct left(bb.coop_code,6) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" and LENGTH(bb.coop_code)=9))
+        </if>
+        order by a.coop_id desc
+    </select>
+
+    <select id="queryCoopChildList2" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid
+        ,a.white_valid
+        ,a.group_type
+        ,b.credit_level
+        FROM prm_coop AS a
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        GROUP BY s.coop_id
+        ) AS b ON a.coop_id=b.coop_id
+        where 1=1
+        and a.coop_code like concat(#{coop_code},'___')
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND (a.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND (a.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="coop_status != null">
+            AND (a.coop_status = #{coop_status}
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.coop_status = #{coop_status} and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.coop_status = #{coop_status} and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND (a.black_valid is null
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.black_valid is null and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.black_valid is null and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND (a.black_valid = #{black_valid}
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.black_valid = #{black_valid} and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.black_valid = #{black_valid} and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND (a.white_valid is null
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.white_valid is null and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.white_valid is null and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND (a.white_valid = #{white_valid}
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.white_valid = #{white_valid} and LENGTH(p.coop_code)=15)
+            or a.coop_code in (select distinct left(coop_code,9) from prm_coop p where p.white_valid = #{white_valid} and LENGTH(p.coop_code)=12))
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND (b.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%"
+
+            or a.coop_code in (select distinct left(bb.coop_code,9) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" and LENGTH(bb.coop_code)=15)
+
+            or a.coop_code in (select distinct left(bb.coop_code,9) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" and LENGTH(bb.coop_code)=12))
+        </if>
+        order by a.coop_id desc
+    </select>
+
+    <select id="queryCoopChildList3" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid
+        ,a.white_valid
+        ,a.group_type
+        ,b.credit_level
+        from prm_coop as a
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        GROUP BY s.coop_id
+        ) AS b ON a.coop_id=b.coop_id
+        where 1=1
+        and a.coop_code like concat(#{coop_code},'___')
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND (a.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND (a.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%"
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="coop_status != null">
+            AND (a.coop_status = #{coop_status}
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.coop_status = #{coop_status} and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND (a.black_valid is null
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.black_valid is null and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND (a.black_valid = #{black_valid}
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.black_valid = #{black_valid} and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND (a.white_valid is null
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.white_valid is null and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND (a.white_valid = #{white_valid}
+            or a.coop_code in (select distinct left(coop_code,12) from prm_coop p where p.white_valid = #{white_valid} and LENGTH(p.coop_code)=15))
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND (b.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%"
+
+            or a.coop_code in (select distinct left(bb.coop_code,12) from (
+            SELECT
+            s.coop_id,pr.coop_code,GROUP_CONCAT(s.credit_level) AS credit_level
+            FROM prm_coop_scope s
+            join prm_coop pr on s.coop_id=pr.coop_id
+            WHERE s.scope_status=1
+            GROUP BY s.coop_id) bb where bb.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%" and LENGTH(bb.coop_code)=15))
+        </if>
+        order by a.coop_id desc
+    </select>
+
+    <select id="queryCoopChildList4" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid
+        ,a.white_valid
+        ,a.group_type
+        ,b.credit_level
+        from prm_coop as a
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        GROUP BY s.coop_id
+        ) AS b ON a.coop_id=b.coop_id
+        where 1=1
+        and a.coop_code like concat(#{coop_code},'___')
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND a.coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND a.social_credit_code  like "%"#{social_credit_code,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_status != null">
+            AND a.coop_status = #{coop_status}
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND a.black_valid is null
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND a.black_valid=#{black_valid}
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND a.white_valid is null
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND a.white_valid=#{white_valid}
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND b.credit_level like "%"#{credit_level,jdbcType=VARCHAR}"%"
+        </if>
+        order by a.coop_id desc
+    </select>
+
+    <select id="queryCoopChildList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop
+        where 1=1
+        and coop_code like concat(#{coop_code},'___')
+        <if test="org_id != null and org_id != '' ">
+            AND org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_code != null and coop_code != '' ">
+            AND coop_code like "%"#{coop_code,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND coop_mnemonic  like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"
+        </if>
+        order by coop_id desc
+
+    </select>
+
+    <select id="queryCoopList1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid,a.white_valid,a.group_type
+        from prm_coop a
+        where 1=1
+        and LENGTH(coop_code)=3
+
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND a.black_valid is null
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND a.black_valid=#{black_valid}
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND a.white_valid is null
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND a.white_valid=#{white_valid}
+        </if>
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND a.dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND a.coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_code != null and coop_code != '' ">
+            AND a.coop_code  like "%"#{coop_code,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND a.coop_mnemonic like "%"#{coop_mnemonic,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND a.social_credit_code like "%"#{social_credit_code,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_status != null">
+            AND a.coop_status = #{coop_status}
+        </if>
+        <if test="coop_type != null and coop_type != '' ">
+            AND a.coop_type IN
+            <foreach item="item" index="index" collection="coop_type" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        order by a.coop_id desc
+
+    </select>
+
+    <select id="queryCoopChildList11" resultMap="BaseResultMap1" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop
+        where 1=1
+        and coop_code like concat(#{coop_code},'___')
+        <if test="org_id != null and org_id != '' ">
+            AND org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+        </if>
+        order by coop_id desc
+
+    </select>
+
+
+    <select id="queryListForChoose" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        select coop_id value,coop_name label,short_name,coop_ename, coop_code, short_ename,social_credit_code,phone_number from
+        prm_coop
+        where coop_status=1 AND org_id = #{org_id,jdbcType=INTEGER} and group_type ='file' and blacklist_date is null
+        <if test="agreement_id != null and agreement_id != '' ">
+            AND agreement_id = #{agreement_id,jdbcType=INTEGER}
+        </if>
+        AND coop_id NOT IN (SELECT coop_id FROM hrs_org WHERE org_type=1 and org_id !=1)
+        order by coop_id desc
+
+    </select>
+    <select id="queryListForChooseForUpdate" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        select coop_id value,coop_name label,short_name,coop_ename, coop_code, short_ename,social_credit_code,phone_number from
+        prm_coop
+        where coop_status=1 AND org_id = #{org_id,jdbcType=INTEGER} and group_type ='file' and blacklist_date is null
+        <if test="agreement_id != null and agreement_id != '' ">
+            AND agreement_id = #{agreement_id,jdbcType=INTEGER}
+        </if>
+        AND coop_id NOT IN (SELECT coop_id FROM hrs_org WHERE org_type=1 and org_id !=1 and org_id !=#{currOrgId})
+        order by coop_id desc
+
+    </select>
+    <select id="queryTreeList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        a.coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,
+        a.coop_name,a.short_name,a.coop_ename,a.short_ename,
+        a.social_credit_code,a.bank_name,a.bank_number,
+        a.phone_number,a.coop_address,a.coop_remark,
+        a.lock_date,a.lock_reason,a.blacklist_date,a.blacklist_reason,
+        a.whitelist_date,a.whitelist_reason,a.creator_id,a.create_time,
+        a.editor_id,a.edit_time,a.org_id,a.dept_id,a.coop_status,
+        a.black_valid,a.white_valid,csu.credit_level,csu.contacts_name,a.group_type
+        FROM prm_coop a
+        LEFT JOIN prm_coop_scope s ON a.`coop_id`=s.`coop_id`
+        LEFT JOIN (
+        SELECT cs.`coop_id`,
+        GROUP_CONCAT(cs.`credit_level`) AS credit_level,
+        GROUP_CONCAT(u.`login_name`) AS contacts_name
+        FROM prm_coop_scope cs
+        LEFT JOIN hrs_user u ON cs.`incharge_id`=u.`user_id`
+        GROUP BY cs.`coop_id`
+        ) csu ON csu.coop_id=a.`coop_id`
+        where a.org_id=#{org_id,jdbcType=INTEGER}
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND a.black_valid is null
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND a.black_valid=#{black_valid}
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND a.white_valid is null
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND a.white_valid=#{white_valid}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND a.dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+            or a.coop_ename like "%"#{coop_name,jdbcType=VARCHAR}"%"
+            or a.short_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+            or a.short_ename like "%"#{coop_name,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="coop_code != null and coop_code != '' ">
+            AND a.coop_code like "%"#{coop_code,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_mnemonic != null and coop_mnemonic != '' ">
+            AND a.coop_mnemonic like "%" #{coop_mnemonic} "%"
+        </if>
+        <if test="social_credit_code != null and social_credit_code != '' ">
+            AND a.social_credit_code like "%"#{social_credit_code,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coop_status != null">
+            AND a.coop_status = #{coop_status}
+        </if>
+        <if test="coop_types != null and coop_types != '' ">
+            AND a.coop_type IN
+            <foreach item="item" index="index" collection="coop_types" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND s.credit_level = #{credit_level,jdbcType=VARCHAR}
+        </if>
+        <if test="contacts_name != null and contacts_name != '' ">
+            AND s.incharge_id = #{contacts_name,jdbcType=VARCHAR}
+        </if>
+        order by a.coop_code
+
+    </select>
+
+    <select id="viewCoop" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        SELECT
+        p.coop_id,
+        coop_code,
+        coop_type,
+        coop_mnemonic,
+        coop_name,
+        short_name,
+        coop_ename,
+        short_ename,
+        social_credit_code,
+        bank_name,
+        bank_number,
+        phone_number,
+        coop_address,
+        coop_remark,
+        lock_date,
+        lock_reason,
+        blacklist_date,
+        blacklist_reason,
+        whitelist_date,
+        whitelist_reason,
+        creator_id,
+        create_time,
+        editor_id,
+        edit_time,
+        org_id,
+        dept_id,
+        coop_status,
+        black_valid,
+        white_valid,
+        group_type,
+        transactor_id,
+        is_share,
+        coop_org_id,
+        coop_org_coop_id,
+        p1.full_address AS workAddress,
+        p2.full_address AS registerAddress,
+        p.coop_code_three AS coopCodeThree,
+        p.iata_code AS iataCode,
+        p.cata_certified_sales_agents AS cataCertifiedSalesAgents,
+        p.financial_code AS financialCode
+        FROM
+        prm_coop p
+        LEFT JOIN ( SELECT coop_id, max( full_address ) AS full_address FROM prm_coop_address WHERE addr_type = '办公地址' GROUP BY coop_id ) p1 ON p.coop_id = p1.coop_id
+        LEFT JOIN ( SELECT coop_id, max( full_address ) AS full_address FROM prm_coop_address WHERE addr_type = '注册地址' GROUP BY coop_id ) p2 ON p.coop_id = p2.coop_id
+        where 1=1
+        and p.coop_id = #{coop_id,jdbcType=INTEGER}
+        <if test="org_id != null and org_id != '' ">
+            AND p.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="dept_id != null and dept_id != '' ">
+            AND p.dept_id = #{dept_id,jdbcType=INTEGER}
+        </if>
+
+        order by p.coop_id desc
+
+    </select>
+
+    <select id="listByType" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop
+        where coop_type = #{coop_type,jdbcType=VARCHAR} AND org_id = #{org_id,jdbcType=INTEGER}
+        order by coop_id desc
+    </select>
+
+    <select id="listByCoopName" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop
+        where coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%" AND org_id = #{org_id,jdbcType=INTEGER}
+        order by coop_id desc
+    </select>
+    <select id="queryAllChildrenByCode" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop
+        where 1=1
+        and coop_code like concat(#{coopCode},'%')
+        <if test="orgId != null and orgId != '' ">
+            AND org_id = #{orgId,jdbcType=INTEGER}
+        </if>
+
+    </select>
+    <insert id="saveCoop" parameterType="com.efreight.prm.entity.Coop" useGeneratedKeys="true" keyProperty="coop_id">
+ 	insert into prm_coop
+	(
+	  coop_code,coop_type,coop_mnemonic,coop_name,
+	  short_name,coop_ename,short_ename,social_credit_code,
+	  bank_name,bank_number,phone_number,coop_address,
+	  coop_remark,lock_date,lock_reason,blacklist_date,blacklist_reason,
+	  whitelist_date,whitelist_reason,creator_id,create_time,editor_id,
+	  edit_time,org_id,dept_id,coop_status,black_valid,white_valid,group_type,transactor_id,
+	  coop_code_three,iata_code,cata_certified_sales_agents,financial_code,bind_time,binder,binder_id,coop_org_id,coop_org_coop_id
+	)
+	values(
+		 #{coop_code},
+		 #{coop_type},
+		 #{coop_mnemonic},
+		 #{coop_name},
+		 #{short_name},
+		 #{coop_ename},
+		 #{short_ename},
+		 #{social_credit_code},
+		 #{bank_name},
+		 #{bank_number},
+		 #{phone_number},
+		 #{coop_address},
+		 #{coop_remark},
+		 #{lock_date,jdbcType=DATE},
+		 #{lock_reason},
+		 #{blacklist_date,jdbcType=DATE},
+		 #{blacklist_reason},
+		 #{whitelist_date},
+		 #{whitelist_reason},
+		 #{creator_id,jdbcType=INTEGER},
+		 #{create_time},
+		 #{editor_id,jdbcType=INTEGER},
+		 #{edit_time,jdbcType=DATE},
+		 #{org_id,jdbcType=INTEGER},
+		 #{dept_id,jdbcType=INTEGER},
+		 1,
+		 null,
+		 null,
+		 #{group_type},
+		 #{transactor_id},
+		 #{coopCodeThree},
+		 #{iataCode},
+		 #{cataCertifiedSalesAgents},
+		 #{financialCode},
+		 #{bind_time,jdbcType=DATE},
+		 #{binder},
+		 #{binder_id,jdbcType=INTEGER},
+		 #{coop_org_id,jdbcType=INTEGER},
+		 #{coop_org_coop_id,jdbcType=INTEGER})
+ 	</insert>
+    <update id="modifyCoop" parameterType="com.efreight.prm.entity.Coop">
+        update prm_coop
+        set
+        coop_type = #{coop_type},
+        coop_mnemonic = #{coop_mnemonic},
+        coop_name = #{coop_name},
+        short_name = #{short_name},
+        coop_ename = #{coop_ename},
+        short_ename = #{short_ename},
+        social_credit_code = #{social_credit_code},
+        bank_name = #{bank_name},
+        bank_number = #{bank_number},
+        phone_number = #{phone_number},
+        coop_address = #{coop_address},
+        coop_remark = #{coop_remark},
+        editor_id = #{editor_id},
+        edit_time = #{edit_time},
+        transactor_id = #{transactor_id},
+        coop_code_three = #{coopCodeThree},
+        iata_code = #{iataCode},
+        cata_certified_sales_agents = #{cataCertifiedSalesAgents},
+        financial_code = #{financialCode}
+        where coop_id = #{coop_id}
+    </update>
+
+    <update id="modifyBlackWhiteValidIncludeChildren" parameterType="java.util.HashMap">
+        update prm_coop set
+        <if test="'0'.toString() == blackWhiteValid.toString()">
+            black_valid=1,blacklist_reason = #{blackWhiteReason},blacklist_date=#{currentTime}
+        </if>
+        <if test="'1'.toString() == blackWhiteValid.toString()">
+            white_valid=1,whitelist_reason = #{blackWhiteReason},whitelist_date=#{currentTime}
+        </if>
+        where coop_code = #{coopCode} and org_id=#{orgId}
+    </update>
+
+    <update id="modifyOutBlackWhiteValidIncludeChildren" parameterType="java.util.HashMap">
+        update prm_coop set
+        <if test="'0'.toString() == blackWhiteValid.toString()">
+            black_valid=null,blacklist_reason = null,blacklist_date=null
+        </if>
+        <if test="'1'.toString() == blackWhiteValid.toString()">
+            white_valid=null,whitelist_reason = null,whitelist_date=null
+        </if>
+        where coop_code = #{coopCode} and org_id=#{orgId}
+    </update>
+
+    <update id="lock" parameterType="java.util.HashMap">
+        update prm_coop set coop_status=0,lock_reason = #{lockReason},lock_date=#{now}
+        where coop_code = #{coopCode} and org_id=#{orgId}
+    </update>
+    <update id="unLock" parameterType="java.util.HashMap">
+        update prm_coop set coop_status=1,lock_reason = #{unlockReason},lock_date=null
+        where coop_id = #{coopId}
+    </update>
+    <update id="modifyCoopCode" parameterType="java.util.HashMap">
+        update prm_coop set coop_code = #{afCoopCode}
+        where coop_code = #{oriCoopCode} and org_id=#{orgId}
+    </update>
+    <select id="queryCoopCodes" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where coop_code like #{coopCode}"%" and org_id=#{orgId}
+    </select>
+
+    <select id="queryCoopCodeByCoop" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where coop_code = #{coopCode} and org_id=#{orgId}
+    </select>
+
+    <select id="queryCoopCodeByCoopName" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where coop_name = #{coopName} and org_id=#{orgId}
+    </select>
+
+    <select id="queryCoopCodeByCoopName1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where coop_name = #{coopName} and org_id=#{orgId} and coop_id!=#{coopId}
+    </select>
+
+    <select id="queryCoopCodeByShortName" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where short_name = #{shortName} and org_id=#{orgId}
+    </select>
+
+    <select id="queryCoopCodeByShortName1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where short_name = #{shortName} and org_id=#{orgId} and coop_id!=#{coopId}
+    </select>
+
+    <select id="queryCoopCodeByCoopEName" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where coop_ename = #{coopEName} and org_id=#{orgId}
+    </select>
+
+    <select id="queryCoopCodeByCoopEName1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where coop_ename = #{coopEName} and org_id=#{orgId} and coop_id!=#{coopId}
+    </select>
+
+    <select id="queryCoopCodeByShortEName" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where short_ename = #{shortEName} and org_id=#{orgId}
+    </select>
+
+    <select id="queryCoopCodeByShortEName1" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where short_ename = #{shortEName} and org_id=#{orgId} and coop_id!=#{coopId}
+    </select>
+
+    <select id="queryCoopCodeBySocialCreditCode" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+    	select coop_code from prm_coop
+    	where social_credit_code = #{socialCreditCode} and org_id=#{orgId}
+    </select>
+
+    <select id="isHaveSocialCreditCode" parameterType="com.efreight.prm.entity.Coop" resultType="java.lang.Integer">
+        SELECT
+        count(1) serviceCount
+        FROM prm_coop
+        WHERE social_credit_code = #{social_credit_code} and org_id=#{org_id}
+        <if test="coop_id != null and coop_id != '' ">
+            AND coop_id != #{coop_id,jdbcType=INTEGER}
+        </if>
+    </select>
+
+    <select id="queryListForExcel" resultType="com.efreight.prm.entity.CoopExcel" parameterType="java.util.HashMap">
+        SET @bill_number=0;select @bill_number:=IFNULL(@bill_number,0)+1 As coop_id,a.coop_code,a.coop_type,a.coop_mnemonic,a.coop_name,a.short_name,a.coop_ename,
+        a.short_ename,a.social_credit_code,a.bank_name,a.bank_number,a.phone_number,a.coop_address,e.business_scope,
+        case when a.coop_status='1' then '生效' when a.coop_status='0' then '失效' else '-' end coop_status,
+        a.lock_date,a.lock_reason,
+        case when a.coop_status='0' then '√' else '' end lock_status,
+        case when a.black_valid='1' then '是' else '' end black_valid,
+        case when a.black_valid='1' then '√' else '' end black_status,
+        a.blacklist_reason,
+        case when a.white_valid='1' then '是' else '' end white_valid,
+        case when a.white_valid='1' then '√' else '' end white_status,
+        a.whitelist_reason,
+        b.user_name creator_name,a.create_time,d.user_name editor_name,a.edit_time,
+        a.coop_remark,u.user_name transactor_user
+        from prm_coop a
+        LEFT JOIN (
+        SELECT hu.user_name, hu.user_id FROM hrs_user hu WHERE hu.org_id = #{org_id}
+        ) AS u ON a.transactor_id = u.user_id
+        LEFT JOIN (
+        SELECT
+        s.coop_id,GROUP_CONCAT(s.credit_level) AS credit_level,GROUP_CONCAT(s.business_scope) AS business_scope
+        FROM prm_coop_scope s
+        WHERE s.scope_status=1
+        <if test="business_scope != null and business_scope != '' ">
+            AND s.business_scope in
+            <foreach item="item" index="index" collection="business_scope" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY s.coop_id
+        ) AS e ON a.coop_id=e.coop_id
+        left join hrs_user b on a.creator_id= b.user_id
+        left join hrs_user d on a.editor_id= d.user_id
+        left join hrs_dept c on a.dept_id = c.dept_id
+        where a.org_id = #{org_id}
+        <if test="org_id != null and org_id != '' ">
+            AND a.org_id = #{org_id,jdbcType=INTEGER}
+        </if>
+        <if test="coop_name != null and coop_name != '' ">
+            AND (a.coop_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.short_name  like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.coop_ename  like "%"#{coop_name,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="coop_code != null and coop_code != '' ">
+            AND (a.coop_code  like "%"#{coop_code,jdbcType=VARCHAR}"%" or a.coop_mnemonic  like "%"#{coop_code,jdbcType=VARCHAR}"%" or a.social_credit_code  like "%"#{coop_code,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="coop_status != null">
+            AND a.coop_status = #{coop_status}
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='0'.toString()">
+            AND a.black_valid is null
+        </if>
+        <if test="black_valid != null and black_valid.toString()=='1'.toString()">
+            AND a.black_valid=#{black_valid}
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='0'.toString()">
+            AND a.white_valid is null
+        </if>
+        <if test="white_valid != null and white_valid.toString()=='1'.toString()">
+            AND a.white_valid=#{white_valid}
+        </if>
+        <if test="coop_type != null and coop_type != '' ">
+            AND a.coop_type IN
+            <foreach item="item" index="index" collection="coop_type" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="credit_level != null and credit_level != '' ">
+            AND e.credit_level  like "%"#{credit_level,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="transactor_user != null and transactor_user != ''">
+            AND u.user_name LIKE "%"#{transactor_user}"%"
+        </if>
+        <if test="lock_valid != null and lock_valid.toString()=='0'.toString()">
+            AND a.lock_date is null
+        </if>
+        <if test="lock_valid != null and lock_valid.toString()=='1'.toString()">
+            AND a.lock_date is not null
+        </if>
+        <if test="business_scope != null and business_scope != '' ">
+            AND e.business_scope is not null
+        </if>
+        ORDER BY a.create_time DESC;
+    </select>
+
+    <select id="getBusinessScope" resultType="java.lang.String" >
+    	select EDICode1 from af_V_prm_category
+    	where category_name = '业务范畴' and (EDICode1 !='' and EDICode1 is not null)
+    </select>
+
+    <select id="getUserCountByUserId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT
+        count(1) countUser
+        FROM hrs_user
+        WHERE user_id = #{userId} and (leave_date is not null or blacklist_date is not null)
+    </select>
+
+</mapper>

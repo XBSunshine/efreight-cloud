@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopShareMapper">
+   <resultMap id="BaseResultMap" type="com.efreight.prm.entity.CoopShare">
+        <result column="coop_id" property="coopId" jdbcType="INTEGER"/>
+        <result column="coop_code" property="coopCode" jdbcType="VARCHAR"/>
+        <result column="coop_type" property="coopType" jdbcType="VARCHAR"/>
+        <result column="coop_name" property="coopName" jdbcType="VARCHAR"/>
+        <result column="org_id" property="orgId" jdbcType="INTEGER"/>
+        <result column="bind_time" property="bindTime" jdbcType="TIMESTAMP"/>
+        <result column="coop_org_id" property="coopOrgId" jdbcType="INTEGER"/>
+        <result column="coop_org_coop_id" property="coopOrgCoopId" jdbcType="INTEGER"/>
+        <result column="is_share" property="isShare" jdbcType="VARCHAR"/>
+        <result column="org_uuid" property="orgUuid" jdbcType="VARCHAR"/>
+        <result column="org_name" property="orgName" jdbcType="VARCHAR"/>
+    </resultMap>
+    
+    <resultMap id="ShareFieldsResultMap" type="com.efreight.prm.entity.ShareFields">
+        <result column="param_ranking" property="code" jdbcType="VARCHAR"/>
+        <result column="param_text" property="name" jdbcType="VARCHAR"/>
+        <result column="EDICode1" property="businessScope" jdbcType="VARCHAR"/>
+        <result column="EDICode2" property="pCode" jdbcType="VARCHAR"/>
+    </resultMap>
+    
+    <resultMap id="PrmCoopShareFields" type="com.efreight.prm.entity.PrmCoopShareFields">
+        <result column="fields_name" property="fieldsName" jdbcType="VARCHAR"/>
+        <result column="is_share" property="isShare" jdbcType="VARCHAR"/>
+        <result column="is_subscribe" property="isSubscribe" jdbcType="VARCHAR"/>
+    </resultMap>
+    
+    
+    <select id="selectList" parameterType="com.efreight.prm.entity.CoopShare" resultMap="BaseResultMap">
+        select
+         A.coop_code,A.coop_id,A.coop_type,A.coop_name,A.org_id,A.bind_time,A.coop_org_id,A.coop_org_coop_id,A.is_share,
+         B.org_uuid,
+         C.org_name 
+        from prm_coop A 
+        LEFT JOIN hrs_org B on A.org_id = B.org_id 
+        LEFT JOIN hrs_org C ON A.coop_org_id = C.org_id 
+        where 1=1 AND A.org_id = #{orgId} 
+        <if test="isBind != null and isBind !='' and isBind==1" >
+	        AND A.bind_time is not null
+	    </if>
+	    <if test="isBind != null and isBind !='' and isBind==0" >
+	        AND A.bind_time is null
+	    </if>
+        <if test="isShare != null and isShare != '' and isShare==1" >
+            AND A.is_share = 1 
+        </if>
+        <if test="isShare != null and isShare != '' and isShare==0" >
+            AND A.is_share = 0 
+        </if>
+        <if test="coopName!=null and coopName!=''">
+             AND (A.coop_name like "%"#{coopName}"%" or A.coop_code like "%"#{coopName}"%" )
+        </if>
+        <if test="coopOrgId != null">
+	        AND A.coop_org_id =#{coopOrgId}
+	    </if>
+        <if test="coopType != null and coopType != '' ">
+            AND A.coop_type IN
+            <foreach item="item" index="index" collection="coopTypes" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        order by A.create_time desc
+    </select>
+    
+    <select id="getCoopShareInfo" parameterType="com.efreight.prm.entity.CoopShare" resultMap="BaseResultMap">
+        select
+         A.coop_code,A.coop_id,A.coop_type,A.coop_name,A.org_id,A.bind_time,A.coop_org_id,A.coop_org_coop_id,A.is_share,
+         B.org_uuid,B.org_name 
+        from prm_coop A 
+        LEFT JOIN hrs_org B on A.org_id = B.org_id 
+        where  A.org_id = #{orgId} 
+        <if test="coopId!=null">
+           and  A.coop_id = #{coopId}
+        </if>
+        <if test="coopOrgId != null">
+           and  A.coop_org_id = #{coopOrgId}
+        </if>
+    </select>
+    
+    <select id="getSharefields" parameterType="java.util.HashMap" resultMap="ShareFieldsResultMap">
+        SELECT param_ranking,param_text,EDICode1,EDICode2 FROM prm_category
+          WHERE category_name='协作字段' 
+          AND is_valid=1 AND EDICode1=#{businessScope}
+          order by param_ranking asc
+    </select>
+    <select id="getPrmCoopShareFields" parameterType="java.util.HashMap" resultMap="PrmCoopShareFields">
+        SELECT 
+           fields_name,is_share,is_subscribe from prm_coop_share_fields  
+        where 
+           org_id = #{orgId} and coop_id = #{coopId} and business_scope = #{businessScope} 
+    </select>
+    
+    <insert id="saveShareFields" parameterType="java.util.HashMap">  
+        insert into prm_coop_share_fields 
+          (org_id,coop_id,business_scope,fields_name,is_share,is_subscribe,creator_id,creator_name,create_time)  
+        values
+          (#{orgId},#{coopId},#{businessScope},#{name},
+          <if test="isShare!=null and isShare==1">
+             1
+          </if>
+          <if test="isShare!=null and isShare==0">
+             0
+          </if>
+          ,
+          <if test="isSubscribe!=null and isSubscribe==1">
+             1
+          </if>
+          <if test="isSubscribe!=null and isSubscribe==0">
+             0
+          </if>
+          ,#{creatorId},#{creatorName},now())  
+    </insert> 
+    
+    <delete id="deleteShareFields" parameterType="java.util.HashMap">  
+        delete from prm_coop_share_fields where org_id=#{orgId} and coop_id=#{coopId} and business_scope=#{businessScope} 
+    </delete>  
+    
+    <update id="updateShareCoop" parameterType="com.efreight.prm.entity.CoopShareEmail">
+         update prm_coop set 
+          bind_time = #{operTime},binder = #{operUserName},binder_id = #{operUserId},coop_org_id=#{orgId},coop_org_coop_id=#{coopId} 
+          where coop_id = #{orgCoopid}
+    </update>
+    
+    <update id="updateOperCoop" parameterType="com.efreight.prm.entity.CoopShareEmail">
+         update prm_coop set 
+          bind_time = #{bindTime},binder = #{bindUserName},binder_id = #{bindUserId},coop_org_id=#{orgUuid},coop_org_coop_id=#{orgCoopid} 
+          where coop_id = #{coopId}
+    </update>
+    
+    <update id="modifyShare" parameterType="com.efreight.prm.entity.CoopShare">
+         update prm_coop set 
+         <if test="isShare==1" >
+            is_share = 1 
+         </if>
+         <if test="isShare==0" >
+            is_share = 0 
+         </if>
+          where coop_id = #{coopId}
+    </update>
+    
+</mapper>

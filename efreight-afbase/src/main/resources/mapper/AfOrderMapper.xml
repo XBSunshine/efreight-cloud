@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.afbase.dao.AfOrderMapper">
+
+    <resultMap id="airCargoManifest1" type="com.efreight.afbase.entity.procedure.AirCargoManifestPrint">
+    </resultMap>
+
+    <resultMap id="airCargoManifest2" type="com.efreight.afbase.entity.procedure.AirCargoManifestPrint">
+    </resultMap>
+
+    <resultMap id="operationLookPageResult1" type="java.util.Map"></resultMap>
+    <resultMap id="operationLookPageResult2" type="java.util.Map"></resultMap>
+
+    <resultMap id="operationLookExportResult" type="com.efreight.afbase.entity.OperationLookExcel"></resultMap>
+
+</mapper>

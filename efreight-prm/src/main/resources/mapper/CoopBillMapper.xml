@@ -1,0 +1,1705 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopBillMapper">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.CoopBill">
+        <result column="bill_id" property="billId" jdbcType="INTEGER"/>
+        <result column="bill_number" property="billNumber" jdbcType="VARCHAR"/>
+        <result column="bill_name" property="billName" jdbcType="VARCHAR"/>
+        <result column="settlement_period" property="settlementPeriod" jdbcType="VARCHAR"/>
+        <result column="settlement_id" property="settlementId" jdbcType="INTEGER"/>
+        <result column="settlement_type" property="settlementType" jdbcType="VARCHAR"/>
+        <result column="plan_charge" property="planCharge" jdbcType="DOUBLE"/>
+        <result column="actural_charge" property="acturalCharge" jdbcType="DOUBLE"/>
+        <result column="invoice_amount" property="invoiceAmount" jdbcType="DOUBLE"/>
+        <result column="discount" property="discount" jdbcType="DOUBLE"/>
+        <result column="invoice_no" property="invoiceNo" jdbcType="VARCHAR"/>
+        <result column="bill_fill_date" property="billFillDate" jdbcType="TIMESTAMP"/>
+        <result column="bill_confirm_date" property="billConfirmDate" jdbcType="TIMESTAMP"/>
+        <result column="bill_status" property="billStatus" jdbcType="VARCHAR"/>
+        <result column="creator_id" property="creatorId" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="org_id" property="orgId" jdbcType="INTEGER"/>
+        <result column="dept_id" property="deptId" jdbcType="INTEGER"/>
+        <result column="invoice_time" property="invoiceTime" jdbcType="TIMESTAMP"/>
+        <result column="verify_time" property="verifyTime" jdbcType="TIMESTAMP"/>
+        <result column="agreement_id" property="agreementId" jdbcType="INTEGER"/>
+        <result column="coop_id" property="coopId" jdbcType="INTEGER"/>
+        <result column="coop_name" property="coopName" jdbcType="VARCHAR"/>
+        <result column="fill_user" property="fillUser" jdbcType="VARCHAR"/>
+        <result column="fill_number" property="fillNumber" jdbcType="INTEGER"/>
+        <result column="fill_url" property="fillUrl" jdbcType="VARCHAR"/>
+        <result column="fill_name" property="fillName" jdbcType="VARCHAR"/>
+        <result column="settlement_mod_name" property="settlementModName" jdbcType="VARCHAR"/>
+        <result column="payment_method" property="paymentMethod" jdbcType="VARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        bill_id,bill_number,settlement_id,settlement_type,plan_charge,actural_charge,discount,invoice_no,bill_fill_date,coop_id,coop_name,fill_user,fill_number,fill_url,
+        bill_confirm_date,bill_status,creator_id,create_time,org_id,dept_id,invoice_time,verify_time,agreement_id,bill_name,settlement_period,invoice_amount
+    </sql>
+    <select id="selectList" parameterType="com.efreight.prm.entity.CoopBill" resultMap="BaseResultMap">
+        select
+        b.bill_id,
+        b.bill_number,
+        b.settlement_id,
+        b.settlement_type,
+        b.plan_charge,
+        b.actural_charge,
+        b.discount,
+        b.invoice_no,
+        b.bill_fill_date,
+        b.coop_id,
+        b.coop_name,
+        b.fill_user,
+        b.fill_number,
+        b.fill_url,
+        b.fill_name,
+        b.bill_confirm_date,
+        b.bill_status,
+        b.creator_id,
+        b.create_time,
+        b.org_id,
+        b.dept_id,
+        b.invoice_time,
+        b.verify_time,
+        b.agreement_id,
+        b.bill_name,
+        b.settlement_period,
+        b.invoice_amount,
+        p.settlement_mod_name,
+        p.payment_method,
+        a.user_name as quantityConfirmName,
+        c.user_name as billConfirmName
+        from prm_coop_bill b
+        left join prm_coop_agreement_settlement p on b.settlement_id=p.settlement_id
+        left join hrs_user a on p.quantity_confirm_id=a.user_id
+        left join hrs_user c on p.bill_confirm_id=c.user_id
+        where b.org_id=#{orgId} and b.bill_status in ('未操作','已填充')
+        <if test="invoiceNo != null and invoiceNo != '' " >
+	        AND b.invoice_no like "%"#{invoiceNo,jdbcType=VARCHAR}"%"
+	    </if>
+        <if test="settlementModName != null and settlementModName != '' " >
+            AND p.settlement_mod_name like "%"#{settlementModName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName != null and coopName != '' " >
+	        AND b.coop_name like "%"#{coopName,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="billName != null and billName != '' " >
+	        AND b.bill_name like "%"#{billName,jdbcType=VARCHAR}"%"
+	    </if>
+        <if test="billNumber !=null and billNumber != '' ">
+            and b.bill_number like #{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="agreementId!=null">
+            and b.agreement_id = #{agreementId}
+        </if>
+        <if test="billStatus!=null and billStatus!=''">
+            and b.bill_status = #{billStatus}
+        </if>
+        <if test="createTimeStart!=null">
+            and <![CDATA[b.create_time >= #{createTimeStart}]]>
+        </if>
+        <if test="createTimeEnd!=null">
+            and <![CDATA[b.create_time <= #{createTimeEnd}]]>
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND a.user_name like "%"#{quantityConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName !=null and billConfirmName != '' ">
+            and c.user_name like #{billConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        order by b.bill_number desc
+    </select>
+    <select id="isHavedList" parameterType="com.efreight.prm.entity.CoopBill" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_bill
+        where org_id=#{orgId} and bill_name=#{billName} and settlement_id=#{settlementId}
+        
+    </select>
+
+    <select id="getCurrentBillNumber" parameterType="com.efreight.prm.entity.CoopUnConfirmBillDetail" resultType="java.lang.String">
+        SELECT
+	    max(bill_number) currentBillNumber
+        from prm_coop_bill
+        where org_id=#{orgId} and bill_name=#{billName}
+
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_bill
+        where bill_id=#{billId}
+    </select>
+    <delete id="deleteStatementById" parameterType="java.lang.Integer">
+        delete from prm_coop_statement
+        where statement_id = #{statement_id}
+    </delete>
+
+    <update id="deleteBilltById" parameterType="java.lang.Integer">
+        delete from prm_coop_bill
+        where statement_id = #{statement_id}
+    </update>
+    <insert id="insert" parameterType="com.efreight.prm.entity.CoopBill">
+        insert into prm_coop_bill (bill_id,bill_number, settlement_id, agreement_id,settlement_type,plan_charge,actural_charge,
+        discount,invoice_no,bill_fill_date,bill_confirm_date,bill_status,creator_id,create_time,org_id,dept_id,invoice_time,verify_time,bill_name,coop_id,coop_name,settlement_period)
+        values (null, #{billNumber},#{settlementId}, #{agreementId},#{settlementType},#{planCharge},#{acturalCharge},#{discount},#{invoiceNo},#{billFillDate},#{billConfirmDate},#{billStatus},#{creatorId},
+        #{createTime},#{orgId},#{deptId},#{invoiceTime},#{verifyTime},#{billName},#{coopId},#{coopName},#{settlementPeriod})
+    </insert>
+    <update id="modifyParam" parameterType="com.efreight.prm.entity.CoopBill">
+        update prm_category
+        set category_name = #{categoryName},
+        is_valid = #{isVolid},
+        param_text = #{paramName},
+        remarks = #{remark},
+        EDICode1 = #{eDICode1},
+        EDICode2 = #{eDICode2}
+        where category_type = #{categoryId} and param_ranking=#{paramId}
+    </update>
+    <update id="confirm" parameterType="java.util.HashMap">
+        update prm_coop_bill
+        set bill_status = "已确认",
+        bill_confirm_date = #{now}
+        where bill_id = #{billId}
+    </update>
+    <update id="verify" parameterType="java.util.HashMap">
+        update prm_coop_statement
+        set statement_status = "账单已核销",
+        invoice_writeoff_date = #{invoiceWriteoffDate},
+        invoice_writeoff_amount = #{acturalCharge},
+        editor_id=#{editorId},
+        editor_name=#{editorName},
+        edit_time=#{now},
+        invoice_writeoff_user_name = #{invoiceWriteoffUserName}
+        where statement_id = #{statement_id}
+    </update>
+    <update id="fill" parameterType="java.util.HashMap">
+        update prm_coop_bill
+        set bill_status = "已填充",
+        bill_fill_date = #{now},
+        fill_user=#{fill_user},
+        actural_charge = #{acturalCharge}
+        where bill_id = #{billId}
+    </update>
+    <update id="doFill" parameterType="com.efreight.prm.entity.CoopBill">
+        update prm_coop_bill
+        set bill_status = "数据已填充",
+        bill_fill_date = #{billFillDate,jdbcType=VARCHAR},
+        fill_user=#{fillUser,jdbcType=VARCHAR},
+        fill_number=#{fillNumber,jdbcType=INTEGER},
+        fill_number_original=#{fillNumber,jdbcType=INTEGER},
+        fill_url=#{fillUrl,jdbcType=VARCHAR},
+        fill_name=#{fillName,jdbcType=VARCHAR},
+        actural_charge = #{acturalCharge,jdbcType=DECIMAL},
+        plan_charge = #{planCharge,jdbcType=DECIMAL},
+        original_charge = #{planCharge,jdbcType=DECIMAL},
+        discount = #{discount,jdbcType=DECIMAL}
+        <if test="modifySaler != null and modifySaler != '' ">
+            , modify_saler = #{modifySaler}
+        </if>
+        <if test="remarkSaler != null and remarkSaler != '' ">
+            , remark_saler = #{remarkSaler}
+        </if>
+        where bill_id = #{billId,jdbcType=INTEGER}
+    </update>
+    <update id="doFill1" parameterType="com.efreight.prm.entity.CoopBill">
+        update prm_coop_bill
+        set bill_status = "数据已填充",
+        bill_fill_date = #{billFillDate,jdbcType=VARCHAR},
+        fill_user=#{fillUser,jdbcType=VARCHAR},
+        fill_number=#{fillNumber,jdbcType=INTEGER},
+        fill_url=#{fillUrl,jdbcType=VARCHAR},
+        fill_name=#{fillName,jdbcType=VARCHAR},
+        actural_charge = #{acturalCharge,jdbcType=DECIMAL},
+        plan_charge = #{planCharge,jdbcType=DECIMAL},
+        discount = #{discount,jdbcType=DECIMAL}
+        <if test="modifySaler != null and modifySaler != '' ">
+            , modify_saler = #{modifySaler}
+        </if>
+        <if test="remarkSaler != null and remarkSaler != '' ">
+            , remark_saler = #{remarkSaler}
+        </if>
+        where bill_id = #{billId,jdbcType=INTEGER}
+    </update>
+    <update id="invoice" parameterType="java.util.HashMap">
+        update prm_coop_statement
+        set statement_status = "发票已开具",
+        invoice_number=#{invoiceNo},
+        invoice_amount=#{acturalCharge},
+        editor_id=#{editorId},
+        editor_name=#{editorName},
+        edit_time = #{now},
+        invoice_title = #{invoiceTitle},
+        invoice_type = #{invoiceType},
+        invoice_remark = #{invoiceRemark},
+        express_company = #{expressCompany},
+        express_number = #{expressNumber},
+        invoice_date = #{invoiceDate},
+        invoice_user_name = #{invoiceUserName}
+        where statement_id = #{statement_id}
+    </update>
+
+    <select id="selectBillEmailList" parameterType="java.lang.Integer" resultType="com.efreight.prm.entity.CoopBillEmail">
+        SELECT
+             A.bill_id AS billId
+            ,A.coop_name AS coopName
+            ,B.settlement_mod_name AS settlementModName
+            ,CASE WHEN A.settlement_type IN (0,2) THEN A.actural_charge ELSE B.unit_price END AS unitPrice
+            ,CASE WHEN A.settlement_type IN (0,2) THEN 1 ELSE A.fill_number END AS fillNumber
+            ,A.actural_charge AS acturalCharge
+            ,F_GetFormatMoney(A.actural_charge) AS formatCharge
+            ,M.contacts_name AS contactsName
+            ,M.email AS email
+            ,M1.contacts_name AS confirmName
+            ,M1.email AS confirmEmail
+            ,M1.phone_number as phoneNumber
+            ,CASE WHEN A.settlement_period IN (1)
+             THEN DATE_FORMAT(DATE_ADD(CONCAT(LEFT(A.bill_name,4),'-01','-01'), INTERVAL -1 YEAR), '%Y')
+             ELSE DATE_FORMAT(DATE_ADD(CONCAT(A.bill_name,'-01'), INTERVAL -1 MONTH), '%Y-%m') END AS billMouth
+            ,CASE WHEN A.settlement_period IN (1)
+             THEN DATE_ADD(CONCAT(LEFT(A.bill_name,4),'-01','-01'), INTERVAL -1 YEAR)
+             ELSE DATE_ADD(CONCAT(A.bill_name,'-01'), INTERVAL -1 MONTH) END  AS settlementPeriodBegin
+            ,CASE WHEN A.settlement_period IN (1)
+             THEN DATE_ADD(CONCAT(LEFT(A.bill_name,4),'-12','-31'), INTERVAL -1 YEAR)
+             ELSE LAST_DAY(DATE_ADD(CONCAT(A.bill_name,'-01'), INTERVAL -1 MONTH)) END AS settlementPeriodEnd
+            ,CASE WHEN B.need_email = 1 AND A.fill_url IS NOT NULL THEN A.fill_url ELSE NULL END as fillUrl
+        FROM prm_coop_bill A
+        INNER JOIN prm_coop_contacts M ON B.bill_confirm_id=M.contacts_id
+        INNER JOIN prm_coop_contacts M1 ON B.bill_confirm_contacts=M1.contacts_id
+        LEFT JOIN prm_coop_agreement_settlement B ON A.settlement_id=B.settlement_id
+        WHERE A.bill_status='已填充'
+        AND A.org_id=#{orgId}
+    </select>
+
+    <select id="selectByGroup" parameterType="java.lang.Integer" resultType="com.efreight.prm.entity.CoopBillGroup">
+        select
+
+          b.bill_name billName,
+          b.coop_name coopName,
+          b.coop_id coopId,
+          CONCAT(b.bill_name,b.coop_id) as coopNameAndBillName
+        from prm_coop_bill b
+        left join prm_coop_agreement_settlement p on b.settlement_id=p.settlement_id
+        left join hrs_user a on p.quantity_confirm_id=a.user_id
+        left join hrs_user c on p.bill_confirm_id=c.user_id
+        where b.org_id=#{orgId} and b.bill_status='已填充'
+
+        <if test="settlementModName != null and settlementModName != '' " >
+            AND p.settlement_mod_name like "%"#{settlementModName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            AND b.coop_name like "%"#{coopName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billName != null and billName != '' " >
+            AND b.bill_name like "%"#{billName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billNumber !=null and billNumber != '' ">
+            and b.bill_number like #{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND a.user_name like "%"#{quantityConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName !=null and billConfirmName != '' ">
+            and c.user_name like #{billConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        group by b.coop_name,b.bill_name,b.coop_id
+    </select>
+
+    <select id="selectByMonthAndCoopName" parameterType="com.efreight.prm.entity.CoopBillGroup" resultType="com.efreight.prm.entity.CoopBillGroupDetail">
+        select
+         b.bill_id billId,
+         b.bill_name billName,
+         b.coop_name coopName,
+         b.coop_id coopId,
+         b.bill_number billNumber,
+         b.settlement_type settlementType,
+         b.settlement_period settlementPeriod,
+         b.actural_charge acturalCharge,
+         b.bill_status billStatus,
+         a.user_name as quantityConfirmName,
+         c.user_name as billConfirmName,
+         p.settlement_mod_name as settlementModName,
+         b.fill_number as fillNumber,
+         b.settlement_id settlementId,
+         CONCAT(b.bill_name,b.coop_id) as coopNameAndBillName
+        from prm_coop_bill b
+        LEFT JOIN prm_coop_agreement_settlement p on b.settlement_id=p.settlement_id
+        left join hrs_user a on p.quantity_confirm_id=a.user_id
+        left join hrs_user c on p.bill_confirm_id=c.user_id
+        where b.org_id=#{orgId} and b.bill_status='已填充' and b.coop_name=#{coopName} and b.bill_name=#{billName}
+        <if test="settlementModName != null and settlementModName != '' " >
+            AND p.settlement_mod_name like "%"#{settlementModName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName1 != null and coopName1 != '' " >
+            AND b.coop_name like "%"#{coopName1,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billName1!= null and billName1 != '' " >
+            AND b.bill_name like "%"#{billName1,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billNumber !=null and billNumber != '' ">
+            and b.bill_number like #{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND a.user_name like "%"#{quantityConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName !=null and billConfirmName != '' ">
+            and c.user_name like #{billConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+    </select>
+
+    <select id="selectByMerge" parameterType="com.efreight.prm.entity.CoopBillGroupMerge" resultType="com.efreight.prm.entity.CoopBillGroupMerge">
+        SELECT * FROM
+        (
+        select
+          CONCAT(b.bill_name,'-',b.coop_id) as coopNameAndBillName
+         ,b.coop_id AS coopId,
+         0 AS billId,
+         MAX(b.coop_name) AS coopName, -- 合作伙伴名称
+         b.bill_name AS billName,
+         NULL AS billNumber,
+         NULL AS settlementType,
+         NULL AS settlementPeriod,
+         NULL AS acturalCharge,
+         NULL AS planCharge,
+         NULL AS discount,
+         NULL as billStatus,
+         NULL as quantityConfirmName,
+         NULL as billConfirmName,
+         NULL as settlementModName,
+         NULL as paymentMethod,
+         NULL as fillNumber,
+         NULL as settlementId,
+         NULL as fillUrl,
+         NULL as fillName
+        from prm_coop_bill b
+        LEFT JOIN prm_coop_agreement_settlement p on b.settlement_id=p.settlement_id
+        left join hrs_user a on p.quantity_confirm_id=a.user_id
+        left join hrs_user c on p.bill_confirm_id=c.user_id
+        where b.bill_status='已填充' and b.org_id=#{orgId}
+        <if test="settlementModName != null and settlementModName != '' " >
+            AND p.settlement_mod_name like "%"#{settlementModName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            AND b.coop_name like "%"#{coopName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billName!= null and billName != '' " >
+            AND b.bill_name like "%"#{billName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billNumber !=null and billNumber != '' ">
+            and b.bill_number like #{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND a.user_name like "%"#{quantityConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName !=null and billConfirmName != '' ">
+            and c.user_name like #{billConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        GROUP BY b.coop_id,b.bill_name
+        UNION ALL
+        select
+         CONCAT(b.bill_name,'-',b.coop_id) as coopNameAndBillName,
+         b.coop_id AS coopId,
+         b.bill_id AS billId,
+         b.coop_name AS coopName, -- 合作伙伴名称
+         b.bill_name AS billName,
+         b.bill_number AS billNumber,
+         b.settlement_type AS settlementType,
+         b.settlement_period AS settlementPeriod,
+         b.actural_charge acturalCharge,
+         b.plan_charge planCharge,
+         b.discount discount,
+         b.bill_status billStatus,
+         a.user_name as quantityConfirmName,
+         c.user_name as billConfirmName,
+         p.settlement_mod_name as settlementModName,
+         p.payment_method as paymentMethod,
+         b.fill_number as fillNumber,
+         b.settlement_id settlementId,
+         b.fill_url as fillUrl,
+         b.fill_name as fillName
+        from prm_coop_bill b
+        LEFT JOIN prm_coop_agreement_settlement p on b.settlement_id=p.settlement_id
+        left join hrs_user a on p.quantity_confirm_id=a.user_id
+        left join hrs_user c on p.bill_confirm_id=c.user_id
+        where b.bill_status='已填充' and b.org_id=#{orgId}
+        <if test="settlementModName != null and settlementModName != '' " >
+            AND p.settlement_mod_name like "%"#{settlementModName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            AND b.coop_name like "%"#{coopName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billName!= null and billName != '' " >
+            AND b.bill_name like "%"#{billName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billNumber !=null and billNumber != '' ">
+            and b.bill_number like #{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND a.user_name like "%"#{quantityConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName !=null and billConfirmName != '' ">
+            and c.user_name like #{billConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        ) AS T
+        ORDER BY coopNameAndBillName,billId ASC
+
+    </select>
+
+    <select id="getMadeBillList" parameterType="com.efreight.prm.entity.CoopBillStatement" resultType="com.efreight.prm.entity.CoopBillStatement">
+        SELECT
+        b.statement_id statement_id,
+        b.statement_date billName,
+        b.coop_id coopId,
+        b.statement_number statementNumber,
+        p.coop_name coopName,
+        b.statement_status statementStatus,
+        b.statement_mail_date statementMailDate,
+        b.amount_received invoiceAmount,
+        b.amount_receivable acturalCharge,
+        b.amount_received_discount discount,
+        IFNULL(b.creator_name,b.editor_name) creatorName,
+        b.statement_mail_sender_name statementMailSenderName,
+        CASE b.statement_name
+        WHEN '人工账单' THEN SUBSTRING_INDEX(b.confirm_customer_name, ' ',  1)
+        ELSE a.billConfirmName END AS billConfirmName,
+        b.invoice_number invoiceNumber,
+        b.statement_name statementName,
+        SUBSTRING_INDEX(b.invoice_user_name, ' ',  1) invoiceUserName,
+        b.invoice_date invoiceDate,
+        SUBSTRING_INDEX(b.invoice_writeoff_user_name, ' ',  1) invoiceWriteoffUserName,
+        b.invoice_writeoff_date invoiceWriteoffDate,
+        b.settlement_id settlementId,
+        b.invoice_type AS invoiceType,
+        b.invoice_remark AS invoiceRemark,
+        b.express_company expressCompany,
+        b.express_number expressNumber,
+        b.confirm_customer_time confirmCustomerTime,
+        b.invoice_title AS invoiceTitle,
+        CASE b.statement_name
+        WHEN '人工账单' THEN con.email
+        ELSE c.invoiceReceiveEmail END AS invoiceReceiveEmail,
+        CASE b.statement_name
+        WHEN '人工账单' THEN CASE bill.bill_template
+        WHEN 'BJS' THEN '华北'
+        WHEN 'CAN' THEN '华南'
+        WHEN 'SHA' THEN '华东 '
+        WHEN 'XIY' THEN '西北'
+        WHEN 'EFT' THEN '总部'
+        ELSE '' END
+        ELSE CASE c.bill_template
+        WHEN 'BJS' THEN '华北'
+        WHEN 'CAN' THEN '华南'
+        WHEN 'SHA' THEN '华东 '
+        WHEN 'XIY' THEN '西北'
+        WHEN 'EFT' THEN '总部'
+        ELSE '' END END AS billTemplate
+
+        FROM prm_coop_statement b
+        INNER JOIN prm_coop p on b.coop_id=p.coop_id
+        LEFT JOIN prm_coop_bill bill on b.statement_id=bill.statement_id and b.statement_name='人工账单'
+        LEFT JOIN prm_coop_contacts con on b.invoice_mail_to=con.contacts_id and b.statement_name='人工账单'
+
+        LEFT JOIN (
+        SELECT
+            A.settlement_id,
+            GROUP_CONCAT( DISTINCT A.bill_template ) AS bill_template,
+            GROUP_CONCAT( DISTINCT A.settlement_mod_name ) AS settlement_mod_name,
+            GROUP_CONCAT( DISTINCT U.email ) AS invoiceReceiveEmail
+            FROM
+            prm_coop_agreement_settlement A
+            LEFT JOIN prm_coop_agreement_settlement_contacts B ON A.settlement_id = B.settlement_id
+            LEFT JOIN prm_coop_contacts U ON B.contacts_id = U.contacts_id
+            WHERE A.group_id IS NULL
+            GROUP BY
+            A.settlement_id
+        ) AS c ON c.settlement_id=b.settlement_id
+
+        LEFT JOIN (
+            SELECT A.statement_id,GROUP_CONCAT(DISTINCT C.user_name) AS billConfirmName
+            FROM prm_coop_bill A
+            LEFT JOIN prm_coop_agreement_settlement B ON A.settlement_id=B.settlement_id AND A.statement_id IS NOT NULL
+            INNER JOIN hrs_user C on B.bill_confirm_id=C.user_id
+            GROUP BY A.statement_id
+        ) AS a ON a.statement_id=b.statement_id
+        where b.org_id=#{orgId} and b.statement_status in ('客户已确认','发票已开具','账单已核销')
+
+        <if test="billName != null and billName != '' " >
+            AND b.statement_date like "%"#{billName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            and (upper(p.coop_name) like "%"#{coopName}"%"  or upper(p.short_name)  like "%"#{coopName}"%" or upper(p.coop_ename)  like "%"#{coopName}"%"
+            or upper(p.short_ename)  like "%"#{coopName}"%" or upper(p.coop_code)  like "%"#{coopName}"%" or upper(p.coop_mnemonic)  like "%"#{coopName}"%" or upper(c.settlement_mod_name)  like "%"#{coopName}"%"
+                or (
+                    b.statement_id in (
+                        SELECT DISTINCT
+                        s.statement_id
+                        FROM
+                        prm_coop_bill s
+                        INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+                        where p.it_code like "%"#{coopName}"%"
+                    )
+                )
+            )
+        </if>
+        <if test="statementNumber !=null and statementNumber != '' ">
+            and b.statement_number like #{statementNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="statementStatus!=null and statementStatus!=''">
+            and b.statement_status = #{statementStatus}
+        </if>
+        <if test="invoiceNumber != null and invoiceNumber != '' " >
+            AND b.invoice_number like "%"#{invoiceNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="createTimeStart!=null">
+            and <![CDATA[b.create_time >= #{createTimeStart}]]>
+        </if>
+        <if test="createTimeEnd!=null">
+            and <![CDATA[b.create_time <= #{createTimeEnd}]]>
+        </if>
+        <if test="billConfirmName != null and billConfirmName != '' " >
+            AND (a.billConfirmName like "%"#{billConfirmName,jdbcType=VARCHAR}"%" or (b.confirm_customer_name like "%"#{billConfirmName,jdbcType=VARCHAR}"%" and b.statement_name = '人工账单'))
+        </if>
+        <if test="creatorName != null and creatorName != '' " >
+            AND (b.creator_name like "%"#{creatorName,jdbcType=VARCHAR}"%" or b.editor_name like "%"#{creatorName,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="statementName != null and statementName != '' " >
+            AND b.statement_name like "%"#{statementName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billTemplate != null and billTemplate != '' " >
+            AND (c.bill_template = #{billTemplate} or bill.bill_template = #{billTemplate})
+        </if>
+        <if test="confirmCustomerTime_begin != null and confirmCustomerTime_begin != '' " >
+            AND b.confirm_customer_time &gt;= #{confirmCustomerTime_begin}
+        </if>
+        <if test="confirmCustomerTime_end != null and confirmCustomerTime_end != '' " >
+            AND b.confirm_customer_time &lt;= #{confirmCustomerTime_end}
+        </if>
+        <if test="invoiceWriteoffDate_begin != null and invoiceWriteoffDate_begin != '' " >
+            AND b.invoice_writeoff_date &gt;= #{invoiceWriteoffDate_begin}
+        </if>
+        <if test="invoiceWriteoffDate_end != null and invoiceWriteoffDate_end != '' " >
+            AND b.invoice_writeoff_date &lt;= #{invoiceWriteoffDate_end}
+        </if>
+        <if test="invoiceDate_begin != null and invoiceDate_begin != '' " >
+            AND b.invoice_date &gt;= #{invoiceDate_begin}
+        </if>
+        <if test="invoiceDate_end != null and invoiceDate_end != '' " >
+            AND b.invoice_date &lt;= #{invoiceDate_end}
+        </if>
+        ORDER BY b.confirm_customer_time desc
+    </select>
+
+    <insert id="insertStatement1" parameterType="com.efreight.prm.entity.CoopBillStatement" useGeneratedKeys="true"
+            keyProperty="statement_id">
+        insert into prm_coop_statement (statement_id,org_id, coop_id, statement_status,statement_number,statement_date,amount_receivable,
+        amount_received,amount_received_discount,creator_id,creator_name,create_time,editor_id,editor_name,edit_time)
+        values (#{statement_id},#{orgId}, #{coopId},'已制作',#{statementNumber},#{billName},#{acturalCharge},#{invoiceAmount},#{discount},#{creatorId},#{creatorName},#{createTime},#{editorId},#{editorName},#{editTime})
+    </insert>
+
+    <insert id="insertStatement" parameterType="com.efreight.prm.entity.CoopBillStatement" useGeneratedKeys="true"
+            keyProperty="statement_id">
+        insert into prm_coop_statement (statement_id,org_id, coop_id, statement_name,statement_status,statement_number,statement_date,amount_receivable,
+        amount_received,creator_id,creator_name,create_time,confirm_customer_name,confirm_customer_time,invoice_title,invoice_type,invoice_remark,invoice_mail_to,bill_manual_mail_to)
+        values (#{statement_id},#{orgId}, #{coopId},#{statementName},#{statementStatus},#{statementNumber},#{billName},#{acturalCharge},
+        #{invoiceAmount},#{creatorId},#{creatorName},#{createTime},#{confirmCustomerName},#{confirmCustomerTime},#{invoiceTitle},#{invoiceType},#{invoiceRemark},#{invoiceMailTo},#{billManualMailTo})
+    </insert>
+
+    <select id="getCurrentBillStatementNumber" parameterType="com.efreight.prm.entity.CoopBillStatement" resultType="java.lang.String">
+        SELECT
+	    max(statement_number) currentBillNumber
+        from prm_coop_statement
+        where org_id=#{orgId} and statement_date=#{billName}
+
+    </select>
+
+    <update id="updateCoopBillByBillId" parameterType="com.efreight.prm.entity.CoopBill">
+        update prm_coop_bill
+        set bill_status = "已确认",
+        statement_id = #{statementId}
+        where bill_id = #{billId}
+    </update>
+
+    <select id="checkBillByStatementId" parameterType="java.lang.Integer" resultType="com.efreight.prm.entity.CoopBill">
+        select
+        b.bill_name billName,
+        b.coop_name coopName,
+        b.coop_id coopId,
+        b.bill_number billNumber,
+        b.bill_status billStatus,
+        b.settlement_type settlementType,
+        b.settlement_period settlementPeriod,
+        b.actural_charge acturalCharge,
+        b.discount discount,
+        b.fill_url fillUrl,
+        b.fill_name fillName,
+        b.payment_method paymentMethod,
+        b.service_name serviceName,
+        b.remark remark,
+        b.departure_station departureStation,
+        b.arrival_departur_type arrivalDeparturType,
+        af.param_text AS aircraftClassification,
+        p.it_code itCode
+        from prm_coop_bill b
+        LEFT JOIN prm_coop_agreement_settlement p on b.settlement_id=p.settlement_id
+        LEFT JOIN af_category af ON af.EDICode1=b.aircraft_classification and af.category_name='航班性质'
+        where b.statement_id=#{statement_id}
+
+    </select>
+
+    <update id="updateStatementMailDate" parameterType="com.efreight.prm.entity.CoopBillStatement">
+        update prm_coop_statement
+        set statement_mail_date = #{statementMailDate},
+        statement_mail_sender_id = #{statementMailSenderId},
+        statement_mail_sender_name = #{statementMailSenderName}
+        where statement_id = #{statement_id}
+    </update>
+
+    <select id="generateBill" parameterType="com.efreight.prm.entity.CoopBill"  statementType="CALLABLE">
+
+		{call prm_P_statement_list_make(#{billName,mode=IN},#{result,mode=OUT,jdbcType=VARCHAR})}
+
+	</select>
+
+    <select id="repairBill" parameterType="com.efreight.prm.entity.CoopBill"  statementType="CALLABLE">
+
+		{call prm_P_statement_list_repair(#{billName,mode=IN})}
+
+	</select>
+
+    <select id="getPdfFields" parameterMap="pm" statementType="CALLABLE" resultMap="rm,rm1">
+        CALL prm_P_statement_print(#{statement_id,mode=IN});
+    </select>
+
+    <parameterMap id="pm" type="java.util.Map">
+        <parameter property="statement_id" jdbcType="INTEGER" mode="IN"></parameter>
+    </parameterMap>
+
+    <resultMap id="rm" type="com.efreight.prm.entity.CoopBillEmail">
+        <result column="txt_01" property="txt_01"></result>
+        <result column="txt_02" property="txt_02"></result>
+        <result column="txt_03" property="txt_03"></result>
+        <result column="txt_04" property="txt_04"></result>
+        <result column="txt_05" property="txt_05"></result>
+        <result column="txt_06" property="txt_06"></result>
+        <result column="txt_07" property="txt_07"></result>
+        <result column="txt_08" property="txt_08"></result>
+        <result column="txt_09" property="txt_09"></result>
+        <result column="txt_10" property="txt_10"></result>
+        <result column="mail_cc" property="mail_cc"></result>
+        <result column="mail_to" property="mail_to"></result>
+        <result column="mail_attachment" property="mailAttachment"></result>
+        <result column="mail_title" property="mailTitle"></result>
+        <result column="print_template" property="printTemplate"></result>
+        <result column="mail_body" property="mailBody"></result>
+    </resultMap>
+
+    <resultMap id="rm1" type="com.efreight.prm.entity.CoopBillEmail">
+        <result column="r_01" property="r_01"></result>
+        <result column="r_02" property="r_02"></result>
+        <result column="r_03" property="r_03"></result>
+        <result column="r_04" property="r_04"></result>
+        <result column="r_05" property="r_05"></result>
+        <result column="r_06" property="r_06"></result>
+        <result column="r_07" property="r_07"></result>
+        <result column="r_08" property="r_08"></result>
+        <result column="r_09" property="r_09"></result>
+        <result column="mail_attachment_url" property="mailAttachmentUrl"></result>
+        <result column="mail_attachment_name" property="mailAttachmentName"></result>
+    </resultMap>
+
+    <select id="searchBillServiceGroup" resultType="com.efreight.prm.entity.BillServiceGroup" parameterType="com.efreight.prm.entity.BillServiceGroup">
+        select
+        a.service_id serviceId,
+        a.service_code serviceCode,
+        a.service_name serviceName,
+        a.is_valid isValid,
+        IFNULL(a.editor_name,a.creator_name) creatorName,
+        IFNULL(a.edit_time,a.create_time) createTime,
+        a.remark remark
+        from prm_coop_agreement_settlement_service a
+        where 1=1
+        and LENGTH(service_code)=3
+        <if test="isValid1 != null and isValid1 ==1 " >
+            AND a.is_valid = #{isValid1}
+        </if>
+        <if test="isValid1 != null and isValid1 ==0 " >
+            AND (a.is_valid = #{isValid1} or a.service_code in (SELECT distinct left(service_code, 3) FROM prm_coop_agreement_settlement_service where is_valid=#{isValid1} and LENGTH(service_code)=6))
+        </if>
+        ORDER BY service_code ASC
+    </select>
+
+    <select id="getServiceDetailByServiceCode" resultType="com.efreight.prm.entity.BillServiceDetail" parameterType="com.efreight.prm.entity.BillServiceGroup">
+        select
+        a.service_id serviceId,
+        a.service_code serviceCode,
+        a.service_name serviceName,
+        a.is_valid isValid,
+        IFNULL(a.editor_name,a.creator_name) creatorName,
+        IFNULL(a.edit_time,a.create_time) createTime,
+        a.remark remark
+        from prm_coop_agreement_settlement_service a
+        where 1=1
+        and service_code like concat(#{serviceCode},'___')
+        <if test="isValid1 != null and isValid1 ==1" >
+            AND a.is_valid = #{isValid1}
+        </if>
+        <if test="isValid1 != null and isValid1 ==0 and isDetailAll ==1" >
+            AND a.is_valid = #{isValid1}
+        </if>
+        ORDER BY service_code ASC
+    </select>
+
+    <insert id="addService" parameterType="com.efreight.prm.entity.BillServiceGroup">
+        insert into prm_coop_agreement_settlement_service (service_code,service_name, is_valid, creator_id,creator_name,create_time,remark)
+        values (#{serviceCode},#{serviceName}, #{isValid},#{creatorId},#{creatorName},#{createTime},#{remark})
+    </insert>
+
+    <select id="getMaxServiceCode" resultType="java.lang.String">
+        select
+        max(a.service_code) serviceCode
+        from prm_coop_agreement_settlement_service a
+        where 1=1
+        and LENGTH(service_code)=3
+
+    </select>
+
+    <select id="getMaxServiceCodeDetail" resultType="java.lang.String" parameterType="java.lang.String">
+        select
+
+        max(a.service_code) serviceCode
+        from prm_coop_agreement_settlement_service a
+        where 1=1
+        and service_code like concat(#{serviceCode},'___')
+
+    </select>
+
+    <update id="editService" parameterType="com.efreight.prm.entity.BillServiceGroup">
+        update prm_coop_agreement_settlement_service
+        set service_name = #{serviceName},
+        is_valid = #{isValid},
+        editor_id = #{editorId},
+        editor_name = #{editorName},
+        edit_time = #{editTime},
+        remark = #{remark}
+        where service_id = #{serviceId}
+    </update>
+
+    <select id="searchUnConfirmBillGroup" parameterType="com.efreight.prm.entity.CoopUnConfirmBillDetail" resultType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        SELECT
+            "1" as  isParent,
+            s.statement_id statementId,
+            s.coop_id coopId,
+            s.statement_status billStatus,
+            s.statement_number billNumber,
+            s.statement_date billName,
+            c.coop_name coopName,
+            s.min_charge minCharge,
+            s.max_charge maxCharge,
+            s.amount_receivable planCharge,
+            s.amount_received acturalCharge,
+            s.amount_received_discount discount,
+            s.statement_name serviceName,
+            s.modify_saler modifySaler,
+            SUBSTRING_INDEX(s.confirm_head_office_name, ' ',  1) headOfficeConfirmName,
+            p.transactor_id transactorId,
+            CASE s.statement_name
+            WHEN '人工账单' THEN SUBSTRING_INDEX(s.confirm_customer_name, ' ',  1)
+            ELSE a.user_name END AS billConfirmName,
+            s.settlement_id settlementId,
+            s.bill_manual_mail_to billManualMailTo
+        FROM
+            prm_coop_statement s
+            LEFT JOIN prm_coop_agreement_settlement p on s.settlement_id=p.settlement_id
+            LEFT JOIN hrs_user a on p.transactor_id=a.user_id
+            LEFT JOIN prm_coop c ON s.coop_id = c.coop_id
+        WHERE
+            s.org_id =#{orgId} and s.statement_status IN ('数据未填充','数据已填充','待总部确认','账单已发送','客户已确认')
+        <if test="billName != null and billName != '' " >
+            AND s.statement_date = #{billName}
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            and (upper(c.coop_name) like "%"#{coopName}"%"  or upper(c.short_name)  like "%"#{coopName}"%" or upper(c.coop_ename)  like "%"#{coopName}"%"
+            or upper(c.short_ename)  like "%"#{coopName}"%" or upper(c.coop_code)  like "%"#{coopName}"%" or upper(c.coop_mnemonic)  like "%"#{coopName}"%" or upper(p.settlement_mod_name)  like "%"#{coopName}"%"
+                or (
+                   s.statement_id in (
+                        SELECT DISTINCT
+                        s.statement_id
+                        FROM
+                        prm_coop_bill s
+                        INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+                        where p.it_code like "%"#{coopName}"%"
+                   )
+                )
+            )
+        </if>
+        <if test="billStatus != null and billStatus != '' " >
+            AND s.statement_status in (${billStatus})
+        </if>
+        <if test="billNumber != null and billNumber != '' " >
+            AND s.statement_number like "%"#{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName != null and billConfirmName != '' " >
+            AND ((s.statement_id in (SELECT DISTINCT
+                    s.statement_id
+                    FROM
+                    prm_coop_bill s
+                    INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+                    LEFT JOIN hrs_user c ON p.bill_confirm_id = c.user_id
+                    WHERE
+                    s.org_id =#{orgId} and c.user_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%")) or s.confirm_saler_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%"
+                     or (s.confirm_customer_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%" and s.statement_name = '人工账单'))
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND s.statement_id in (SELECT DISTINCT
+            s.statement_id
+            FROM
+            prm_coop_bill s
+            INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+            left join hrs_user a on p.quantity_confirm_id=a.user_id
+            WHERE
+            a.user_name LIKE "%"#{quantityConfirmName,jdbcType=VARCHAR}"%" and s.org_id =#{orgId})
+        </if>
+        <if test="headOfficeConfirmName != null and headOfficeConfirmName != '' " >
+            AND ((s.statement_id in (SELECT DISTINCT
+            s.statement_id
+            FROM
+            prm_coop_bill s
+            INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+            left join hrs_user a on p.head_office_confirm_id=a.user_id
+            WHERE
+            s.org_id =#{orgId} and a.user_name LIKE "%"#{headOfficeConfirmName,jdbcType=VARCHAR}"%")) or s.confirm_head_office_name LIKE "%"#{headOfficeConfirmName,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="billTemplate != null and billTemplate != '' " >
+            AND p.bill_template = #{billTemplate}
+        </if>
+
+    </select>
+
+    <select id="findCoopUnConfirmBillDetail" parameterType="java.util.HashMap" resultType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        SELECT
+             s.bill_id billId,
+             s.bill_number billNumber,
+             s.settlement_id settlementModName,
+             s.bill_status billStatus,
+             s.bill_name billName,
+             s.coop_name  coopName,
+             s.settlement_type  settlementType,
+             s.settlement_period  settlementPeriod,
+             s.actural_charge acturalCharge,
+             s.plan_charge planCharge,
+             s.discount discount,
+             s.fill_number  fillNumber,
+             s.fill_url  fillUrl,
+             s.fill_name  fillName,
+             s.service_name serviceName,
+             a.user_name quantityConfirmName,
+             c.user_name billConfirmName,
+             d.user_name headOfficeConfirmName,
+             s.payment_method paymentMethod,
+             s.settlement_id settlementId,
+             s.unit_price unitPrice,
+             s.min_charge minCharge,
+             s.max_charge maxCharge,
+             s.statement_id statementId,
+             s.modify_saler modifySaler,
+             s.need_email needEmail,
+             s.base_quantity baseQuantity,
+             s.unit_price_excessive unitPriceExcessive,
+             s.remark remark,
+             s.departure_station departureStation,
+             s.arrival_departur_type arrivalDeparturType,
+             af.param_text AS aircraftClassification,
+             p.it_code itCode,
+             s.original_charge originalCharge,
+             s.fill_number_original fillNumberOriginal,
+             s.remark_saler remarkSaler
+        FROM
+            prm_coop_bill s
+            LEFT JOIN prm_coop_agreement_settlement p on s.settlement_id=p.settlement_id
+            LEFT JOIN hrs_user a on p.quantity_confirm_id=a.user_id
+            LEFT JOIN hrs_user c on p.bill_confirm_id=c.user_id
+            LEFT JOIN hrs_user d on p.head_office_confirm_id=d.user_id
+            LEFT JOIN af_category af ON af.EDICode1=s.aircraft_classification and af.category_name='航班性质'
+        WHERE
+            s.org_id =#{orgId} and statement_id = #{statementId}
+    </select>
+
+    <select id="searchUnConfirmBillGroup_detail" parameterType="com.efreight.prm.entity.CoopUnConfirmBillDetail" resultType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        SELECT
+        "1" as  isParent,
+        s.statement_id statementId,
+        s.coop_id coopId,
+        s.statement_status billStatus,
+        s.statement_number billNumber,
+        s.statement_date billName,
+        c.coop_name coopName,
+        s.min_charge minCharge,
+        s.max_charge maxCharge,
+        s.amount_receivable planCharge,
+        s.amount_received invoiceAmount,
+        s.amount_received_discount discount,
+        s.statement_name serviceName
+        FROM
+        prm_coop_statement s
+        LEFT JOIN prm_coop_agreement_settlement p on s.settlement_id=p.settlement_id
+        LEFT JOIN prm_coop c ON s.coop_id = c.coop_id
+        WHERE
+        s.org_id =#{orgId} and s.statement_status IN ('数据未填充','数据已填充')
+        <if test="billName != null and billName != '' " >
+            AND s.statement_date = #{billName}
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            and (upper(c.coop_name) like "%"#{coopName}"%"  or upper(c.short_name)  like "%"#{coopName}"%" or upper(c.coop_ename)  like "%"#{coopName}"%"
+            or upper(c.short_ename)  like "%"#{coopName}"%" or upper(c.coop_code)  like "%"#{coopName}"%" or upper(c.coop_mnemonic)  like "%"#{coopName}"%" or upper(p.settlement_mod_name)  like "%"#{coopName}"%")
+        </if>
+        <if test="billNumber != null and billNumber != '' " >
+            AND s.statement_number like "%"#{billNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billConfirmName != null and billConfirmName != '' " >
+            AND s.statement_id in (SELECT DISTINCT
+            s.statement_id
+            FROM
+            prm_coop_bill s
+            INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+            LEFT JOIN hrs_user c ON p.bill_confirm_id = c.user_id
+            WHERE
+            c.user_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%" and s.org_id =#{orgId})
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND s.statement_id in (SELECT DISTINCT
+            s.statement_id
+            FROM
+            prm_coop_bill s
+            INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+            left join hrs_user a on p.quantity_confirm_id=a.user_id
+            WHERE
+            a.user_name LIKE "%"#{quantityConfirmName,jdbcType=VARCHAR}"%" and s.org_id =#{orgId})
+        </if>
+        <if test="serviceName != null and serviceName != '' " >
+            AND s.statement_id in (select distinct statement_id from prm_coop_bill where service_name LIKE "%"#{serviceName,jdbcType=VARCHAR}"%" and org_id =#{orgId})
+        </if>
+        <if test="billStatus != null and billStatus != '' " >
+            AND s.statement_id in (select distinct statement_id from prm_coop_bill where bill_status = #{billStatus} and org_id =#{orgId})
+        </if>
+        <if test="billTemplate != null and billTemplate != '' " >
+            AND p.bill_template = #{billTemplate}
+        </if>
+        <if test="itCode != null and itCode != '' " >
+            AND s.statement_id in (SELECT DISTINCT
+            statement_id
+            FROM
+            prm_coop_bill s
+            INNER JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+            WHERE
+            upper(p.it_code) LIKE "%"#{itCode,jdbcType=VARCHAR}"%" and s.org_id =#{orgId})
+        </if>
+    </select>
+
+    <select id="findCoopUnConfirmBillDetail_detail" parameterType="java.util.HashMap" resultType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        SELECT
+        s.bill_id billId,
+        s.bill_number billNumber,
+        s.settlement_id settlementModName,
+        s.bill_status billStatus,
+        s.bill_name billName,
+        s.coop_name  coopName,
+        s.settlement_type  settlementType,
+        s.settlement_period  settlementPeriod,
+        s.actural_charge acturalCharge,
+        s.plan_charge planCharge,
+        s.discount discount,
+        s.fill_number  fillNumber,
+        s.fill_url  fillUrl,
+        s.fill_name  fillName,
+        s.service_name serviceName,
+        a.user_name quantityConfirmName,
+        c.user_name billConfirmName,
+        d.user_name headOfficeConfirmName,
+        s.payment_method paymentMethod,
+        s.settlement_id settlementId,
+        s.unit_price unitPrice,
+        s.min_charge minCharge,
+        s.max_charge maxCharge,
+        s.statement_id statementId,
+        s.modify_saler modifySaler,
+        s.need_email needEmail,
+        s.base_quantity baseQuantity,
+        s.unit_price_excessive unitPriceExcessive,
+        s.remark remark,
+        s.departure_station departureStation,
+        s.arrival_departur_type arrivalDeparturType,
+        af.param_text AS aircraftClassification,
+        p.it_code itCode
+        FROM
+        prm_coop_bill s
+        LEFT JOIN prm_coop_agreement_settlement p on s.settlement_id=p.settlement_id
+        LEFT JOIN hrs_user a on p.quantity_confirm_id=a.user_id
+        LEFT JOIN hrs_user c on p.bill_confirm_id=c.user_id
+        LEFT JOIN hrs_user d on p.head_office_confirm_id=d.user_id
+        LEFT JOIN af_category af ON af.EDICode1=s.aircraft_classification and af.category_name='航班性质'
+        WHERE
+        s.org_id =#{orgId} and statement_id = #{statementId}
+        <if test="billName != null and billName != '' " >
+            AND s.bill_name = #{billName}
+        </if>
+        <if test="billConfirmName != null and billConfirmName != '' " >
+            AND c.user_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="quantityConfirmName != null and quantityConfirmName != '' " >
+            AND a.user_name LIKE "%"#{quantityConfirmName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="serviceName != null and serviceName != '' " >
+            AND s.service_name LIKE "%"#{serviceName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billStatus != null and billStatus != '' " >
+            AND s.bill_status = #{billStatus}
+        </if>
+        <if test="itCode != null and itCode != '' " >
+            AND upper(p.it_code) LIKE "%"#{itCode,jdbcType=VARCHAR}"%"
+        </if>
+    </select>
+
+    <select id="searchCoopBillSettleList" parameterType="java.util.HashMap" resultType="com.efreight.prm.entity.CoopBillSettle">
+        select
+            s.statement_id AS statementId,
+            s.statement_date AS statementDate,
+            p.coop_name AS coopName,
+            s.statement_name AS statementName,
+            CASE WHEN b.bill_status='数据已填充' THEN s.statement_status ELSE b.bill_status END AS statementStatus,
+            s.amount_received AS amountReceived,
+            CASE s.statement_name
+            WHEN '人工账单' THEN CASE b.bill_template
+            WHEN 'BJS' THEN '华北'
+            WHEN 'CAN' THEN '华南'
+            WHEN 'SHA' THEN '华东 '
+            WHEN 'XIY' THEN '西北'
+            WHEN 'EFT' THEN '总部'
+            ELSE '' END
+            ELSE CASE se.bill_template
+            WHEN 'BJS' THEN '华北'
+            WHEN 'CAN' THEN '华南'
+            WHEN 'SHA' THEN '华东 '
+            WHEN 'XIY' THEN '西北'
+            WHEN 'EFT' THEN '总部'
+            ELSE '' END END AS billTemplate,
+            U1.user_name AS saleConfirmName,
+            U2.user_name AS billConfirmName,
+            serv1.service_name AS serviceNameOne,
+            b.service_name AS serviceNameTwo,
+            b.settlement_type AS settlementType,
+            b.settlement_period AS settlementPeriod,
+            b.payment_method AS paymentMethod,
+            b.unit_price AS unitPrice,
+            b.fill_number AS fillNumber,
+            b.actural_charge AS acturalCharge,
+            b.departure_station AS departureStation,
+            b.bill_status billStatus,
+            date_format(IFNULL(se.begin_date,se1.begin_date), '%Y-%m-%d' ) AS validBeginDate,
+            date_format(IFNULL(se.end_date,IFNULL(se1.end_date,'2099-12-31')), '%Y-%m-%d' ) AS validEndDate,
+            se2.it_code itCode,
+            s.invoice_writeoff_date AS invoiceWriteoffDate,
+            SUBSTRING_INDEX(s.invoice_writeoff_user_name, ' ',  1) invoiceWriteoffUserName,
+            s.confirm_customer_time AS confirmCustomerTime,
+            U3.user_name AS salesCollaborativeName,
+            CASE WHEN se2.start_charge_time IS NOT NULL  THEN left(se2.start_charge_time,7) ELSE '' END AS startChargeTime
+        FROM
+            prm_coop_statement s
+            INNER JOIN prm_coop_bill b ON s.statement_id = b.statement_id
+            INNER JOIN prm_coop p ON s.coop_id = p.coop_id
+            LEFT JOIN prm_coop_agreement_settlement se2 ON b.settlement_id = se2.settlement_id
+            LEFT JOIN prm_coop_agreement_settlement se ON s.settlement_id = se.settlement_id
+            LEFT JOIN prm_coop_agreement_settlement se1 ON se.group_id = se1.settlement_id
+            LEFT JOIN hrs_user U1 ON U1.user_id = p.transactor_id
+            LEFT JOIN hrs_user U2 ON U2.user_id = se.transactor_id
+            LEFT JOIN hrs_user U3 ON U3.user_id = se2.sales_collaborative_id
+            LEFT JOIN prm_coop_agreement_settlement_service serv ON b.service_id = serv.service_id
+            LEFT JOIN prm_coop_agreement_settlement_service serv1 ON left(serv.service_code,3) = serv1.service_code
+        WHERE
+            s.org_id =#{orgId}
+            <if test="coopName != null and coopName != '' " >
+                and (upper(p.coop_name) like "%"#{coopName}"%"  or upper(p.short_name)  like "%"#{coopName}"%" or upper(p.coop_ename)  like "%"#{coopName}"%"
+                or upper(p.short_ename)  like "%"#{coopName}"%" or upper(p.coop_code)  like "%"#{coopName}"%" or upper(p.coop_mnemonic)  like "%"#{coopName}"%"
+                or upper(se.settlement_mod_name)  like "%"#{coopName}"%" or upper(se2.it_code)  like "%"#{coopName}"%")
+            </if>
+            <if test="billTemplate != null and billTemplate != '' " >
+                AND (se.bill_template = #{billTemplate} or b.bill_template = #{billTemplate})
+            </if>
+            <if test="departureStation != null and departureStation != '' " >
+                AND b.departure_station LIKE "%"#{departureStation,jdbcType=VARCHAR}"%"
+            </if>
+            <if test="billConfirmName != null and billConfirmName != '' " >
+                AND U2.user_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%"
+            </if>
+            <if test="saleConfirmName != null and saleConfirmName != '' " >
+                AND U1.user_name LIKE "%"#{saleConfirmName,jdbcType=VARCHAR}"%"
+            </if>
+            <if test="statementStatus != null and statementStatus != '' " >
+                AND s.statement_status = #{statementStatus}
+            </if>
+            <if test="statementDate_begin != null and statementDate_begin != '' " >
+                AND s.statement_date &gt;= #{statementDate_begin}
+            </if>
+            <if test="statementDate_end != null and statementDate_end != '' " >
+                AND s.statement_date &lt;= #{statementDate_end}
+            </if>
+            <if test="validBeginDate != null and validBeginDate != '' " >
+                AND IFNULL(se.end_date,IFNULL(se1.end_date,'2099-12-31')) &gt;= #{validBeginDate}
+            </if>
+            <if test="validEndDate != null and validEndDate != '' " >
+                AND IFNULL(se.begin_date,se1.begin_date) &lt;= #{validEndDate}
+            </if>
+            <if test="serviceNameOne != null and serviceNameOne != '' ">
+                AND serv1.service_id IN
+                <foreach item="item" index="index" collection="serviceNameOne" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="serviceNameTwo != null and serviceNameTwo != '' ">
+                AND b.service_id IN
+                <foreach item="item" index="index" collection="serviceNameTwo" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="invoiceWriteoffDateBegin != null and invoiceWriteoffDateBegin != '' " >
+                AND s.invoice_writeoff_date &gt;= #{invoiceWriteoffDateBegin}
+            </if>
+            <if test="invoiceWriteoffDateEnd != null and invoiceWriteoffDateEnd != '' " >
+                AND s.invoice_writeoff_date &lt;= #{invoiceWriteoffDateEnd}
+            </if>
+            <if test="paymentMethod != null and paymentMethod != '' " >
+                AND b.payment_method = #{paymentMethod}
+            </if>
+        ORDER BY
+            s.statement_id,s.statement_date,p.coop_name,s.statement_name
+    </select>
+
+    <select id="queryListForExcel" parameterType="java.util.HashMap" resultType="com.efreight.prm.entity.CoopBillSettleExcel">
+        SET @bill_number=0;
+            select aa.*,
+            @bill_number:=IFNULL(@bill_number,0)+1 As billNumber
+            from (
+            select
+            s.statement_id AS statementId,
+            s.statement_date AS statementDate,
+            p.coop_name AS coopName,
+            s.statement_name AS statementName,
+            CASE WHEN b.bill_status='数据已填充' THEN s.statement_status ELSE b.bill_status END AS statementStatus,
+            s.amount_received AS amountReceived,
+            CASE s.statement_name
+            WHEN '人工账单' THEN CASE b.bill_template
+            WHEN 'BJS' THEN '华北'
+            WHEN 'CAN' THEN '华南'
+            WHEN 'SHA' THEN '华东 '
+            WHEN 'XIY' THEN '西北'
+            WHEN 'EFT' THEN '总部'
+            ELSE '' END
+            ELSE CASE se.bill_template
+            WHEN 'BJS' THEN '华北'
+            WHEN 'CAN' THEN '华南'
+            WHEN 'SHA' THEN '华东 '
+            WHEN 'XIY' THEN '西北'
+            WHEN 'EFT' THEN '总部'
+            ELSE '' END END AS billTemplate,
+            U1.user_name AS saleConfirmName,
+            U2.user_name AS billConfirmName,
+            serv1.service_name AS serviceNameOne,
+            b.service_name AS serviceNameTwo,
+            b.settlement_type AS settlementType,
+            b.settlement_period AS settlementPeriod,
+            b.payment_method AS paymentMethod,
+            b.unit_price AS unitPrice,
+            format(b.fill_number,0) AS fillNumber,
+            b.actural_charge AS acturalCharge,
+            format(b.actural_charge,2) AS acturalCharge1,
+            b.departure_station AS departureStation,
+            b.bill_status billStatus,
+            date_format(IFNULL(se.begin_date,se1.begin_date), '%Y-%m-%d' ) AS validBeginDate,
+            date_format(IFNULL(se.end_date,IFNULL(se1.end_date,'2099-12-31')), '%Y-%m-%d' ) AS validEndDate,
+            CONCAT(
+            b.payment_method
+            ,'/'
+            ,CASE b.settlement_period
+            WHEN 0 THEN '按月'
+            WHEN 1 THEN '按年'
+            WHEN 2 THEN '按季度'
+            WHEN 3 THEN '按半年'
+            ELSE '' END
+            ,'/'
+            ,CASE b.settlement_type
+            WHEN 0 THEN '包月'
+            WHEN 1 THEN '按量'
+            WHEN 2 THEN '包年 '
+            WHEN 3 THEN '包半年'
+            WHEN 4 THEN '包季度'
+            ELSE '' END
+            ) AS periodAndMethod,
+            se2.it_code itCode,
+            U3.user_name AS salesCollaborativeName,
+            CASE WHEN se2.start_charge_time IS NOT NULL  THEN left(se2.start_charge_time,7) ELSE '' END AS startChargeTime,
+            s.confirm_customer_time AS confirmCustomerTime,
+            SUBSTRING_INDEX(s.invoice_writeoff_user_name, ' ',  1) invoiceWriteoffUserName,
+            SUBSTRING_INDEX(s.invoice_writeoff_date, ' ',  1) invoiceWriteoffDate
+
+            FROM
+            prm_coop_statement s
+            INNER JOIN prm_coop_bill b ON s.statement_id = b.statement_id
+            INNER JOIN prm_coop p ON s.coop_id = p.coop_id
+            LEFT JOIN prm_coop_agreement_settlement se2 ON b.settlement_id = se2.settlement_id
+            LEFT JOIN prm_coop_agreement_settlement se ON s.settlement_id = se.settlement_id
+            LEFT JOIN prm_coop_agreement_settlement se1 ON se.group_id = se1.settlement_id
+            LEFT JOIN hrs_user U1 ON U1.user_id = p.transactor_id
+            LEFT JOIN hrs_user U2 ON U2.user_id = se.transactor_id
+            LEFT JOIN hrs_user U3 ON U3.user_id = se2.sales_collaborative_id
+            LEFT JOIN prm_coop_agreement_settlement_service serv ON b.service_id = serv.service_id
+            LEFT JOIN prm_coop_agreement_settlement_service serv1 ON left(serv.service_code,3) = serv1.service_code
+            WHERE
+            s.org_id =#{orgId}
+            <if test="coopName != null and coopName != '' " >
+                and (upper(p.coop_name) like "%"#{coopName}"%"  or upper(p.short_name)  like "%"#{coopName}"%" or upper(p.coop_ename)  like "%"#{coopName}"%"
+                or upper(p.short_ename)  like "%"#{coopName}"%" or upper(p.coop_code)  like "%"#{coopName}"%" or upper(p.coop_mnemonic)  like "%"#{coopName}"%" or upper(se.settlement_mod_name)  like "%"#{coopName}"%")
+            </if>
+            <if test="billTemplate != null and billTemplate != '' " >
+                AND (se.bill_template = #{billTemplate} or b.bill_template = #{billTemplate})
+            </if>
+            <if test="departureStation != null and departureStation != '' " >
+                AND b.departure_station LIKE "%"#{departureStation,jdbcType=VARCHAR}"%"
+            </if>
+            <if test="billConfirmName != null and billConfirmName != '' " >
+                AND U2.user_name LIKE "%"#{billConfirmName,jdbcType=VARCHAR}"%"
+            </if>
+            <if test="saleConfirmName != null and saleConfirmName != '' " >
+                AND U1.user_name LIKE "%"#{saleConfirmName,jdbcType=VARCHAR}"%"
+            </if>
+            <if test="statementStatus != null and statementStatus != '' " >
+                AND s.statement_status = #{statementStatus}
+            </if>
+            <if test="statementDate_begin != null and statementDate_begin != '' " >
+                AND s.statement_date &gt;= #{statementDate_begin}
+            </if>
+            <if test="statementDate_end != null and statementDate_end != '' " >
+                AND s.statement_date &lt;= #{statementDate_end}
+            </if>
+            <if test="validBeginDate != null and validBeginDate != '' " >
+                AND IFNULL(se.end_date,IFNULL(se1.end_date,'2099-12-31')) &gt;= #{validBeginDate}
+            </if>
+            <if test="validEndDate != null and validEndDate != '' " >
+                AND IFNULL(se.begin_date,se1.begin_date) &lt;= #{validEndDate}
+            </if>
+            <if test="serviceNameOne != null and serviceNameOne != '' ">
+                AND serv1.service_id IN
+                <foreach item="item" index="index" collection="serviceNameOne" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="serviceNameTwo != null and serviceNameTwo != '' ">
+                AND b.service_id IN
+                <foreach item="item" index="index" collection="serviceNameTwo" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="invoiceWriteoffDateBegin != null and invoiceWriteoffDateBegin != '' " >
+                AND s.invoice_writeoff_date &gt;= #{invoiceWriteoffDateBegin}
+            </if>
+            <if test="invoiceWriteoffDateEnd != null and invoiceWriteoffDateEnd != '' " >
+                AND s.invoice_writeoff_date &lt;= #{invoiceWriteoffDateEnd}
+            </if>
+            <if test="paymentMethod != null and paymentMethod != '' " >
+                AND b.payment_method = #{paymentMethod}
+            </if>
+            ORDER BY
+            s.statement_id,s.statement_date,p.coop_name,s.statement_name) aa
+        ;
+    </select>
+
+    <select id="queryServiceIsValid" resultType="com.efreight.prm.entity.CoopServiceBean">
+        select
+        service_id serviceId,
+        service_name serviceName
+        from prm_coop_agreement_settlement_service
+        where 1=1
+        and LENGTH(service_code)=3 and is_valid = 1
+    </select>
+
+    <select id="queryServiceTwoIsValid" resultType="com.efreight.prm.entity.CoopServiceBean">
+        select
+        service_id serviceId,
+        service_name serviceName
+        from prm_coop_agreement_settlement_service
+        where 1=1
+        and LENGTH(service_code)=6 and is_valid = 1
+    </select>
+
+    <update id="updateStatementByStatementId" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        update prm_coop_statement
+        set
+        <trim suffixOverrides=",">
+            <if test="statementMailSenderId != null and statementMailSenderId != '' ">
+                statement_mail_sender_id = #{statementMailSenderId},
+            </if>
+            <if test="statementMailSenderName != null and statementMailSenderName != '' ">
+                statement_mail_sender_name = #{statementMailSenderName},
+            </if>
+            amount_receivable = #{planCharge},
+            amount_received = #{acturalCharge},
+            amount_received_discount = #{discount},
+            statement_status = #{statementStatus},
+            editor_id = #{editorId},
+            editor_name = #{editorName},
+            edit_time = #{editTime},
+            modify_saler = 1,
+            confirm_saler_name = #{confirmSalerName},
+            confirm_saler_time = #{confirmSalerTime},
+            <if test="statementMailDate != null and statementMailDate != '' ">
+                statement_mail_date = #{statementMailDate}
+            </if>
+        </trim>
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="updateStatementByStatementId1" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        update prm_coop_statement
+        set
+            amount_receivable = #{planCharge},
+            amount_received = #{acturalCharge},
+            amount_received_discount = #{discount},
+            statement_status = #{statementStatus},
+            editor_id = #{editorId},
+            editor_name = #{editorName},
+            edit_time = #{editTime},
+            statement_mail_date = #{statementMailDate},
+            statement_mail_sender_id = #{statementMailSenderId},
+            statement_mail_sender_name = #{statementMailSenderName},
+            confirm_head_office_name = #{confirmHeadOfficeName},
+            confirm_head_office_time = #{confirmHeadOfficeTime}
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="updateStatementByStatementId2" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        update prm_coop_statement
+        set
+            amount_receivable = #{planCharge},
+            amount_received = #{acturalCharge},
+            amount_received_discount = #{discount},
+            statement_status = #{statementStatus},
+            editor_id = #{editorId},
+            editor_name = #{editorName},
+            edit_time = #{editTime},
+            statement_mail_date = #{statementMailDate},
+            statement_mail_sender_id = #{statementMailSenderId},
+            statement_mail_sender_name = #{statementMailSenderName},
+            confirm_saler_name = #{confirmSalerName},
+            confirm_saler_time = #{confirmSalerTime}
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="updateStatementByStatementId3" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        update prm_coop_statement
+        set
+            statement_status = #{statementStatus},
+            editor_id = #{editorId},
+            editor_name = #{editorName},
+            edit_time = #{editTime}
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="updateAmountReceivable" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        update prm_coop_statement
+        set amount_receivable = #{planCharge},
+            amount_received = #{planCharge},
+            amount_received_discount = 10
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="setStatement" parameterType="com.efreight.prm.entity.CoopBill">
+        update prm_coop_statement
+        set modify_saler = #{modifySaler}
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="customerConfirmBill" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        update prm_coop_statement
+        set statement_status = #{statementStatus},
+        confirm_customer_name = #{confirmCustomerName},
+        confirm_customer_time = #{confirmCustomerTime}
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="updateSettlementBySettlementId" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        UPDATE prm_coop_agreement_settlement
+        SET start_charge_time = #{confirmCustomerTime}
+        WHERE
+	    group_id = #{settlementId}
+	    AND start_charge_time IS NULL
+    </update>
+
+    <select id="getTotalPlanChargeByStatementId" resultType="com.efreight.prm.entity.CoopUnConfirmBillGroup" parameterType="java.lang.Integer">
+        select
+            b.statement_id statementId,
+            sum(b.plan_charge) totalActuralCharge,
+            s.min_charge minCharge,
+            s.max_charge maxCharge
+            from prm_coop_bill b
+            join prm_coop_statement s on b.statement_id=s.statement_id
+            where b.statement_id=#{statementId}
+    </select>
+
+    <select id="getCountByStatementId" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select
+            count(1) unCount
+            from prm_coop_bill where bill_status='数据未填充' and statement_id=#{statementId}
+    </select>
+
+    <update id="updateStatementStatusByStatementId" parameterType="java.lang.Integer">
+        update prm_coop_statement
+        set statement_status = '数据已填充'
+        where statement_id = #{statementId}
+    </update>
+
+    <select id="getServiceCountByServiceName" parameterType="com.efreight.prm.entity.BillServiceGroup" resultType="java.lang.Integer">
+        SELECT
+        count(1) serviceCount
+        FROM prm_coop_agreement_settlement_service
+        WHERE service_name = #{serviceName} AND LENGTH(service_code)=3
+        <if test="serviceCode != null and serviceCode != '' ">
+            and service_code != #{serviceCode}
+        </if>
+    </select>
+
+    <select id="getServiceProjectCountByServiceName" parameterType="com.efreight.prm.entity.BillServiceGroup" resultType="java.lang.Integer">
+        SELECT
+        count(1) serviceCount
+        FROM prm_coop_agreement_settlement_service
+        WHERE service_name = #{serviceName}
+        <if test="serviceCodeGroup != null and serviceCodeGroup != '' ">
+            AND  service_code like concat(#{serviceCodeGroup},'___')
+        </if>
+        <if test="serviceCode != null and serviceCode != '' ">
+            and service_code != #{serviceCode}
+        </if>
+    </select>
+
+    <select id="getOriginalChargeByBillId" resultType="java.lang.Double" parameterType="java.lang.Integer">
+        select
+            original_charge AS  originalCharge
+            from prm_coop_bill where bill_id=#{billId}
+    </select>
+
+    <select id="checkIfModify" resultType="java.lang.String" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup">
+        SELECT
+            CASE
+            WHEN
+            (original_charge != actural_charge) or (fill_number != fill_number_original) THEN
+            'modify' ELSE 'unmodify'
+            END AS falg
+            FROM
+            `prm_coop_bill`
+            WHERE
+            statement_id = #{statementId}
+    </select>
+
+    <select id="getRemarkByBillId" parameterType="java.util.HashMap" resultType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        SELECT
+             s.bill_id billId,
+             s.bill_number billNumber,
+             s.settlement_id settlementModName,
+             s.bill_status billStatus,
+             s.bill_name billName,
+             s.coop_name  coopName,
+             s.settlement_type  settlementType,
+             s.settlement_period  settlementPeriod,
+             s.actural_charge acturalCharge,
+             s.plan_charge planCharge,
+             s.discount discount,
+             s.fill_number  fillNumber,
+             s.fill_url  fillUrl,
+             s.fill_name  fillName,
+             s.service_name serviceName,
+             s.payment_method paymentMethod,
+             s.settlement_id settlementId,
+             s.unit_price unitPrice,
+             s.min_charge minCharge,
+             s.max_charge maxCharge,
+             s.statement_id statementId,
+             s.modify_saler modifySaler,
+             s.need_email needEmail,
+             s.base_quantity baseQuantity,
+             s.unit_price_excessive unitPriceExcessive,
+             s.remark remark,
+             s.departure_station departureStation,
+             s.arrival_departur_type arrivalDeparturType,
+             s.original_charge originalCharge,
+             s.fill_number_original fillNumberOriginal,
+             s.remark_saler remarkSaler
+        FROM
+            prm_coop_bill s
+
+        WHERE
+            s.org_id =#{orgId} and bill_id = #{billId}
+    </select>
+
+    <select id="findBillConfirmContacts" parameterType="com.efreight.prm.entity.CoopAgreementSettlement" resultType="java.lang.String">
+        SELECT
+        GROUP_CONCAT(CONCAT(con.contacts_name,'&lt;',con.email,'&gt;')) AS billConfirmContacts
+        FROM
+        prm_coop_agreement_settlement_contacts co
+        INNER JOIN prm_coop_contacts con ON co.contacts_id=con.contacts_id
+        WHERE
+        co.org_id = #{orgId}
+        AND co.settlement_id = #{settlementId}
+        GROUP BY co.settlement_id
+    </select>
+
+    <select id="queryMadeBillListForExcel" parameterType="com.efreight.prm.entity.CoopBillStatement" resultType="com.efreight.prm.entity.CoopBillMadeExcel">
+        SELECT
+        CONCAT(p.coop_name,'(',b.statement_name,')') AS statementName,
+        b.statement_status statementStatus,
+        b.statement_date billName,
+        format(b.amount_received,2) AS invoiceAmount,
+        CASE b.statement_name
+        WHEN '人工账单' THEN SUBSTRING_INDEX(b.confirm_customer_name, ' ',  1)
+        ELSE a.billConfirmName END AS billConfirmName,
+        b.confirm_customer_time confirmCustomerTime,
+        b.invoice_title invoiceTitle,
+        b.invoice_type AS invoiceType,
+        b.invoice_number invoiceNumber,
+        SUBSTRING_INDEX(b.invoice_user_name, ' ',  1) invoiceUserName,
+        SUBSTRING_INDEX(b.invoice_date, ' ',  1) invoiceDate,
+        SUBSTRING_INDEX(b.invoice_writeoff_user_name, ' ',  1) invoiceWriteoffUserName,
+        SUBSTRING_INDEX(b.invoice_writeoff_date, ' ',  1) invoiceWriteoffDate,
+        b.express_number expressNumber,
+        CASE WHEN b.statement_mail_date != '' AND b.statement_mail_date IS NOT NULL THEN '√' ELSE '' END AS sendBillFlag,
+        c.invoiceReceiveEmail AS invoiceReceiveEmail,
+        CASE b.statement_name
+        WHEN '人工账单' THEN CASE bill.bill_template
+        WHEN 'BJS' THEN '华北'
+        WHEN 'CAN' THEN '华南'
+        WHEN 'SHA' THEN '华东 '
+        WHEN 'XIY' THEN '西北'
+        WHEN 'EFT' THEN '总部'
+        ELSE '' END
+        ELSE CASE c.bill_template
+        WHEN 'BJS' THEN '华北'
+        WHEN 'CAN' THEN '华南'
+        WHEN 'SHA' THEN '华东 '
+        WHEN 'XIY' THEN '西北'
+        WHEN 'EFT' THEN '总部'
+        ELSE '' END END AS billTemplate
+
+        FROM prm_coop_statement b
+        INNER JOIN prm_coop p on b.coop_id=p.coop_id
+        LEFT JOIN prm_coop_bill bill on b.statement_id=bill.statement_id and b.statement_name='人工账单'
+
+        LEFT JOIN (
+            SELECT
+            A.settlement_id,
+            GROUP_CONCAT( DISTINCT A.bill_template ) AS bill_template,
+            GROUP_CONCAT( DISTINCT A.settlement_mod_name ) AS settlement_mod_name,
+            GROUP_CONCAT( DISTINCT U.email ) AS invoiceReceiveEmail
+            FROM
+            prm_coop_agreement_settlement A
+            LEFT JOIN prm_coop_agreement_settlement_contacts B ON A.settlement_id = B.settlement_id
+            LEFT JOIN prm_coop_contacts U ON B.contacts_id = U.contacts_id
+            WHERE A.group_id IS NULL
+            GROUP BY
+            A.settlement_id
+        ) AS c ON c.settlement_id=b.settlement_id
+
+        LEFT JOIN (
+            SELECT A.statement_id,GROUP_CONCAT(DISTINCT C.user_name) AS billConfirmName
+            FROM prm_coop_bill A
+            LEFT JOIN prm_coop_agreement_settlement B ON A.settlement_id=B.settlement_id AND A.statement_id IS NOT NULL
+            INNER JOIN hrs_user C on B.bill_confirm_id=C.user_id
+            GROUP BY A.statement_id
+        ) AS a ON a.statement_id=b.statement_id
+        where b.org_id=#{orgId} and b.statement_status in ('客户已确认','发票已开具','账单已核销')
+
+        <if test="billName != null and billName != '' " >
+            AND b.statement_date like "%"#{billName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="coopName != null and coopName != '' " >
+            and (upper(p.coop_name) like "%"#{coopName}"%"  or upper(p.short_name)  like "%"#{coopName}"%" or upper(p.coop_ename)  like "%"#{coopName}"%"
+            or upper(p.short_ename)  like "%"#{coopName}"%" or upper(p.coop_code)  like "%"#{coopName}"%" or upper(p.coop_mnemonic)  like "%"#{coopName}"%" or upper(c.settlement_mod_name)  like "%"#{coopName}"%"
+            or (
+            b.statement_id in (
+            SELECT DISTINCT
+            s.statement_id
+            FROM
+            prm_coop_bill s
+            LEFT JOIN prm_coop_agreement_settlement p ON s.settlement_id = p.settlement_id
+            where p.it_code like "%"#{coopName}"%"
+            )
+            )
+            )
+        </if>
+        <if test="statementNumber !=null and statementNumber != '' ">
+            and b.statement_number like #{statementNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="statementStatus!=null and statementStatus!=''">
+            and b.statement_status = #{statementStatus}
+        </if>
+        <if test="invoiceNumber != null and invoiceNumber != '' " >
+            AND b.invoice_number like "%"#{invoiceNumber,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="createTimeStart!=null">
+            and <![CDATA[b.create_time >= #{createTimeStart}]]>
+        </if>
+        <if test="createTimeEnd!=null">
+            and <![CDATA[b.create_time <= #{createTimeEnd}]]>
+        </if>
+        <if test="billConfirmName != null and billConfirmName != '' " >
+            AND (a.billConfirmName like "%"#{billConfirmName,jdbcType=VARCHAR}"%" or (b.confirm_customer_name like "%"#{billConfirmName,jdbcType=VARCHAR}"%" and b.statement_name = '人工账单'))
+        </if>
+        <if test="creatorName != null and creatorName != '' " >
+            AND (b.creator_name like "%"#{creatorName,jdbcType=VARCHAR}"%" or b.editor_name like "%"#{creatorName,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="statementName != null and statementName != '' " >
+            AND b.statement_name like "%"#{statementName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="billTemplate != null and billTemplate != '' " >
+            AND (c.bill_template = #{billTemplate} or bill.bill_template = #{billTemplate})
+        </if>
+        <if test="confirmCustomerTime_begin != null and confirmCustomerTime_begin != '' " >
+            AND b.confirm_customer_time &gt;= #{confirmCustomerTime_begin}
+        </if>
+        <if test="confirmCustomerTime_end != null and confirmCustomerTime_end != '' " >
+            AND b.confirm_customer_time &lt;= #{confirmCustomerTime_end}
+        </if>
+        <if test="invoiceWriteoffDate_begin != null and invoiceWriteoffDate_begin != '' " >
+            AND b.invoice_writeoff_date &gt;= #{invoiceWriteoffDate_begin}
+        </if>
+        <if test="invoiceWriteoffDate_end != null and invoiceWriteoffDate_end != '' " >
+            AND b.invoice_writeoff_date &lt;= #{invoiceWriteoffDate_end}
+        </if>
+        <if test="invoiceDate_begin != null and invoiceDate_begin != '' " >
+            AND b.invoice_date &gt;= #{invoiceDate_begin}
+        </if>
+        <if test="invoiceDate_end != null and invoiceDate_end != '' " >
+            AND b.invoice_date &lt;= #{invoiceDate_end}
+        </if>
+        ORDER BY b.confirm_customer_time desc
+    </select>
+
+    <select id="getConfirmSalerEmailByStatementId" parameterType="com.efreight.prm.entity.CoopUnConfirmBillGroup" resultType="java.lang.String">
+        SELECT
+        SUBSTRING_INDEX(confirm_saler_name, ' ', -1) AS confirmSalerEmail
+        FROM
+        prm_coop_statement
+        WHERE
+        statement_id = #{statementId}
+    </select>
+
+    <insert id="insertBill" parameterType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        insert into prm_coop_bill (bill_id,bill_number, statement_id,settlement_type,service_id,unit_price,original_charge,plan_charge,actural_charge,
+        bill_fill_date,bill_status,creator_id,create_time,org_id,bill_name,coop_id,coop_name,fill_user,fill_url,fill_number,fill_name,fill_number_original,
+        service_name,remark,agreement_id,need_email,bill_template)
+        values (null, #{billNumber},#{statementId},#{settlementType},#{serviceId},#{unitPrice},#{originalCharge},#{planCharge},#{acturalCharge},#{billFillDate},#{billStatus}
+        ,#{creatorId},#{createTime},#{orgId},#{billName},#{coopId},#{coopName},#{fillUser},#{fillUrl},#{fillNumber},#{fillName},#{fillNumberOriginal},
+        #{serviceName},#{remark},0,#{needEmail},#{billTemplate})
+    </insert>
+
+    <select id="getEmailByContactId" parameterType="com.efreight.prm.entity.CoopBillStatement" resultType="java.lang.String">
+        select GROUP_CONCAT(DISTINCT email) AS emails from prm_coop_contacts where contacts_id in (${billManualMailTo}) GROUP BY coop_id
+
+    </select>
+
+</mapper>

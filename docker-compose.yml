@@ -1,0 +1,100 @@
+version: '2'
+services:
+#  fruit-mysql:
+#    build:
+#      context: ./
+#      dockerfile: ./db/Dockerfile
+#    environment:
+#      MYSQL_ROOT_PASSWORD: root
+#    restart: always
+#    container_name: fruit-mysql
+#    image: mysql
+#    ports:
+#    - 3306:3306
+  cloud-redis:
+    image: redis
+    ports:
+    - 6379:6379
+    restart: always
+    container_name: efreight-redis
+    hostname: efreight-redis
+  efreight-eureka:
+    build:
+      context: ./
+      dockerfile: ./efreight-eureka/Dockerfile
+    restart: always
+    ports:
+     - 9001:9001
+    container_name: efreight-eureka
+    hostname: efreight-eureka
+    image: efreight-eureka
+  efreight-config:
+    build:
+      context: ./
+      dockerfile: ./efreight-config/Dockerfile
+    restart: always
+    ports:
+     - 8888:8888
+    container_name: efreight-config
+    hostname: efreight-config
+    image: efreight-config
+#  efreight-ui:
+#    build:
+#      context: ./
+#      dockerfile: ./efreight-ui/Dockerfile
+#    restart: always
+#    ports:
+#     - 8080:8080
+#    container_name: efreight-ui
+#    hostname: efreight-ui
+#    image: efreight-ui
+  efreight-oauth:
+    build:
+      context: ./
+      dockerfile: ./efreight-oauth/Dockerfile
+    restart: always
+    ports:
+     - 8080:8080
+    container_name: efreight-oauth
+    hostname: efreight-oauth
+    image: efreight-oauth
+  efreight-hrs:
+    build:
+      context: ./
+      dockerfile: ./efreight-hrs/Dockerfile
+    restart: always
+    ports:
+     - 8081:8081
+    container_name: efreight-hrs
+    hostname: efreight-hrs
+    image: efreight-hrs
+  efreight-prm:
+    build:
+      context: ./
+      dockerfile: ./efreight-prm/Dockerfile
+    restart: always
+    ports:
+     - 8082:8082
+    container_name: efreight-prm
+    hostname: efreight-prm
+    image: efreight-prm
+#
+#  efreight-resource:
+#    build:
+#      context: ./
+#      dockerfile: ./efreight-resourc/Dockerfile
+#    restart: always
+#    container_name: efreight-resource
+#    hostname: efreight-resource
+#    image: efreight-resource
+    
+#  efreight-zipkin:
+#    build:
+#      context: ./
+#      dockerfile: ./efreight-zipkin/Dockerfile
+#    restart: always
+#    image: efreight-zipkin
+#    container_name: efreight-zipkin
+#    ports:
+#      - 5002:5002
+#   

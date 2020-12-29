@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.LogDao">
+   <select id="queryList" resultType="com.efreight.prm.entity.LogBean" parameterType="java.util.HashMap">
+		select a.log_id,a.op_level,a.op_type,a.op_name,a.op_info,a.creator_id,a.create_time,a.org_id,a.dept_id,CONCAT(b.user_name,'//',b.user_email) creator_name
+		from prm_log a
+		left join hrs_user b on a.creator_id=b.user_id
+		where 1=1 AND a.org_id = #{org_id,jdbcType=INTEGER}
+		<if test="op_level != null and op_level != '' " >
+	        AND a.op_level = #{op_level,jdbcType=VARCHAR}
+	    </if> 
+	    <if test="op_name != null and op_name != '' " >
+	        AND a.op_name like "%"#{op_name,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="creator_name != null and creator_name != '' " >
+	        AND b.user_name like "%"#{creator_name,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="create_time_begin != null and create_time_begin != '' " >
+	        AND a.create_time &gt;= #{create_time_begin,jdbcType=VARCHAR}
+	    </if>
+	    <if test="create_time_end != null and create_time_end != '' " >
+	        AND a.create_time &lt;= #{create_time_end,jdbcType=VARCHAR}
+	    </if>
+	    order by a.log_id desc
+	</select>
+  <insert id="doSave" parameterType="com.efreight.prm.entity.LogBean">
+    insert into prm_log (op_level,op_type,op_name,op_info,creator_id,create_time,org_id,dept_id)
+    values (#{op_level,jdbcType=VARCHAR}, 
+      	#{op_type,jdbcType=VARCHAR},
+      	#{op_name,jdbcType=VARCHAR},
+      	#{op_info,jdbcType=VARCHAR},
+      	#{creator_id,jdbcType=VARCHAR},
+      	#{create_time,jdbcType=VARCHAR},
+      	#{org_id,jdbcType=INTEGER},
+      	#{dept_id,jdbcType=INTEGER}
+      )
+ 	</insert>
+</mapper>

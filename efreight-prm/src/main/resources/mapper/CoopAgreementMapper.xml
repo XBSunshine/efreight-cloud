@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopAgreementMapper">
+	<sql id="Base_Column_List" >
+    agreement_id, org_id, coop_id, agreement_type, template, serial_number, begin_date,
+    end_date, incharge_id, business_scope, settlement_period, settlement_remark, signing_dept_id,
+    payment_standard, payment_period, total_amount, agreement_remark, creator_id, create_time,
+    editor_id, edit_time, dept_id, agreement_status, stop_remark, file_name, file_url
+  </sql>
+   <select id="queryList" resultType="com.efreight.prm.entity.CoopAgreementBean" parameterType="java.util.HashMap">
+		select a.agreement_id,a.coop_id,a.agreement_type,a.template,a.serial_number,a.begin_date,a.end_date,a.incharge_id,a.business_scope
+			,a.settlement_period,a.settlement_remark,a.signing_dept_id,a.payment_standard,a.payment_period,a.total_amount
+			,a.agreement_remark,a.creator_id,a.create_time,a.editor_id,a.edit_time,a.org_id,a.dept_id,a.agreement_status,
+			b.coop_name,c.user_name incharge_name,d.dept_name signing_dept_name,stop_remark
+		from prm_coop_agreement a
+		left join prm_coop b on a.coop_id=b.coop_id
+		left join hrs_user c on a.incharge_id= c.user_id
+		left join hrs_dept d on a.signing_dept_id = d.dept_id
+		where 1=1 AND a.org_id = #{org_id,jdbcType=INTEGER}
+		<if test="coop_name != null and coop_name != '' " >
+	        AND b.coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+	    </if> 
+	    <if test="business_scope != null and business_scope != '' " >
+	        AND a.business_scope like "%"#{business_scope,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="agreement_type != null and agreement_type != '' " >
+	        AND a.agreement_type like "%"#{agreement_type,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="begin_date != null and begin_date != '' " >
+	        AND a.begin_date &gt;= #{begin_date,jdbcType=VARCHAR}
+	    </if>
+	    <if test="end_date != null and end_date != '' " >
+	        AND a.end_date &lt;= #{end_date,jdbcType=VARCHAR}
+	    </if>
+	    <if test="serial_number != null and serial_number != '' " >
+	        AND a.serial_number like "%"#{serial_number,jdbcType=VARCHAR}"%"
+	    </if>
+		<if test="signing_dept_name != null and signing_dept_name != '' " >
+	        AND d.dept_name like "%"#{signing_dept_name,jdbcType=VARCHAR}"%"
+	    </if> 
+		<if test="incharge_name != null and incharge_name != '' " >
+	        AND c.user_name like "%"#{incharge_name,jdbcType=VARCHAR}"%"
+	    </if> 
+		<if test="agreement_status == 1 " >
+	        AND  #{now_date,jdbcType=VARCHAR} &gt;= a.begin_date 
+	        AND   #{now_date,jdbcType=VARCHAR} &lt;= a.end_date
+	    </if> 
+		<if test="agreement_status == 0 " >
+	        AND  ( #{now_date,jdbcType=VARCHAR} &gt; a.end_date
+	        or #{now_date,jdbcType=VARCHAR} &lt; a.begin_date )
+	    </if> 
+	    order by a.agreement_id desc
+	</select>
+
+	<select id="queryList1" resultType="com.efreight.prm.entity.CoopAgreementBean" parameterType="java.util.HashMap">
+		select a.coop_id,a.coop_code,a.coop_name,a.coop_mnemonic,a.transactor_id,c.user_name
+		from prm_coop a
+		left join hrs_user c on a.transactor_id= c.user_id
+		where 1=1 AND a.org_id = #{org_id,jdbcType=INTEGER} and (a.black_valid='0' or a.black_valid is null) and a.coop_status='1' and a.lock_date is null and a.group_type='file'
+		<if test="coop_name != null and coop_name != '' " >
+			AND (a.coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.short_name like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.coop_ename like "%"#{coop_name,jdbcType=VARCHAR}"%" or a.short_ename like "%"#{coop_name,jdbcType=VARCHAR}"%")
+		</if>
+		<if test="coop_code != null and coop_code != '' " >
+			AND (a.coop_code like "%"#{coop_code,jdbcType=VARCHAR}"%" or a.coop_mnemonic like "%"#{coop_code,jdbcType=VARCHAR}"%")
+		</if>
+	</select>
+
+   <select id="queryListForExcle" resultType="com.efreight.prm.entity.CoopAgreementExcelBean" parameterType="java.util.HashMap">
+		select b.coop_name,a.agreement_type,a.template,a.serial_number,
+		DATE_FORMAT(a.begin_date,'%Y-%m-%d') begin_date,DATE_FORMAT(a.end_date,'%Y-%m-%d') end_date ,
+		c.user_name incharge_name,a.business_scope
+			,a.settlement_period,d.dept_name signing_dept_name,a.payment_standard,a.payment_period,a.total_amount
+			,case when a.agreement_status=1 then '生效' else '失效' end agreement_status
+		from prm_coop_agreement a
+		left join prm_coop b on a.coop_id=b.coop_id
+		left join hrs_user c on a.incharge_id= c.user_id
+		left join hrs_dept d on a.signing_dept_id = d.dept_id
+		where 1=1 AND a.org_id = #{org_id,jdbcType=INTEGER}
+		<if test="coop_name != null and coop_name != '' " >
+	        AND b.coop_name like "%"#{coop_name,jdbcType=VARCHAR}"%"
+	    </if> 
+	    <if test="business_scope != null and business_scope != '' " >
+	        AND a.business_scope like "%"#{business_scope,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="agreement_type != null and agreement_type != '' " >
+	        AND a.agreement_type like "%"#{agreement_type,jdbcType=VARCHAR}"%"
+	    </if>
+	    <if test="begin_date != null and begin_date != '' " >
+	        AND a.begin_date &gt;= #{begin_date,jdbcType=VARCHAR}
+	    </if>
+	    <if test="end_date != null and end_date != '' " >
+	        AND a.end_date &lt;= #{end_date,jdbcType=VARCHAR}
+	    </if>
+	    <if test="serial_number != null and serial_number != '' " >
+	        AND a.serial_number like "%"#{serial_number,jdbcType=VARCHAR}"%"
+	    </if>
+		<if test="signing_dept_name != null and signing_dept_name != '' " >
+	        AND d.dept_name like "%"#{signing_dept_name,jdbcType=VARCHAR}"%"
+	    </if> 
+		<if test="incharge_name != null and incharge_name != '' " >
+	        AND c.user_name like "%"#{incharge_name,jdbcType=VARCHAR}"%"
+	    </if> 
+		<if test="agreement_status == 1 " >
+	        AND  #{now_date,jdbcType=VARCHAR} &gt;= a.begin_date 
+	        AND   #{now_date,jdbcType=VARCHAR} &lt;= a.end_date
+	    </if> 
+		<if test="agreement_status == 0 " >
+	        AND  ( #{now_date,jdbcType=VARCHAR} &gt; a.end_date
+	        or #{now_date,jdbcType=VARCHAR} &lt; a.begin_date )
+	    </if> 
+	    order by a.agreement_id desc
+	</select>
+   <select id="querySigningList" resultType="com.efreight.prm.entity.CoopAgreementSigningBean" parameterType="java.util.HashMap">
+		select a.signing_id,a.agreement_id,a.coop_id,a.signing_type,a.serial_number,a.pre_serial_number,a.begin_date,a.end_date,a.pre_begin_date
+			,a.pre_end_date,a.incharge_id,a.pre_incharge_id,a.payment_period,a.total_amount,a.pre_payment_period
+			,a.pre_total_amount,a.remark,document_file,a.creator_id,a.create_time,a.editor_id,a.edit_time,a.org_id,a.dept_id,
+			b.coop_name,c.user_name incharge_name,d.user_name pre_incharge_name
+		from prm_coop_agreement_signing a
+		left join prm_coop b on a.coop_id=b.coop_id
+		left join hrs_user c on a.incharge_id= c.user_id
+		left join hrs_user d on a.pre_incharge_id = d.user_id
+		where 1=1 AND a.org_id = #{org_id,jdbcType=INTEGER}
+		<if test="agreement_id != null and agreement_id != '' " >
+	        AND a.agreement_id = #{agreement_id,jdbcType=INTEGER}
+	    </if>  
+	    order by a.signing_id desc
+	</select>
+   <select id="queryListForChoose" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select coop_id value,coop_name label from prm_coop
+		where coop_status=1 AND org_id = #{org_id,jdbcType=INTEGER} and group_type ='file' and blacklist_date is null
+		<if test="agreement_id != null and agreement_id != '' " >
+	        AND agreement_id = #{agreement_id,jdbcType=INTEGER}
+	    </if>  
+		
+	    order by coop_id desc
+	</select>
+   <select id="selectUser" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select user_id value,user_name label ,login_name label2 from hrs_user
+		where user_status=1 and isadmin !=1 AND org_id = #{org_id,jdbcType=INTEGER}
+	    order by user_id
+	</select>
+	<select id="selectDept" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select dept_id value,full_name label from hrs_dept
+		where dept_status=1 AND org_id = #{org_id,jdbcType=INTEGER}
+	    order by dept_code
+	</select>
+  <insert id="doSave" parameterType="com.efreight.prm.entity.CoopAgreementBean" useGeneratedKeys="true" keyProperty="agreement_id">
+    insert into prm_coop_agreement (coop_id,agreement_type,template,serial_number,begin_date,end_date,incharge_id,business_scope
+			,settlement_period,settlement_remark,signing_dept_id,payment_standard,payment_period,total_amount
+			,agreement_remark,creator_id,create_time,editor_id,edit_time,org_id,dept_id,agreement_status,file_name, file_url)
+    values (#{coop_id,jdbcType=INTEGER}, 
+      	#{agreement_type,jdbcType=VARCHAR},
+      	#{template,jdbcType=VARCHAR},
+      	#{serial_number,jdbcType=VARCHAR},
+      	#{begin_date,jdbcType=VARCHAR},
+      	#{end_date,jdbcType=VARCHAR},
+      	#{incharge_id,jdbcType=INTEGER},
+      	#{business_scope,jdbcType=VARCHAR},
+      	#{settlement_period,jdbcType=VARCHAR},
+      	#{settlement_remark,jdbcType=VARCHAR},
+      	#{signing_dept_id,jdbcType=INTEGER},
+      	#{payment_standard,jdbcType=VARCHAR},
+      	#{payment_period,jdbcType=VARCHAR},
+      	#{total_amount,jdbcType=DECIMAL},
+      	#{agreement_remark,jdbcType=VARCHAR},
+      	#{creator_id,jdbcType=INTEGER},
+      	#{create_time,jdbcType=VARCHAR},
+      	#{editor_id,jdbcType=INTEGER},
+      	#{edit_time,jdbcType=VARCHAR},
+      	#{org_id,jdbcType=INTEGER},
+      	#{dept_id,jdbcType=INTEGER},
+      	#{agreement_status,jdbcType=INTEGER},
+      	#{file_name,jdbcType=VARCHAR},
+      	#{file_url,jdbcType=VARCHAR}
+      )
+ 	</insert>
+  <insert id="signingDoSave" parameterType="com.efreight.prm.entity.CoopAgreementSigningBean">
+    insert into prm_coop_agreement_signing (agreement_id,
+	  coop_id,
+	  signing_type,
+	  serial_number,
+	  pre_serial_number,
+	  begin_date,
+	  end_date,
+	  pre_begin_date,
+	  pre_end_date,
+	  incharge_id,
+	  pre_incharge_id,
+	  payment_period,
+	  total_amount,
+	  pre_payment_period,
+	  pre_total_amount,
+	  remark,
+	  document_file,
+	  creator_id,
+	  create_time,
+	  editor_id,
+	  edit_time,
+	  org_id,
+	  dept_id)
+    values (
+    #{agreement_id      ,jdbcType=INTEGER},
+	#{coop_id           ,jdbcType=INTEGER},
+	#{signing_type      ,jdbcType=VARCHAR},
+	#{serial_number     ,jdbcType=VARCHAR},
+	#{pre_serial_number ,jdbcType=VARCHAR},
+	#{begin_date        ,jdbcType=VARCHAR},
+	#{end_date          ,jdbcType=VARCHAR},
+	#{pre_begin_date    ,jdbcType=VARCHAR},
+	#{pre_end_date      ,jdbcType=VARCHAR},
+	#{incharge_id       ,jdbcType=INTEGER},
+	#{pre_incharge_id   ,jdbcType=INTEGER},
+	#{payment_period    ,jdbcType=VARCHAR},
+	#{total_amount      ,jdbcType=DECIMAL},
+	#{pre_payment_period,jdbcType= VARCHAR},
+	#{pre_total_amount  ,jdbcType=DECIMAL},
+	#{remark            ,jdbcType=VARCHAR},
+	#{document_file     ,jdbcType=VARCHAR},
+	#{creator_id        ,jdbcType=INTEGER},
+	#{create_time       ,jdbcType=VARCHAR},
+	#{editor_id         ,jdbcType=INTEGER},
+	#{edit_time         ,jdbcType=VARCHAR},
+	#{org_id            ,jdbcType=INTEGER},
+	#{dept_id           ,jdbcType=INTEGER}
+      )
+ 	</insert>
+ 	<select id="queryByID" resultType="com.efreight.prm.entity.CoopAgreementBean" parameterType="java.lang.Integer" >
+    	select agreement_id,coop_id,agreement_type,template,serial_number,begin_date,end_date,incharge_id,business_scope
+			,settlement_period,settlement_remark,signing_dept_id,payment_standard,payment_period,total_amount
+			,agreement_remark,creator_id,create_time,editor_id,edit_time,org_id,dept_id,agreement_status
+		from prm_coop_agreement 
+    	where agreement_id = #{agreement_id,jdbcType=INTEGER}
+  	</select>
+	<select id="queryAgreementsByCoopId" resultType="com.efreight.prm.entity.CoopAgreementBean">
+		select
+			*,IF(incharge_id, (select hu.user_name from hrs_user hu where hu.org_id = org_id and hu.user_id = incharge_id), NULL)  as incharge_name
+		from prm_coop_agreement
+    	where agreement_status=1 and coop_id = #{coop_id,jdbcType=INTEGER} and org_id = #{org_id,jdbcType=INTEGER}
+    	order by end_date desc
+	</select>
+	<select id="queryAgreementsBySerialNumber" resultType="com.efreight.prm.entity.CoopAgreementBean">
+		select
+			*
+		from prm_coop_agreement
+    	where agreement_status=1 and serial_number = #{serial_number,jdbcType=INTEGER}
+		<if test="agreement_id != null" >
+			and agreement_id != #{agreement_id,jdbcType=INTEGER}
+		</if>
+	</select>
+
+	<update id="doEdit" parameterType="com.efreight.prm.entity.CoopAgreementBean" >
+	    update prm_coop_agreement
+		<set >
+			<if test="org_id != null" >
+				org_id = #{org_id,jdbcType=INTEGER},
+			</if>
+			<if test="coop_id != null" >
+				coop_id = #{coop_id,jdbcType=INTEGER},
+			</if>
+			<if test="agreement_type != null and agreement_type!=''" >
+				agreement_type = #{agreement_type,jdbcType=VARCHAR},
+			</if>
+			<if test="template != null and agreement_type!=''" >
+				template = #{template,jdbcType=VARCHAR},
+			</if>
+			<if test="serial_number != null and serial_number!=''" >
+				serial_number = #{serial_number,jdbcType=VARCHAR},
+			</if>
+			<if test="begin_date != null" >
+				begin_date = #{begin_date,jdbcType=TIMESTAMP},
+			</if>
+			<if test="end_date != null" >
+				end_date = #{end_date,jdbcType=TIMESTAMP},
+			</if>
+			<if test="incharge_id != null" >
+				incharge_id = #{incharge_id,jdbcType=INTEGER},
+			</if>
+			<if test="business_scope != null and business_scope!=''" >
+				business_scope = #{business_scope,jdbcType=VARCHAR},
+			</if>
+			<if test="settlement_period != null and settlement_period!=''" >
+				settlement_period = #{settlement_period,jdbcType=VARCHAR},
+			</if>
+			<if test="settlement_remark != null" >
+				settlement_remark = #{settlement_remark,jdbcType=VARCHAR},
+			</if>
+			<if test="signing_dept_id != null" >
+				signing_dept_id = #{signing_dept_id,jdbcType=INTEGER},
+			</if>
+			<if test="payment_standard != null and payment_standard!=''" >
+				payment_standard = #{payment_standard,jdbcType=VARCHAR},
+			</if>
+			<if test="payment_period != null and payment_period!=''" >
+				payment_period = #{payment_period,jdbcType=VARCHAR},
+			</if>
+			<if test="total_amount != null" >
+				total_amount = #{total_amount,jdbcType=DECIMAL},
+			</if>
+			<if test="agreement_remark != null and agreement_remark!=''" >
+				agreement_remark = #{agreement_remark,jdbcType=VARCHAR},
+			</if>
+			<if test="creator_id != null" >
+				creator_id = #{creator_id,jdbcType=INTEGER},
+			</if>
+			<if test="create_time != null" >
+				create_time = #{create_time,jdbcType=TIMESTAMP},
+			</if>
+			<if test="editor_id != null" >
+				editor_id = #{editor_id,jdbcType=INTEGER},
+			</if>
+			<if test="edit_time != null" >
+				edit_time = #{edit_time,jdbcType=TIMESTAMP},
+			</if>
+			<if test="dept_id != null" >
+				dept_id = #{dept_id,jdbcType=INTEGER},
+			</if>
+			<if test="agreement_status != null" >
+				agreement_status = #{agreement_status,jdbcType=BIT},
+			</if>
+			<if test="stop_remark != null and stop_remark!=''" >
+				stop_remark = #{stop_remark,jdbcType=VARCHAR},
+			</if>
+			file_name = #{file_name,jdbcType=VARCHAR},
+			file_url = #{file_url,jdbcType=VARCHAR},
+		</set>
+	    where agreement_id = #{agreement_id,jdbcType=INTEGER}
+  	</update>
+  	<update id="doRenew" parameterType="com.efreight.prm.entity.CoopAgreementBean" >
+	    update prm_coop_agreement
+	    set 
+	   	serial_number = #{serial_number,jdbcType=VARCHAR}, 
+	   	begin_date = #{begin_date,jdbcType=VARCHAR}, 
+	   	end_date = #{end_date,jdbcType=VARCHAR}, 
+	   	incharge_id = #{incharge_id,jdbcType=INTEGER}, 
+      	signing_dept_id = #{signing_dept_id,jdbcType=INTEGER},
+      	payment_period = #{payment_period,jdbcType=VARCHAR},
+      	total_amount = #{total_amount,jdbcType=DECIMAL}
+	    where agreement_id = #{agreement_id,jdbcType=INTEGER}
+  	</update>
+  	<update id="doExtension" parameterType="com.efreight.prm.entity.CoopAgreementBean" >
+	    update prm_coop_agreement
+	    set 
+	   	begin_date = #{begin_date,jdbcType=VARCHAR}, 
+	   	end_date = #{end_date,jdbcType=VARCHAR}, 
+	   	business_scope=#{business_scope,jdbcType=VARCHAR},
+	   	settlement_remark = #{settlement_remark,jdbcType=VARCHAR},
+	   	agreement_remark = #{agreement_remark,jdbcType=VARCHAR},
+	   	incharge_id = #{incharge_id,jdbcType=INTEGER}
+	    where agreement_id = #{agreement_id,jdbcType=INTEGER}
+  	</update>
+  	<update id="doStop" parameterType="com.efreight.prm.entity.CoopAgreementBean" >
+	    update prm_coop_agreement
+	    set 
+	   	end_date = #{end_date,jdbcType=VARCHAR}, 
+	   	agreement_status = #{agreement_status,jdbcType=INTEGER},
+	   	stop_remark = #{stop_remark,jdbcType=VARCHAR}
+	    where agreement_id = #{agreement_id,jdbcType=INTEGER}
+  	</update>
+</mapper>

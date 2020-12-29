@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.afbase.dao.StatementMapper">
+
+    <resultMap id="result1" type="com.efreight.afbase.entity.StatementPrint">
+        <result column="currencyAmount" property="currencyAmount"></result>
+        <result column="functionalAmount" property="functionalAmount"></result>
+        <result column="awbNumber" property="awbNumber"></result>
+        <result column="debitNoteNum" property="debitNoteNum"></result>
+        <result column="flightDate" property="flightDate"></result>
+        <result column="orgName" property="orgName"></result>
+        <result column="orgEname" property="orgEname"></result>
+        <result column="customerName" property="customerName"></result>
+        <result column="customerEname" property="customerEname"></result>
+        <result column="statementNum" property="statementNum"></result>
+        <result column="statementDate" property="statementDate"></result>
+        <result column="creatorName" property="creatorName"></result>
+        <result column="creatorEname" property="creatorEname"></result>
+        <result column="createTime" property="createTime"></result>
+        <result column="statementRemark" property="statementRemark"></result>
+    </resultMap>
+
+    <resultMap id="result2" type="com.efreight.afbase.entity.StatementPrint">
+        <result column="currencyAmount" property="currencyAmount"></result>
+        <result column="functionalAmount" property="functionalAmount"></result>
+        <result column="awbNumber" property="awbNumber"></result>
+        <result column="debitNoteNum" property="debitNoteNum"></result>
+        <result column="flightDate" property="flightDate"></result>
+        <result column="orgName" property="orgName"></result>
+        <result column="orgEname" property="orgEname"></result>
+        <result column="customerName" property="customerName"></result>
+        <result column="customerEname" property="customerEname"></result>
+        <result column="statementNum" property="statementNum"></result>
+        <result column="statementDate" property="statementDate"></result>
+        <result column="creatorName" property="creatorName"></result>
+        <result column="creatorEname" property="creatorEname"></result>
+        <result column="createTime" property="createTime"></result>
+        <result column="statementRemark" property="statementRemark"></result>
+    </resultMap>
+
+</mapper>

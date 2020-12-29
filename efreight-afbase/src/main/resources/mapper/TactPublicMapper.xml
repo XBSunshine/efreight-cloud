@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.afbase.dao.TactPublicMapper" >
+  <resultMap id="BaseResultMap" type="com.efreight.afbase.entity.TactPublic" >
+    <id column="publish_price_id" property="publishPriceId" jdbcType="INTEGER" />
+    <result column="org_id" property="orgId" jdbcType="INTEGER" />
+    <result column="product_name" property="productName" jdbcType="VARCHAR" />
+    <result column="begin_date" property="beginDate" jdbcType="TIMESTAMP" />
+    <result column="end_date" property="endDate" jdbcType="TIMESTAMP" />
+    <result column="departure_station" property="departureStation" jdbcType="VARCHAR" />
+    <result column="arrival_station" property="arrivalStation" jdbcType="VARCHAR" />
+    <result column="transit_station" property="transitStation" jdbcType="VARCHAR" />
+    <result column="carrier_code" property="carrierCode" jdbcType="VARCHAR" />
+    <result column="goods_type" property="goodsType" jdbcType="VARCHAR" />
+    <result column="density_class" property="densityClass" jdbcType="VARCHAR" />
+    <result column="tact_m" property="tactM" jdbcType="VARCHAR" />
+    <result column="tact_n" property="tactN" jdbcType="VARCHAR" />
+    <result column="tact_45" property="tact45" jdbcType="VARCHAR" />
+    <result column="tact_100" property="tact100" jdbcType="VARCHAR" />
+    <result column="tact_300" property="tact300" jdbcType="VARCHAR" />
+    <result column="tact_500" property="tact500" jdbcType="VARCHAR" />
+    <result column="tact_700" property="tact700" jdbcType="VARCHAR" />
+    <result column="tact_1000" property="tact1000" jdbcType="VARCHAR" />
+    <result column="tact_2000" property="tact2000" jdbcType="VARCHAR" />
+    <result column="tact_3000" property="tact3000" jdbcType="VARCHAR" />
+    <result column="tact_5000" property="tact5000" jdbcType="VARCHAR" />
+    <result column="tact_remark" property="tactRemark" jdbcType="VARCHAR" />
+    <result column="creator_id" property="creatorId" jdbcType="INTEGER" />
+    <result column="creator_name" property="creatorName" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="editor_id" property="editorId" jdbcType="INTEGER" />
+    <result column="editor_name" property="editorName" jdbcType="VARCHAR" />
+    <result column="edit_time" property="editTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    publish_price_id, org_id, product_name, begin_date, end_date, departure_station, 
+    arrival_station, transit_station, carrier_code, goods_type, density_class, tact_m, 
+    tact_n, tact_45, tact_100, tact_300, tact_500, tact_700, tact_1000, tact_2000, tact_3000, 
+    tact_5000, tact_remark, creator_id, creator_name, create_time, editor_id, editor_name, 
+    edit_time
+  </sql>
+
+</mapper>

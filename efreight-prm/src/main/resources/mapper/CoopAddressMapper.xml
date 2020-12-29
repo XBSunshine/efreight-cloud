@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopAddressDao">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.CoopAddressBean">
+      
+    </resultMap>
+    <sql id="Base_Column_List">
+          addr_id,
+		  coop_id,
+		  addr_type,
+		  short_name,
+		  full_address,
+		  creator_id,
+		  create_time,
+		  editor_id,
+		  edit_time,
+		  org_id,
+		  dept_id,
+		  addr_status
+    </sql>
+    <select id="queryCoopAddressList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_address
+        where coop_id =#{coop_id,jdbcType=INTEGER} and addr_status not in (-1) 
+        <if test="org_id != null and org_id != '' " >
+	        AND org_id = #{org_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="dept_id != null and dept_id != '' " >
+	        AND dept_id = #{dept_id,jdbcType=INTEGER}
+	    </if>
+	       <if test="addr_status != null and addr_status != '' " >
+	        AND addr_status = #{addr_status,jdbcType=INTEGER}
+	    </if>
+	    <if test="addr_type != null and addr_type != '' " >
+	        AND addr_type = #{addr_type,jdbcType=VARCHAR}
+	    </if>
+        <if test="full_address != null and full_address != '' " >
+	        AND full_address like "%"#{full_address,jdbcType=VARCHAR}"%"
+	    </if> 
+	    <if test="short_name != null and short_name != '' " >
+	        AND short_name = #{short_name,jdbcType=VARCHAR}
+	    </if> 
+		
+	    order by addr_id desc
+	    
+    </select>
+     <select id="queryList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_address
+        where 1=1
+        <if test="org_id != null and org_id != '' " >
+	        AND org_id = #{org_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="coop_id != null and coop_id != '' " >
+	        AND coop_id = #{coop_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="dept_id != null and dept_id != '' " >
+	        AND dept_id = #{dept_id,jdbcType=INTEGER}
+	    </if>
+		<if test="addr_status != null and addr_status != '' " >
+	        AND addr_status = #{addr_status,jdbcType=INTEGER}
+	    </if>
+	    <if test="addr_type != null and addr_type != '' " >
+	        AND addr_type = #{addr_type,jdbcType=VARCHAR}
+	    </if>
+        <if test="full_address != null and full_address != '' " >
+	        AND full_address like "%"#{full_address,jdbcType=VARCHAR}"%"
+	    </if> 
+	    <if test="short_name != null and short_name != '' " >
+	        AND short_name = #{short_name,jdbcType=VARCHAR}
+	    </if> 
+	    order by addr_id desc
+	    
+    </select>
+   <select id="viewCoopAddress" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_address
+        where 1=1
+        and addr_id = #{addr_id}
+        <if test="org_id != null and org_id != '' " >
+	        AND org_id = #{org_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="dept_id != null and dept_id != '' " >
+	        AND dept_id = #{dept_id,jdbcType=INTEGER}
+	    </if>
+	    
+    </select>
+    
+ 	<insert  id="saveCoopAddress" parameterType="com.efreight.prm.entity.CoopAddressBean" useGeneratedKeys="true" keyProperty="addr_id">
+ 	insert into prm_coop_address
+	(
+	  addr_id,coop_id,addr_type,short_name,full_address,creator_id,
+	  create_time,editor_id,edit_time,org_id,dept_id,addr_status
+	)
+	values(
+		 #{addr_id},
+		#{coop_id},
+		#{addr_type},
+		#{short_name},
+		#{full_address},
+		#{creator_id},
+		#{create_time},
+		#{editor_id},
+		#{edit_time},
+		#{org_id},
+		#{dept_id},
+		#{addr_status}
+	)
+ 	</insert>
+ 	<update  id="modifyCoopAddress" parameterType="com.efreight.prm.entity.CoopAddressBean" >
+ 	update prm_coop_address
+	set
+	  addr_type         = #{addr_type},
+	  short_name        = #{short_name},
+	  full_address      = #{full_address},
+	  editor_id         = #{editor_id},
+	  edit_time         = #{edit_time},
+	  addr_status       = #{addr_status}
+	where addr_id = #{addr_id}
+
+ 	</update>
+  
+  
+</mapper>

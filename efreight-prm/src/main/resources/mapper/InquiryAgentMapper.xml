@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.InquiryAgentDao">
+    <select id="queryList" resultType="com.efreight.prm.entity.InquiryAgent" parameterType="java.util.HashMap">
+        select
+        a.inquiry_id inquiryId,
+        a.org_id orgId,
+        a.business_scope businessScope,
+        a.inquiry_agent_id inquiryAgentId,
+        a.inquiry_agent_name_short inquiryAgentNameShort,
+        a.carrier_code carrierCode,
+        a.contract_type contractType,
+        a.departure_station departureStation,
+        a.arrival_station arrivalStation,
+        a.nation_code_arrival nationCodeArrival,
+        a.routing_name routingName,
+        a.booking_contacts_id bookingContactsId,
+        a.remark,
+        a.is_valid isValid,
+        b.coop_code coopCode,b.coop_name inquiryAgentName
+        from prm_inquiry_agent a
+        left join af_V_prm_coop b on a.inquiry_agent_id=b.coop_id
+        where 1=1 AND a.org_id = #{orgId,jdbcType=INTEGER}
+        <if test="inquiryAgentName != null and inquiryAgentName != '' ">
+            AND b.coop_name like "%"#{inquiryAgentName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="departureStation != null and departureStation != '' ">
+            AND a.departure_station like "%"#{departureStation,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="arrivalStation != null and arrivalStation != '' ">
+            AND a.arrival_station like "%"#{arrivalStation,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="carrierCode != null and carrierCode != '' ">
+            AND a.carrier_code like "%"#{carrierCode,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="contractType != null and contractType != '' ">
+            AND a.contract_type = #{contractType,jdbcType=VARCHAR}
+        </if>
+        <if test="inquiryAgentNameShort != null and inquiryAgentNameShort != '' ">
+            AND a.inquiry_agent_name_short like "%"#{inquiryAgentNameShort,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="isValid != null ">
+            AND a.is_valid = #{isValid}
+        </if>
+        order by b.coop_code,a.departure_station,a.carrier_code
+    </select>
+    <select id="exportExcel" resultType="com.efreight.prm.entity.InquiryAgent"
+            parameterType="com.efreight.prm.entity.InquiryAgent">
+        select
+        a.inquiry_id inquiryId,
+        a.org_id orgId,
+        a.business_scope businessScope,
+        a.inquiry_agent_id inquiryAgentId,
+        a.inquiry_agent_name_short inquiryAgentNameShort,
+        a.carrier_code carrierCode,
+        a.contract_type contractType,
+        a.departure_station departureStation,
+        a.arrival_station arrivalStation,
+        a.nation_code_arrival nationCodeArrival,
+        a.routing_name routingName,
+        a.booking_contacts_id bookingContactsId,
+        a.remark,
+        a.is_valid isValid,
+        b.coop_code coopCode,b.coop_name inquiryAgentName
+        from prm_inquiry_agent a
+        left join af_V_prm_coop b on a.inquiry_agent_id=b.coop_id
+        where 1=1 AND a.org_id = #{orgId,jdbcType=INTEGER}
+        <if test="inquiryAgentName != null and inquiryAgentName != '' ">
+            AND b.coop_name like "%"#{inquiryAgentName,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="departureStation != null and departureStation != '' ">
+            AND a.departure_station like "%"#{departureStation,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="arrivalStation != null and arrivalStation != '' ">
+            AND a.arrival_station like "%"#{arrivalStation,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="carrierCode != null and carrierCode != '' ">
+            AND a.carrier_code like "%"#{carrierCode,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="contractType != null and contractType != '' ">
+            AND a.contract_type = #{contractType,jdbcType=VARCHAR}
+        </if>
+        <if test="inquiryAgentNameShort != null and inquiryAgentNameShort != '' ">
+            AND a.inquiry_agent_name_short like "%"#{inquiryAgentNameShort,jdbcType=VARCHAR}"%"
+        </if>
+        <if test="isValid != null ">
+            AND a.is_valid = #{isValid}
+        </if>
+        order by b.coop_code,a.departure_station,a.carrier_code
+    </select>
+    <select id="getInquiryAgentList" resultType="com.efreight.prm.entity.InquiryAgent"
+            parameterType="java.util.HashMap">
+        select
+        a.inquiry_id inquiryId,
+        a.org_id orgId,
+        a.business_scope businessScope,
+        a.inquiry_agent_id inquiryAgentId,
+        a.inquiry_agent_name_short inquiryAgentNameShort,
+        a.carrier_code carrierCode,
+        a.contract_type contractType,
+        a.departure_station departureStation,
+        a.arrival_station arrivalStation,
+        a.nation_code_arrival nationCodeArrival,
+        a.routing_name routingName,
+        a.booking_contacts_id bookingContactsId,
+        a.remark,
+        a.is_valid isValid,
+        b.coop_code coopCode,b.coop_name inquiryAgentName
+        from prm_inquiry_agent a
+        left join af_V_prm_coop b on a.inquiry_agent_id=b.coop_id
+        where 1=1 AND a.org_id in (#{orgId,jdbcType=INTEGER},1) and a.is_valid = 1
+        <if test="inquiryAgentName != null and inquiryAgentName != '' ">
+            AND (b.coop_name like "%"#{inquiryAgentName,jdbcType=VARCHAR}"%" or a.inquiry_agent_name_short like
+            "%"#{inquiryAgentName,jdbcType=VARCHAR}"%")
+        </if>
+        <if test="departureStation != null and departureStation != '' ">
+            AND (a.departure_station like "%"#{departureStation,jdbcType=VARCHAR}"%" or a.departure_station is null or
+            a.departure_station="")
+        </if>
+        <if test="arrivalStation != null and arrivalStation != '' ">
+            AND (a.arrival_station like "%"#{arrivalStation,jdbcType=VARCHAR}"%" or a.arrival_station is null or
+            a.arrival_station ="" )
+        </if>
+        <if test="carrierCodes != null and carrierCodes != '' ">
+            <foreach collection="carrierCodes.split(',')" item="carrierCode" separator=" or " open="and ("
+                     close=" or a.carrier_code is null or a.carrier_code = '')">
+                a.carrier_code like "%"#{carrierCode,jdbcType=VARCHAR}"%"
+            </foreach>
+        </if>
+        order by a.org_id, b.coop_code,a.departure_station,a.carrier_code
+    </select>
+
+    <insert id="doSave" parameterType="com.efreight.prm.entity.InquiryAgent">
+    insert into prm_inquiry_agent (
+	    org_id,
+	    business_scope,
+	    inquiry_agent_id,
+	    inquiry_agent_name_short,
+	    carrier_code,
+	    contract_type,
+	    departure_station,
+	    arrival_station,
+	    nation_code_arrival,
+	    routing_name,
+	    booking_contacts_id,
+	    remark,
+	    is_valid,
+	    creator_id,
+	    creator_name,
+	    create_time
+    ) values (
+    	#{orgId,jdbcType=INTEGER}, 
+      	#{businessScope,jdbcType=VARCHAR},
+      	#{inquiryAgentId,jdbcType=INTEGER},
+      	#{inquiryAgentNameShort,jdbcType=VARCHAR},
+      	#{carrierCode,jdbcType=VARCHAR},
+      	#{contractType,jdbcType=VARCHAR},
+      	#{departureStation,jdbcType=VARCHAR},
+      	#{arrivalStation,jdbcType=VARCHAR},
+      	#{nationCodeArrival,jdbcType=VARCHAR},
+      	#{routingName,jdbcType=VARCHAR},
+      	#{bookingContactsId,jdbcType=VARCHAR},
+      	#{remark,jdbcType=VARCHAR},
+      	#{isValid,jdbcType=VARCHAR},
+      	#{creatorId,jdbcType=INTEGER},
+      	#{creatorName,jdbcType=VARCHAR},
+      	#{createTime,jdbcType=VARCHAR}
+      )
+ 	</insert>
+    <select id="queryById" resultType="com.efreight.prm.entity.InquiryAgent" parameterType="java.util.HashMap">
+		select 
+			a.inquiry_id inquiryId,
+			a.org_id orgId,
+		    a.business_scope businessScope,
+		    a.inquiry_agent_id inquiryAgentId,
+		    a.inquiry_agent_name_short inquiryAgentNameShort,
+		    a.carrier_code carrierCode,
+		    a.contract_type contractType,
+		    a.departure_station departureStation,
+		    a.arrival_station arrivalStation,
+		    a.nation_code_arrival nationCodeArrival,
+		    a.routing_name routingName,
+		    a.booking_contacts_id bookingContactsId,
+		    a.remark,
+		    a.is_valid isValid,
+			b.coop_code coopCode,b.coop_name inquiryAgentName
+		from prm_inquiry_agent a
+		left join af_V_prm_coop b on a.inquiry_agent_id=b.coop_id
+		where a.inquiry_id = #{inquiryId,jdbcType=INTEGER} AND a.org_id = #{orgId,jdbcType=INTEGER}
+	</select>
+    <update id="doEdit" parameterType="com.efreight.prm.entity.InquiryAgent">
+	    update prm_inquiry_agent
+	    set 
+	    inquiry_agent_id=#{inquiryAgentId,jdbcType=INTEGER},
+	    inquiry_agent_name_short=#{inquiryAgentNameShort,jdbcType=VARCHAR},
+	    carrier_code=#{carrierCode,jdbcType=VARCHAR},
+	    contract_type=#{contractType,jdbcType=VARCHAR},
+	    departure_station=	#{departureStation,jdbcType=VARCHAR},
+	    arrival_station=#{arrivalStation,jdbcType=VARCHAR},
+	    nation_code_arrival=#{nationCodeArrival,jdbcType=VARCHAR},
+	    routing_name=#{routingName,jdbcType=VARCHAR},
+	    booking_contacts_id=#{bookingContactsId,jdbcType=VARCHAR},
+	    remark=#{remark,jdbcType=VARCHAR},
+	    is_valid=#{isValid,jdbcType=VARCHAR},
+	    editor_id=#{editorId,jdbcType=INTEGER},
+      	editor_name=#{editorName,jdbcType=VARCHAR},
+      	edit_time=#{editTime,jdbcType=VARCHAR}
+	    where inquiry_id = #{inquiryId,jdbcType=INTEGER}
+  	</update>
+    <select id="selectCarrierCode" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT 
+			carrier_code code,
+			CONCAT(carrier_code,' - ',carrier_prefix,',',carrier_name_en,',',carrier_name_cn) AS label 
+		FROM af_carrier
+	</select>
+    <select id="selectAirport" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT 
+			ap_code code,
+			CONCAT(ap_code,' - ',ap_name_en,',',ap_name_cn) AS label 
+		FROM af_airport
+		WHERE ap_status=1
+	</select>
+    <select id="selectNation" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT 
+		nation_code code,
+		MAX(CONCAT(nation_code,' - ',nation_name_en,',',nation_name_cn)) AS label 
+		FROM af_airport
+		WHERE ap_status=1
+		GROUP BY nation_code
+	</select>
+    <select id="selectContacts" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        select
+        	contacts_id,coop_id,contacts_type,contacts_name,
+          phone_number,email,dept_name,job_position,
+          tel_number,creator_id,create_time,editor_id,
+          edit_time,org_id,dept_id,contacts_status
+        from prm_coop_contacts
+        where 1=1
+        and coop_id = #{coopId} and contacts_status = 1 AND org_id = #{orgId,jdbcType=INTEGER} and (contacts_type='订舱' or contacts_type='老板')
+	</select>
+
+    <select id="queryContactsList" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+       SELECT contacts_name FROM prm_coop_contacts WHERE  org_id = #{orgId,jdbcType=INTEGER} and contacts_id in ${contactsId}
+	</select>
+
+    <select id="countInquiryOrderAmount" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT count(1) FROM af_order_Inquiry g where (g.inquiry_agent_ids like "%,"#{inquiryId}",%" or g.inquiry_agent_ids like "%,"#{inquiryId} or g.inquiry_agent_ids like #{inquiryId}",%" or g.inquiry_agent_ids = #{inquiryId}) AND g.creat_time > DATE_SUB(CURDATE(), INTERVAL 90 DAY) AND g.order_inquiry_status != '已关闭'
+    </select>
+</mapper>

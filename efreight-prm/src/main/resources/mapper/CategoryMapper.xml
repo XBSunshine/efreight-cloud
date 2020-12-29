@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CategoryDao">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.Category">
+        <result column="id" property="categoryId" jdbcType="INTEGER"/>
+        <result column="category_type" property="categoryType" jdbcType="INTEGER"/>
+        <result column="category_name" property="categoryName" jdbcType="VARCHAR"/>
+        <result column="param_ranking" property="paramId" jdbcType="INTEGER"/>
+        <result column="param_text" property="paramText" jdbcType="VARCHAR"/>
+        <result column="is_valid" property="isVolid" jdbcType="INTEGER"/>
+        <result column="remarks" property="remark" jdbcType="VARCHAR"/>
+        <result column="EDICode1" property="eDICode1" jdbcType="VARCHAR"/>
+        <result column="EDICode2" property="eDICode2" jdbcType="VARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id,category_type,category_name,param_ranking,param_text,is_valid,
+	     remarks,EDICode1,EDICode2
+    </sql>
+    <select id="findParamListCriteria" parameterType="com.efreight.prm.entity.Category" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_category
+        where 1=1
+        <if test="categoryName!=null and categoryName!=''">
+            and category_name = #{categoryName}
+        </if>
+        <if test="paramName!=null and paramName!=''">
+            and param_text = #{paramName}
+        </if>
+        <if test="isVolid!=null">
+            and is_valid = #{isVolid,jdbcType=INTEGER}
+        </if>
+        order by category_type,param_ranking
+    </select>
+    <select id="findCategoryList" resultType="java.util.HashMap">
+        select
+        distinct category_type,category_name
+        from prm_category
+    </select>
+    <select id="findCategoryListCriteria" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        select g.category_type,g.category_name from ( select
+        distinct category_type,category_name
+        from prm_category
+        where 1=1
+        <if test="categoryName != null and categoryName != '' ">
+            and category_name like "%"#{categoryName,jdbcType=VARCHAR}"%"
+        </if>) g order by g.category_type asc
+
+    </select>
+    <select id="findParamCriteria" parameterType="com.efreight.prm.entity.Category" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_category
+        where
+        category_type = #{categoryId} and param_ranking = #{paramId}
+    </select>
+    <select id="findParamsByCategoryType" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_category
+        where category_type = #{categoryType}
+        <if test="paramText != null and paramText != '' ">
+            and param_text like "%"#{paramText}"%"
+        </if>
+        <if test="isVolid != null">
+            and is_valid = #{isVolid}
+        </if>
+        order by param_ranking asc
+    </select>
+
+    <delete id="deleteParam" parameterType="com.efreight.prm.entity.Category">
+        delete from prm_category
+        where category_type = #{categoryId} and param_ranking=#{paramId}
+    </delete>
+    <insert id="createParam" parameterType="com.efreight.prm.entity.Category">
+        insert into prm_category (category_type, category_name, param_ranking,is_valid,param_text,
+        remarks,EDICode1,EDICode2)
+        values (#{categoryId}, #{categoryName}, #{paramId},#{isVolid},#{paramName},#{remark},
+        #{eDICode1},#{eDICode2})
+    </insert>
+    <update id="modifyParam" parameterType="com.efreight.prm.entity.Category">
+        update prm_category
+        set category_name = #{categoryName},
+        is_valid = #{isVolid},
+        param_text = #{paramName},
+        remarks = #{remark},
+        EDICode1 = #{eDICode1},
+        EDICode2 = #{eDICode2}
+        where category_type = #{categoryId} and param_ranking=#{paramId}
+    </update>
+
+    <select id="getParamsNew" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        param_text
+        from af_V_prm_category
+        where category_name = '业务范畴' and (EDICode1 !='' and EDICode1 is not null)
+    </select>
+
+    <select id="getSettlementPeriods" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        EDICode1,param_text
+        from af_V_prm_category
+        where category_name = 'EQ'
+    </select>
+</mapper>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopScopeDao">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.CoopScopeBean">
+      
+    </resultMap>
+    <sql id="Base_Column_List">
+          scope_id,coop_id,is_key_client,incharge_id,business_scope,
+          credit_level,credit_limit,invoice_type,payment_dept_id,
+          income_tax_rate,credit_duration,creator_id,create_time,
+          editor_id,edit_time,org_id,dept_id,scope_status,settlement_period
+    </sql>
+	<sql id="Base_Column_List1">
+          scope_id,coop_id,is_key_client,incharge_id,business_scope,
+          credit_level,credit_limit,invoice_type,payment_dept_id,
+          income_tax_rate,credit_duration,creator_id,create_time,
+          editor_id,edit_time,org_id,dept_id,scope_status,settlement_period,ca.param_text AS settlement_period_name
+    </sql>
+    <select id="queryCoopScopeList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List1"/>,
+		IF(incharge_id, (select hu.user_name from hrs_user hu where hu.org_id = org_id and hu.user_id = incharge_id), NULL)  as incharge_user_name
+        from prm_coop_scope sc
+		LEFT JOIN af_V_prm_category ca ON sc.settlement_period = ca.EDICode1
+		AND ca.category_name = 'EQ'
+        where coop_id =#{coop_id,jdbcType=INTEGER}
+        <if test="org_id != null and org_id != '' " >
+	        AND org_id = #{org_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="dept_id != null and dept_id != '' " >
+	        AND dept_id = #{dept_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="scope_status != null and scope_status != '' " >
+	        AND scope_status = #{scope_status,jdbcType=INTEGER}
+	    </if>
+	    <if test="business_scope != null and business_scope != '' " >
+	        AND business_scope = #{business_scope,jdbcType=VARCHAR}
+	    </if>
+	    <if test="credit_level != null and credit_level != '' " >
+	        AND credit_level = #{credit_level,jdbcType=VARCHAR}
+	    </if>
+	     <if test="is_key_client != null and is_key_client != '' " >
+	        AND is_key_client = #{is_key_client,jdbcType=INTEGER}
+	    </if>
+		
+	    order by scope_id desc
+	    
+    </select>
+     <select id="queryList" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_scope
+        where 1=1
+        <if test="org_id != null and org_id != '' " >
+	        AND org_id = #{org_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="dept_id != null and dept_id != '' " >
+	        AND dept_id = #{dept_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="scope_status != null and scope_status != '' " >
+	        AND scope_status = #{scope_status,jdbcType=INTEGER}
+	    </if>
+	    <if test="business_scope != null and business_scope != '' " >
+	        AND business_scope = #{business_scope,jdbcType=VARCHAR}
+	    </if>
+	    <if test="credit_level != null and credit_level != '' " >
+	        AND credit_level = #{credit_level,jdbcType=VARCHAR}
+	    </if>
+	     <if test="is_key_client != null and is_key_client != '' " >
+	        AND is_key_client = #{is_key_client,jdbcType=INTEGER}
+	    </if>
+		
+	    order by scope_id desc
+	    
+    </select>
+   <select id="viewCoopScope" resultMap="BaseResultMap" parameterType="java.util.HashMap">
+        select
+        <include refid="Base_Column_List"/>
+        from prm_coop_scope
+        where 1=1
+        and scope_id = #{scope_id}
+        <if test="org_id != null and org_id != '' " >
+	        AND org_id = #{org_id,jdbcType=INTEGER}
+	    </if>
+	    <if test="dept_id != null and dept_id != '' " >
+	        AND dept_id = #{dept_id,jdbcType=INTEGER}
+	    </if>
+	    
+    </select>
+    
+ 	<insert  id="saveCoopScope" parameterType="com.efreight.prm.entity.CoopScopeBean" useGeneratedKeys="true" keyProperty="scope_id">
+ 	insert into prm_coop_scope
+	(
+	   scope_id,coop_id,is_key_client,incharge_id,business_scope,
+          credit_level,credit_limit,invoice_type,payment_dept_id,
+          income_tax_rate,credit_duration,creator_id,create_time,
+          editor_id,edit_time,org_id,dept_id,scope_status,settlement_period
+	)
+	values(
+	#{scope_id},
+	#{coop_id},
+	#{is_key_client},
+	#{incharge_id},
+	#{business_scope},
+	#{credit_level},
+	#{credit_limit},
+	#{invoice_type},
+	#{payment_dept_id},
+	#{income_tax_rate},
+	#{credit_duration},
+	#{creator_id},
+	#{create_time},
+	#{editor_id},
+	#{edit_time},
+	#{org_id},
+	#{dept_id},
+	#{scope_status},
+	#{settlement_period}
+	)
+ 	</insert>
+ 	<update  id="modifyCoopScope" parameterType="com.efreight.prm.entity.CoopScopeBean" >
+ 	update prm_coop_scope
+	set
+	  is_key_client     = #{is_key_client},
+	  incharge_id       = #{incharge_id},
+	  business_scope    = #{business_scope},
+	  credit_level      = #{credit_level},
+	  credit_limit      = #{credit_limit},
+	  invoice_type      = #{invoice_type},
+	  payment_dept_id   = #{payment_dept_id},
+	  income_tax_rate   = #{income_tax_rate},
+	  credit_duration   = #{credit_duration},
+	  editor_id         = #{editor_id},
+	  edit_time         = #{edit_time},
+	  scope_status      = #{scope_status},
+	  settlement_period      = #{settlement_period}
+	where scope_id = #{scope_id}
+
+ 	</update>
+  
+  
+</mapper>
