@@ -56,7 +56,7 @@ public interface InboundMapper extends BaseMapper<Inbound> {
     IPage<Inbound> getPage(Page page, @Param("inbound") Inbound inbound);
 
     @Update("<script>" +
-            "update af_order set confirm_pieces=null,confirm_weight=null,confirm_volume=null,confirm_charge_weight=null,confirm_density=null,order_status=#{nodeName},row_uuid=#{rowUuid}" +
+            "update af_order set confirm_pieces=null,confirm_weight=null,confirm_volume=null,confirm_charge_weight=null,confirm_dimensions=null,confirm_density=null,order_status=#{nodeName},row_uuid=#{rowUuid}" +
             " where order_id = #{orderId} and org_id = #{orgId}" +
             "</script>")
     void updateOrderWhenDeleteInbound(@Param("orderId") Integer orderId, @Param("orgId") Integer orgId, @Param("nodeName")String nodeName, @Param("rowUuid") String rowUuid);

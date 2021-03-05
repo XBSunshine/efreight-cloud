@@ -513,8 +513,8 @@ public interface OrderLockOrUnlockMapper {
     @Select("<script>" +
             "SELECT c.order_id AS orderId,c.order_uuid AS orderUuid,c.business_scope AS businessScope,c.order_code AS orderCode,c.rwb_number AS awbNumber,c.customer_number AS customerNumber,c.income_recorded AS incomeFinishStatus,c.cost_recorded AS costFinishStatus,\n" +
             "IF(c.order_status='财务锁账',1,0) AS orderLockStatus,c.order_status AS orderStatus,c.income_status AS incomeStatus,c.cost_status AS costStatus,b.incomeAmount,b.costAmount,b.profitAmount,b.lockDate,'' AS flightNo,IF(c.business_scope='TE',c.expect_departure,c.expect_arrival) AS flightDate,c.container_method AS business_method,\n" +
-            "c.departure_station AS departureStation,c.arrival_station AS arrivalStation,d.coop_code AS coopCode,d.coop_name AS coopName,e.coop_name AS awbFromName,c.sales_name AS salesName,\n" +
-            "c.servicer_name AS servicerName,c.goods_type AS goodsType,c.plan_pieces AS planPieces,c.plan_weight AS planWeight,c.plan_volume AS planVolume,c.plan_charge_weight AS planChargeWeight\n" +
+            "c.departure_station AS departureStation,c.arrival_station AS arrivalStation,d.coop_code AS coopCode,d.coop_name AS coopName,e.coop_name AS awbFromName,SUBSTRING_INDEX(c.sales_name,' ',1) AS salesName,\n" +
+            "SUBSTRING_INDEX(c.servicer_name,' ',1) AS servicerName,c.goods_type AS goodsType,c.plan_pieces AS planPieces,c.plan_weight AS planWeight,c.plan_volume AS planVolume,c.plan_charge_weight AS planChargeWeight\n" +
             "FROM  tc_order c\n" +
             "LEFT JOIN (SELECT MAX(a.orderId) AS orderId,MAX(a.lockDate) AS lockDate,SUM(a.incomeAmount) AS incomeAmount,SUM(a.costAmount) AS costAmount,SUM(a.incomeAmount)- SUM(a.costAmount) AS profitAmount FROM\n" +
             "(SELECT income_functional_amount AS incomeAmount,0 AS costAmount,order_id AS orderId,financial_date as lockDate FROM tc_income WHERE org_id=#{orderLockOrUnlock.orgId}\n" +

@@ -46,6 +46,8 @@ public class CssPReportSettleAfExcelAI implements Serializable{
 	private String deptName;
 	
 	private String servicerName;
+
+	private String workgroupName;
 	
 	private String goodsType;
 	

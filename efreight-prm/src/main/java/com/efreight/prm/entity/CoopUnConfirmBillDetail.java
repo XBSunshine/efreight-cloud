@@ -68,4 +68,6 @@ public class CoopUnConfirmBillDetail implements Serializable {
     private Date createTime;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date billFillDate;
+    private Integer isSendMailAuto;
+    private BigDecimal settlementCharge;
 }

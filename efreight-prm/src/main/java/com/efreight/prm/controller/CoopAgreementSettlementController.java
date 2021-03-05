@@ -219,7 +219,7 @@ public class CoopAgreementSettlementController {
 
         ExportExcel<CoopAgreementSettlementExcel> ex = new ExportExcel<CoopAgreementSettlementExcel>();
         String[] headers = {"账单模板", "企业名称", "企业六字码", "口岸", "进出港", "航班性质", "收费项目", "IT编码", "收费标准" , "结算方式" , "结算周期" , "计费模式", "收费备注", "收费期限"
-                , "数据填充人", "销售确认人", "账单审核人", "总部确认人", "模板状态" , "发送明细" , "首次收费月份", "是否需要IT审核"};
+                , "数据填充人", "账单确认人", "账单审核人", "总部确认人", "模板状态" , "发送明细" , "首次收费月份", "是否需要IT审核"};
         ex.exportExcel(response, "导出EXCEL", headers, list, "Export");
 
     }

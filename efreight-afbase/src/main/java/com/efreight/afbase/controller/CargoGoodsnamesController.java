@@ -27,7 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.efreight.afbase.entity.CargoGoodsnames;
+import com.efreight.afbase.entity.LogBean;
 import com.efreight.afbase.service.CargoGoodsnamesService;
+import com.efreight.afbase.service.LogService;
 import com.efreight.common.security.util.MessageInfo;
 import com.efreight.common.security.util.SecurityUtils;
 import lombok.AllArgsConstructor;
@@ -47,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CargoGoodsnamesController {
 	private final CargoGoodsnamesService service;
-	
+	private final LogService logService;
 	@GetMapping("querylist")
     public MessageInfo querylist(CargoGoodsnames bean) {
         try {
@@ -228,6 +230,17 @@ public class CargoGoodsnamesController {
     			data.get(i).setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
     		}
         	service.saveBatch(data);
+        	//添加日志
+      		LogBean logBean = new LogBean();
+      		logBean.setPageName(data.get(0).getPageName());
+      		logBean.setPageFunction("导入货物清单");
+      		logBean.setBusinessScope("AE");
+      		
+      		logBean.setOrderNumber(data.get(0).getOrderCode());
+      		logBean.setLogRemark("总共入库"+data.size()+"条");
+      		logBean.setOrderId(data.get(0).getOrderId());
+      		logBean.setOrderUuid(data.get(0).getOrderUuid());
+      		logService.saveLog(logBean);
         	 return MessageInfo.ok(data,"haveNoError");
         }else{
             throw new RuntimeException("列表无数据");

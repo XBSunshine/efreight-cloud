@@ -30,4 +30,10 @@ public interface CategoryService extends IService<Category> {
     List<AfVPrmCategory> getAfVPrmCategory(String categoryName);
 
     List<AfVPrmCategory> queryCategoryByCategoryType(Integer categoryType);
+
+    /**
+     * 单证管理-查询业务域
+     * @return
+     */
+    List<AfVPrmCategory> findDocBusinessScope();
 }

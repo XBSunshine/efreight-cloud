@@ -60,4 +60,8 @@ public class CoopUnConfirmBillGroup implements Serializable {
     private String confirmCustomerName;
     private Integer settlementId;
     private String billManualMailTo;
+    private Integer isSendMailAuto;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date mailSendTime;
+    private Double acturalChargeAll;//同一个账单所有账单明细实收金额总和
 }

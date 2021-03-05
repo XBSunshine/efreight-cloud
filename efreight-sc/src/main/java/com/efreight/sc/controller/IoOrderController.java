@@ -113,7 +113,7 @@ public class IoOrderController {
             ioOrderService.modify(ioOrder);
             return MessageInfo.ok();
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error(e.getMessage(), e);
             return MessageInfo.failed(e.getMessage());
         }
     }

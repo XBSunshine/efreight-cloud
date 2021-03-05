@@ -1,18 +1,18 @@
 package com.efreight.afbase.controller;
 
-import javax.validation.Valid;
-
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.efreight.afbase.entity.view.SendProductEmail;
 import com.efreight.afbase.service.AfProductService;
+import com.efreight.afbase.utils.FilePathUtils;
 import com.efreight.common.security.util.MessageInfo;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.validation.Valid;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * af 产品相关控制器
@@ -42,6 +42,24 @@ public class AfProductController {
 		   log.info(e.getMessage());
            return MessageInfo.failed(e.getMessage());
 		}
+	}
+
+	@PostMapping("uploadFile")
+	public MessageInfo uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("fileName") String fileName){
+		if (file.isEmpty()) {
+		    return MessageInfo.failed("文件不能为空");
+		}
+
+		Path path = Paths.get(FilePathUtils.filePath, "/PDFtemplate/temp/");
+		Path dest = path.resolve(fileName);
+		try {
+			file.transferTo(dest);
+			return MessageInfo.ok(dest.toFile().getAbsolutePath());
+		} catch (IOException e) {
+			log.error(e.toString(), e);
+			return MessageInfo.failed(e.getMessage());
+		}
+
 	}
 
 }

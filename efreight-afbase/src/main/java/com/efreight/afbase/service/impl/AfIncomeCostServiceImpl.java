@@ -17,6 +17,7 @@ import com.efreight.afbase.dao.AfCostMapper;
 import com.efreight.afbase.dao.AfIncomeCostMapper;
 import com.efreight.afbase.dao.AfIncomeMapper;
 import com.efreight.afbase.dao.AfOrderMapper;
+import com.efreight.afbase.dao.CssIncomeInvoiceDetailMapper;
 import com.efreight.afbase.dao.RountingSignMapper;
 import com.efreight.afbase.dao.ScCostMapper;
 import com.efreight.afbase.dao.ScIncomeMapper;
@@ -58,9 +59,11 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
     private final AwbNumberService awbservice;
     private final AfIncomeMapper afIncomeMapper;
     private final AfCostMapper afCostMapper;
+    private final ScOrderService scOrderService;
     private final ScIncomeMapper scIncomeMapper;
     private final ScCostMapper scCostMapper;
     private final AfOrderService afOrderService;
+    private final TcOrderService tcOrderService;
     private final TcIncomeMapper tcIncomeMapper;
     private final TcLogService tcLogService;
     private final TcCostMapper tcCostMapper;
@@ -70,6 +73,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
     private final CssPaymentDetailService cssPaymentDetailService;
     private final RemoteCoopService remoteCoopService;
     private final RountingSignMapper rountingSignMapper;
+    private final CssIncomeInvoiceDetailMapper detailMapper;
 
     @Override
     public List<AfIncomeCostTree> getListTree(Integer order_id, String businessScope) {
@@ -152,16 +156,17 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
         			if("false".equals(map.get("rounting_sign").toString())) {
         				//当前签约公司AE订单没有签单设置
         				flagSign = false;
+        			}else {
+        				//订单符合签单条件
+            			if(order!=null&&StringUtils.isNotBlank(order.getBusinessProduct())&&(map.get("rounting_sign_business_product").toString().contains(order.getBusinessProduct()))) {
+            				//当前签约公司设置的AE订单签单服务产品不包含当前订单的服务产品
+            				flagSign = true;
+            			}else {
+            				flagSign = false;
+            			}
         			}
         			//编辑才处理
 //        			if(StringUtils.isNotEmpty(bean.getSignFlag())) {
-//        				//订单符合签单条件
-//            			if(flagSign&&order!=null&&!StringUtils.isEmpty(order.getBusinessProduct())&&(map.get("rounting_sign_business_product").toString().contains(order.getBusinessProduct()))) {
-//            				//当前签约公司设置的AE订单签单服务产品不包含当前订单的服务产品
-//            				flagSign = true;
-//            			}else {
-//            				flagSign = false;
-//            			}
 //        			}
         		}else {
         			flagSign = false;
@@ -314,18 +319,18 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             }
         }
         //修改订单费用状态
-        String income_status = "";
-        String cost_status = "";
-        if (incomeList.size() > 0) {
-            income_status = "已录收入";
-        } else {
-            income_status = "未录收入";
-        }
-        if (costList.size() > 0) {
-            cost_status = "已录成本";
-        } else {
-            cost_status = "未录成本";
-        }
+//        String income_status = "";
+//        String cost_status = "";
+//        if (incomeList.size() > 0) {
+//            income_status = "已录收入";
+//        } else {
+//            income_status = "未录收入";
+//        }
+//        if (costList.size() > 0) {
+//            cost_status = "已录成本";
+//        } else {
+//            cost_status = "未录成本";
+//        }
         //日志
         LogBean logBean = new LogBean();
         logBean.setPageName("费用录入");
@@ -352,8 +357,8 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
         		}
         	}
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), income_status, UUID.randomUUID().toString());
-            afOrderMapper.updateOrderCostStatus(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), cost_status, UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), income_status, UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderCostStatus(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), cost_status, UUID.randomUUID().toString());
             //日志
             AfOrder orderBean = afOrderMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
             logBean.setOrderNumber(orderBean.getOrderCode());
@@ -361,8 +366,8 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             logBean.setOrderUuid(orderBean.getOrderUuid());
             logService.saveLog(logBean);
             //空运应收
-            int flag1 = 0;
-            int flag2 = 0;
+//            int flag1 = 0;
+//            int flag2 = 0;
             if (bean.getIncomeRecorded() != orderBean.getIncomeRecorded() || bean.getCostRecorded() != orderBean.getCostRecorded()) {
                 throw new RuntimeException("订单不是最新数据，请刷新页面再操作");
             }
@@ -377,7 +382,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                     incomeBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     incomeBean.setOrgId(SecurityUtils.getUser().getOrgId());
                     afIncomeMapper.insert(incomeBean);
-                    flag1 = 1;
+//                    flag1 = 1;
                 } else {
                     AfIncome bean2 = afIncomeMapper.selectById(incomeBean.getIncomeId());
                     if (!incomeBean.getRowUuid().equals(bean2.getRowUuid())) {
@@ -415,7 +420,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                     costBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     costBean.setOrgId(SecurityUtils.getUser().getOrgId());
                     afCostMapper.insert(costBean);
-                    flag2 = 1;
+//                    flag2 = 1;
                 } else {
                     AfCost bean2 = afCostMapper.selectById(costBean.getCostId());
                     if (!costBean.getRowUuid().equals(bean2.getRowUuid())) {
@@ -443,29 +448,61 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                  }
                 baseMapper.deleteCost(SecurityUtils.getUser().getOrgId(), costDeleteList.get(i).getCostId());
             }
-            if (flag1 == 1) {
-                afOrderMapper.updateOrderIncomeStatus4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-            } else if (incomeDeleteList.size() > 0) {
-                List<CssDebitNote> billList = afOrderMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
 
-                int incomeStatus = 1;
-                for (int i = 0; i < billList.size(); i++) {
-                    CssDebitNote bill = billList.get(i);
-                    if (bill.getWriteoffComplete() == null || bill.getWriteoffComplete() != 1) {
-                        incomeStatus = 0;
-                        break;
-                    }
-                }
-                List<Integer> icomeList = afOrderMapper.getOrderIcome(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                List<Integer> icomeList2 = afOrderMapper.getOrderIcome2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                if (icomeList.size() == 0 && icomeList2.size() > 0 && incomeStatus == 1) {
-                    afOrderMapper.updateOrderIncomeStatus5(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                }
-            }
-            if (flag2 == 1) {
-                afOrderMapper.updateOrderCostStatus4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-            }
-            
+            //修改订单成本状态（订单应收状态在最后面统一修改）
+            orderBean.setRowUuid(UUID.randomUUID().toString());
+            orderBean.setCostStatus(afOrderService.getOrderCostStatusForAF(bean.getOrderId()));
+            afOrderService.updateById(orderBean);
+
+//            if (flag1 == 1) {
+//                afOrderMapper.updateOrderIncomeStatus4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//            } else if (incomeDeleteList.size() > 0) {
+//                List<CssDebitNote> billList = afOrderMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//
+//                int incomeStatus = 1;
+//                for (int i = 0; i < billList.size(); i++) {
+//                    CssDebitNote bill = billList.get(i);
+//                    if (bill.getWriteoffComplete() == null || bill.getWriteoffComplete() != 1) {
+//                        incomeStatus = 0;
+//                        break;
+//                    }
+//                }
+//                List<Integer> icomeList = afOrderMapper.getOrderIcome(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                List<Integer> icomeList2 = afOrderMapper.getOrderIcome2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                if (icomeList.size() == 0 && icomeList2.size() > 0 && incomeStatus == 1) {
+//                    afOrderMapper.updateOrderIncomeStatus5(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                }
+//            }
+//            if (flag2 == 1) {
+//                //含有新增成本
+//                afOrderMapper.updateOrderCostStatus4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//            }else{
+//                LambdaQueryWrapper<AfCost> afCostLambdaQueryWrapper = Wrappers.<AfCost>lambdaQuery();
+//                afCostLambdaQueryWrapper.eq(AfCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(AfCost::getOrderId, bean.getOrderId());
+//                List<AfCost> list = afCostMapper.selectList(afCostLambdaQueryWrapper);
+//                boolean ifCostCompleteWriteoff = true;
+//                try {
+//                    if (list.size() > 0) {
+//                        list.stream().forEach(afCost -> {
+//                            if (afCost.getCostAmountWriteoff() == null || afCost.getCostAmount().compareTo(afCost.getCostAmountWriteoff()) != 0 || afCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
+//                                throw new RuntimeException();
+//                            }
+//                        });
+//                    } else {
+//                        ifCostCompleteWriteoff = false;
+//                    }
+//                } catch (Exception e) {
+//                    ifCostCompleteWriteoff = false;
+//                }
+//                if (ifCostCompleteWriteoff) {
+//                    AfOrder order = afOrderService.getById(bean.getOrderId());
+//                    order.setCostStatus("核销完毕");
+//                    order.setRowUuid(UUID.randomUUID().toString());
+//                    afOrderService.updateById(order);
+//                }
+//            }
+
+
             //未启用签单
             if(!flag&&"AE".equals(businessScope)) {
             	RountingSign checkSign = new RountingSign();
@@ -509,8 +546,8 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             }
         } else if ("SE".equals(businessScope) || "SI".equals(businessScope)) {
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatusSE(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), income_status, UUID.randomUUID().toString());
-            afOrderMapper.updateOrderCostStatusSE(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), cost_status, UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatusSE(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), income_status, UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderCostStatusSE(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), cost_status, UUID.randomUUID().toString());
             //日志
             AfOrder orderBean = afOrderMapper.getSEOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
             logBean.setOrderNumber(orderBean.getOrderCode());
@@ -520,8 +557,8 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             BeanUtils.copyProperties(logBean, logBean2);
             scLogService.saveLog(logBean2);
             //海运应收
-            int flag1 = 0;
-            int flag2 = 0;
+//            int flag1 = 0;
+//            int flag2 = 0;
             if (bean.getIncomeRecorded() != orderBean.getIncomeRecorded() || bean.getCostRecorded() != orderBean.getCostRecorded()) {
                 throw new RuntimeException("订单不是最新数据，请刷新页面再操作");
             }
@@ -537,7 +574,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                     incomeBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     incomeBean.setOrgId(SecurityUtils.getUser().getOrgId());
                     scIncomeMapper.insert(incomeBean);
-                    flag1 = 1;
+//                    flag1 = 1;
                 } else {
                     ScIncome bean2 = scIncomeMapper.selectById(incomeBean.getIncomeId());
                     if (!incomeBean.getRowUuid().equals(bean2.getRowUuid())) {
@@ -569,7 +606,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                     costBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     costBean.setOrgId(SecurityUtils.getUser().getOrgId());
                     scCostMapper.insert(costBean);
-                    flag2 = 1;
+//                    flag2 = 1;
                 } else {
                     ScCost bean2 = scCostMapper.selectById(costBean.getCostId());
                     if (!costBean.getRowUuid().equals(bean2.getRowUuid())) {
@@ -594,32 +631,58 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             for (int i = 0; i < costDeleteList.size(); i++) {
                 baseMapper.deleteCostSE(SecurityUtils.getUser().getOrgId(), costDeleteList.get(i).getCostId());
             }
-            if (flag1 == 1) {
-                afOrderMapper.updateOrderIncomeStatusSE4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-            } else if (incomeDeleteList.size() > 0) {
-                List<CssDebitNote> billList = afOrderMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-
-                int incomeStatus = 1;
-                for (int i = 0; i < billList.size(); i++) {
-                    CssDebitNote bill = billList.get(i);
-                    if (bill.getWriteoffComplete() == null || bill.getWriteoffComplete() != 1) {
-                        incomeStatus = 0;
-                        break;
-                    }
-                }
-                List<Integer> icomeList = afOrderMapper.getSEOrderIcome(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                List<Integer> icomeList2 = afOrderMapper.getSEOrderIcome2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                if (icomeList.size() == 0 && icomeList2.size() > 0 && incomeStatus == 1) {
-                    afOrderMapper.updateOrderIncomeStatusSE5(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                }
-            }
-            if (flag2 == 1) {
-                afOrderMapper.updateOrderCostStatusSE4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-            }
+//            if (flag1 == 1) {
+//                afOrderMapper.updateOrderIncomeStatusSE4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//            } else if (incomeDeleteList.size() > 0) {
+//                List<CssDebitNote> billList = afOrderMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//
+//                int incomeStatus = 1;
+//                for (int i = 0; i < billList.size(); i++) {
+//                    CssDebitNote bill = billList.get(i);
+//                    if (bill.getWriteoffComplete() == null || bill.getWriteoffComplete() != 1) {
+//                        incomeStatus = 0;
+//                        break;
+//                    }
+//                }
+//                List<Integer> icomeList = afOrderMapper.getSEOrderIcome(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                List<Integer> icomeList2 = afOrderMapper.getSEOrderIcome2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                if (icomeList.size() == 0 && icomeList2.size() > 0 && incomeStatus == 1) {
+//                    afOrderMapper.updateOrderIncomeStatusSE5(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                }
+//            }
+//            if (flag2 == 1) {
+//                afOrderMapper.updateOrderCostStatusSE4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//            }else{
+//                LambdaQueryWrapper<ScCost> scCostLambdaQueryWrapper = Wrappers.<ScCost>lambdaQuery();
+//                scCostLambdaQueryWrapper.eq(ScCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(ScCost::getOrderId, bean.getOrderId());
+//                List<ScCost> list = scCostMapper.selectList(scCostLambdaQueryWrapper);
+//                boolean ifCostCompleteWriteoff = true;
+//                try {
+//                    if (list.size() > 0) {
+//                        list.stream().forEach(scCost -> {
+//                            if (scCost.getCostAmountWriteoff() == null || scCost.getCostAmount().compareTo(scCost.getCostAmountWriteoff()) != 0 || scCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
+//                                throw new RuntimeException();
+//                            }
+//                        });
+//                    } else {
+//                        ifCostCompleteWriteoff = false;
+//                    }
+//                } catch (Exception e) {
+//                    ifCostCompleteWriteoff = false;
+//                }
+//                if (ifCostCompleteWriteoff) {
+//                    ScOrder order = scOrderService.getById(bean.getOrderId());
+//                    order.setCostStatus("核销完毕");
+//                    order.setRowUuid(UUID.randomUUID().toString());
+//                    scOrderService.updateById(order);
+//                }
+//            }
+            //修改订单成本状态（订单应收状态在最后面统一修改）
+            afOrderService.updateOrderCostStatusForSC(bean.getOrderId());
         } else if (bean.getBusinessScope().startsWith("T")) {
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatusTC(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), income_status, UUID.randomUUID().toString());
-            afOrderMapper.updateOrderCostStatusTC(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), cost_status, UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatusTC(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), income_status, UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderCostStatusTC(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), cost_status, UUID.randomUUID().toString());
             //日志
             AfOrder orderBean = afOrderMapper.getTCOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
             logBean.setOrderNumber(orderBean.getOrderCode());
@@ -633,8 +696,8 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             logBean2.setOrgId(SecurityUtils.getUser().getOrgId());
             tcLogService.save(logBean2);
             //海运应收
-            int flag1 = 0;
-            int flag2 = 0;
+//            int flag1 = 0;
+//            int flag2 = 0;
             if (bean.getIncomeRecorded() != orderBean.getIncomeRecorded() || bean.getCostRecorded() != orderBean.getCostRecorded()) {
                 throw new RuntimeException("订单不是最新数据，请刷新页面再操作");
             }
@@ -650,7 +713,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                     incomeBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     incomeBean.setOrgId(SecurityUtils.getUser().getOrgId());
                     tcIncomeMapper.insert(incomeBean);
-                    flag1 = 1;
+//                    flag1 = 1;
                 } else {
                     TcIncome bean2 = tcIncomeMapper.selectById(incomeBean.getIncomeId());
                     if (!incomeBean.getRowUuid().equals(bean2.getRowUuid())) {
@@ -682,7 +745,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
                     costBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     costBean.setOrgId(SecurityUtils.getUser().getOrgId());
                     tcCostMapper.insert(costBean);
-                    flag2 = 1;
+//                    flag2 = 1;
                 } else {
                     TcCost bean2 = tcCostMapper.selectById(costBean.getCostId());
                     if (!costBean.getRowUuid().equals(bean2.getRowUuid())) {
@@ -708,34 +771,58 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             for (int i = 0; i < costDeleteList.size(); i++) {
                 baseMapper.deleteCostTC(SecurityUtils.getUser().getOrgId(), costDeleteList.get(i).getCostId());
             }
-            if (flag1 == 1) {
-                afOrderMapper.updateOrderIncomeStatusTC4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-            } else if (incomeDeleteList.size() > 0) {
-                List<CssDebitNote> billList = afOrderMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-
-                int incomeStatus = 1;
-                for (int i = 0; i < billList.size(); i++) {
-                    CssDebitNote bill = billList.get(i);
-                    if (bill.getWriteoffComplete() == null || bill.getWriteoffComplete() != 1) {
-                        incomeStatus = 0;
-                        break;
-                    }
-                }
-                List<Integer> icomeList = afOrderMapper.getTCOrderIcome(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                List<Integer> icomeList2 = afOrderMapper.getTCOrderIcome2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                if (icomeList.size() == 0 && icomeList2.size() > 0 && incomeStatus == 1) {
-                    afOrderMapper.updateOrderIncomeStatusTC5(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-                }
-            }
-            if (flag2 == 1) {
-                afOrderMapper.updateOrderCostStatusTC4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
-            }
+//            if (flag1 == 1) {
+//                afOrderMapper.updateOrderIncomeStatusTC4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//            } else if (incomeDeleteList.size() > 0) {
+//                List<CssDebitNote> billList = afOrderMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//
+//                int incomeStatus = 1;
+//                for (int i = 0; i < billList.size(); i++) {
+//                    CssDebitNote bill = billList.get(i);
+//                    if (bill.getWriteoffComplete() == null || bill.getWriteoffComplete() != 1) {
+//                        incomeStatus = 0;
+//                        break;
+//                    }
+//                }
+//                List<Integer> icomeList = afOrderMapper.getTCOrderIcome(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                List<Integer> icomeList2 = afOrderMapper.getTCOrderIcome2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                if (icomeList.size() == 0 && icomeList2.size() > 0 && incomeStatus == 1) {
+//                    afOrderMapper.updateOrderIncomeStatusTC5(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//                }
+//            }
+//            if (flag2 == 1) {
+//                afOrderMapper.updateOrderCostStatusTC4(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+//            }else{
+//                LambdaQueryWrapper<TcCost> tcCostLambdaQueryWrapper = Wrappers.<TcCost>lambdaQuery();
+//                tcCostLambdaQueryWrapper.eq(TcCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcCost::getOrderId, bean.getOrderId());
+//                List<TcCost> list = tcCostMapper.selectList(tcCostLambdaQueryWrapper);
+//                boolean ifCostCompleteWriteoff = true;
+//                try {
+//                    if (list.size() > 0) {
+//                        list.stream().forEach(tcCost -> {
+//                            if (tcCost.getCostAmountWriteoff() == null || tcCost.getCostAmount().compareTo(tcCost.getCostAmountWriteoff()) != 0 || tcCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
+//                                throw new RuntimeException();
+//                            }
+//                        });
+//                    } else {
+//                        ifCostCompleteWriteoff = false;
+//                    }
+//                } catch (Exception e) {
+//                    ifCostCompleteWriteoff = false;
+//                }
+//                if (ifCostCompleteWriteoff) {
+//                    TcOrder order = tcOrderService.getById(bean.getOrderId());
+//                    order.setCostStatus("核销完毕");
+//                    order.setRowUuid(UUID.randomUUID().toString());
+//                    tcOrderService.updateById(order);
+//                }
+//            }
+            //修改订单成本状态（订单应收状态在最后面统一修改）
+            afOrderService.updateOrderCostStatusForTC(bean.getOrderId());
         } else if ("LC".equals(businessScope)) {
             //修改LC订单费用
             com.efreight.common.remoteVo.IncomeCostList incomeCostList = new com.efreight.common.remoteVo.IncomeCostList();
             BeanUtils.copyProperties(bean, incomeCostList);
-            incomeCostList.setIncomeStatus(income_status);
-            incomeCostList.setCostStatus(cost_status);
             MessageInfo messageInfo = remoteServiceToSC.saveOrderIncomeAndCost(incomeCostList);
             if (messageInfo.getCode() == 1) {
                 throw new RuntimeException(messageInfo.getMessageInfo());
@@ -744,12 +831,19 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
             //修改IO订单费用
             com.efreight.common.remoteVo.IncomeCostList incomeCostList = new com.efreight.common.remoteVo.IncomeCostList();
             BeanUtils.copyProperties(bean, incomeCostList);
-            incomeCostList.setIncomeStatus(income_status);
-            incomeCostList.setCostStatus(cost_status);
             MessageInfo messageInfo = remoteServiceToSC.saveIoOrderIncomeAndCost(incomeCostList);
             if (messageInfo.getCode() == 1) {
                 throw new RuntimeException(messageInfo.getMessageInfo());
             }
+        }
+        if(!"IO".equals(businessScope)&&!"LC".equals(businessScope)) {
+        	//更新订单应收状态：（order. income_status）
+    		List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), bean.getOrderId().toString(),businessScope);
+    		if(listMap!=null&&listMap.size()>0) {
+    			for(Map map:listMap) {
+    				detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),businessScope);
+    			}
+    		}
         }
         //日志
         return true;
@@ -1439,10 +1533,9 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
     		if(map!=null&&map.containsKey("rounting_sign")) {
     			AfOrder orderCheck = afOrderMapper.selectById(bean.getOrderId());
     			if("true".equals(map.get("rounting_sign").toString())) {
-    				flag = true;
-    			}
-    			if(orderCheck!=null&&!StringUtils.isEmpty(orderCheck.getBusinessProduct())&&(map.get("rounting_sign_business_product").toString().contains(orderCheck.getBusinessProduct()))) {
-    				flag = true;
+    				if(orderCheck!=null&&StringUtils.isNotBlank(orderCheck.getBusinessProduct())&&(map.get("rounting_sign_business_product").toString().contains(orderCheck.getBusinessProduct()))) {
+        				flag = true;
+        			}
     			}
     		}
     		List<AfCost> resultListNew = new ArrayList<AfCost>();

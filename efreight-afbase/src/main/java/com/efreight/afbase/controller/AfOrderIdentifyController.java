@@ -68,7 +68,7 @@ public class AfOrderIdentifyController {
     @PostMapping("save")
     public MessageInfo addAfOrderIdentify(@Valid @RequestBody AfOrderIdentify afOrderIdentify){
         try{
-            MessageInfo messageInfo = checkAfOrderIdentify(afOrderIdentify);
+            MessageInfo messageInfo = checkAfOrderIdentify2(afOrderIdentify);
             if(messageInfo!=null){
                 return  messageInfo;
             }
@@ -83,17 +83,12 @@ public class AfOrderIdentifyController {
         }
     }
 
-    private MessageInfo checkAfOrderIdentify(AfOrderIdentify afOrderIdentify){
+    private MessageInfo checkAfOrderIdentify2(AfOrderIdentify afOrderIdentify){
         if(afOrderIdentify.getOrderId()==null
                 &&afOrderIdentify.getOrderId()<=0){
             return MessageInfo.failed( "保存鉴定信息失败！没有对应的订单信息");
         }
-        if(StrUtil.isEmpty(afOrderIdentify.getAwbNumber())){
-            return MessageInfo.failed( "保存鉴定信息失败！没有对应的运单信息");
-        }
-        if(StrUtil.isEmpty(afOrderIdentify.getCarrierId())){
-            return MessageInfo.failed( "保存鉴定信息失败！请填写承运人信息");
-        }
+        
         if(StrUtil.isEmpty(afOrderIdentify.getAgentHandlerName())){
             return MessageInfo.failed( "保存鉴定信息失败！请填写操作人中文姓名");
         }
@@ -126,6 +121,52 @@ public class AfOrderIdentifyController {
             return MessageInfo.failed( "保存鉴定信息失败！" + buffer.toString());
         }
         return null;
+    }
+    private MessageInfo checkAfOrderIdentify(AfOrderIdentify afOrderIdentify){
+    	if(afOrderIdentify.getOrderId()==null
+    			&&afOrderIdentify.getOrderId()<=0){
+    		return MessageInfo.failed( "保存鉴定信息失败！没有对应的订单信息");
+    	}
+    	if(StrUtil.isEmpty(afOrderIdentify.getAwbNumber())){
+//    		return MessageInfo.failed( "保存鉴定信息失败！没有对应的运单信息");
+    		return MessageInfo.failed( "对不起，您的订单缺少运单号，请先完善订单之后再发送！");
+    	}
+    	if(StrUtil.isEmpty(afOrderIdentify.getCarrierId())){
+//    		return MessageInfo.failed( "保存鉴定信息失败！请填写承运人信息");
+    		return MessageInfo.failed( "对不起，您未填写航司信息，请填写航司信息后再发送！");
+    	}
+    	if(StrUtil.isEmpty(afOrderIdentify.getAgentHandlerName())){
+    		return MessageInfo.failed( "保存鉴定信息失败！请填写操作人中文姓名");
+    	}
+//        if(StrUtil.isEmpty(afOrderIdentify.getReportImgUrls())){
+//            return MessageInfo.failed( "保存鉴定信息失败！请填写上传文件");
+//        }
+    	boolean hasUploadFile = false;
+    	List<AfOrderIdentifyDetail> details = afOrderIdentify.getAfOrderIdentifyDetailList();
+    	StringBuffer buffer = new StringBuffer();
+    	for (int i =0;details!=null && i<details.size();i++) {
+    		AfOrderIdentifyDetail detail = details.get(i);
+    		if(StrUtil.isEmpty(detail.getReportIssueNo())){
+    			buffer.append("第").append(i+1).append("行的报告编号不能为空，请填写！");
+    		}
+    		if(StrUtil.isEmpty(detail.getReportIssueOrgan())){
+    			buffer.append("第").append(i+1).append("行的鉴定机构不能为空，请填写！");
+    		}
+    		if(detail.getReportIssueDate()==null){
+    			buffer.append("第").append(i+1).append("行的签发日期不能为空，请填写！");
+    		}
+    		if(!StrUtil.isEmpty(detail.getReportImgUrl())){
+    			hasUploadFile =true;
+    		}
+    	}
+    	if(!hasUploadFile){
+    		return MessageInfo.failed( "保存鉴定信息失败！请填写上传文件");
+    	}
+    	
+    	if(buffer.length()>0){
+    		return MessageInfo.failed( "保存鉴定信息失败！" + buffer.toString());
+    	}
+    	return null;
     }
 
     /**
@@ -182,17 +223,17 @@ public class AfOrderIdentifyController {
      * @param orderIdentifyId
      * @return
      */
-    @PostMapping("delete/{orderIdentifyId}")
-    public MessageInfo deleteAfOrderIdentify(@PathVariable Integer orderIdentifyId){
-        try{
-            return afterOparete(service.deleteAfOrderIdentify(orderIdentifyId),"删除");
-        }catch (CheckedException e){
-            log.error("删除鉴定信息时出现异常："+ e.getMessage());
-            return MessageInfo.failed(e.getMessage());
-        }catch (Exception e){
-            log.error("删除鉴定信息时出现异常："+ e.getMessage());
-            return MessageInfo.failed("删除鉴定信息时出现异常");
-        }
+    @PostMapping("delete/{orderIdentifyId}/{pageName}")
+    public MessageInfo deleteAfOrderIdentify(@PathVariable Integer orderIdentifyId,@PathVariable String pageName){
+    	try{
+    		return afterOparete(service.deleteAfOrderIdentify(orderIdentifyId,pageName),"删除");
+    	}catch (CheckedException e){
+    		log.error("删除鉴定信息时出现异常："+ e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}catch (Exception e){
+    		log.error("删除鉴定信息时出现异常："+ e.getMessage());
+    		return MessageInfo.failed("删除鉴定信息时出现异常");
+    	}
     }
 
     /**
@@ -200,10 +241,10 @@ public class AfOrderIdentifyController {
      * @param orderIdentifyId
      * @return
      */
-    @PostMapping("deldeclare/{orderIdentifyId}")
-    public MessageInfo deleteDeclareAfOrderIdentify(@PathVariable Integer orderIdentifyId){
+    @PostMapping("deldeclare/{orderIdentifyId}/{pageName}")
+    public MessageInfo deleteDeclareAfOrderIdentify(@PathVariable Integer orderIdentifyId,@PathVariable String pageName){
         try{
-            return afterOparete(service.deleteDeclare(orderIdentifyId),"删除申报");
+            return afterOparete(service.deleteDeclare(orderIdentifyId,pageName),"删除申报");
         }catch (CheckedException e){
             log.error("删除申报鉴定信息时出现异常："+ e.getMessage());
             return MessageInfo.failed(e.getMessage());

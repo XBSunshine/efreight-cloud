@@ -1,9 +1,16 @@
 package com.efreight.hrs.controller;
 
 
+import com.efreight.common.core.annotation.ResponseResult;
+import com.efreight.hrs.entity.OrgBankConfig;
+import com.efreight.hrs.service.OrgBankConfigService;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * <p>
@@ -14,8 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2020-12-29
  */
 @RestController
-@RequestMapping("/hrs/org-bank-config")
+@RequestMapping("/orgBankConfig")
+@ResponseResult
+@AllArgsConstructor
 public class OrgBankConfigController {
 
+    private final OrgBankConfigService orgBankConfigService;
+
+    @GetMapping
+    public List<OrgBankConfig> queryCurrOrgId(){
+        return orgBankConfigService.queryCurrOrgId();
+    }
 }
 

@@ -52,6 +52,7 @@
         <result column="regional_head_id" property="regionalHeadId" jdbcType="INTEGER"/>
         <result column="review_it_need" property="reviewItNeed1" jdbcType="INTEGER"/>
         <result column="start_charge_time" property="startChargeTime" jdbcType="DATE"/>
+        <result column="is_new_business" property="isNewBusiness" jdbcType="BIT"/>
     </resultMap>
     <resultMap id="BaseResultMapDetail" type="com.efreight.prm.entity.CoopAgreementSettlementDetail">
         <id column="settlement_id" property="settlementId" jdbcType="INTEGER"/>
@@ -118,7 +119,7 @@
               max_charge,quantity_confirm_days,quantity_confirm_id,bill_confirm_days,bill_confirm_id,bill_confirm_contacts,need_email,
               e_invoice,special_invoice,g.creator_id,g.create_time,g.editor_id,g.edit_time,g.org_id,g.dept_id,payment_method,begin_date,end_date,settlement_mod_bill_month,settlement_state,
               base_quantity,unit_price_excessive,head_office_confirm_id,departure_station,arrival_station,g.service_id,s.service_name,g.head_office_confirm_id,g.remark,g.arrival_departur_type,
-              g.aircraft_classification,g.it_code,g.sales_collaborative_id,g.regional_head_id,g.review_it_need,g.start_charge_time
+              g.aircraft_classification,g.it_code,g.sales_collaborative_id,g.regional_head_id,g.review_it_need,g.start_charge_time,g.is_new_business
     </sql>
     <select id="findCoopAgreementSettlementListCriteria" parameterType="com.efreight.prm.entity.CoopAgreementSettlement"
             resultMap="BaseResultMap">
@@ -162,7 +163,8 @@
         g.group_id groupId,
         g.transactor_id transactorId,
         d.user_name billConfirmName,
-        g1.haveChild as haveChild
+        g1.haveChild as haveChild,
+        g.is_send_mail_auto isSendMailAuto
         from prm_coop_agreement_settlement g
         inner join prm_coop p on g.coop_id=p.coop_id
         left join hrs_user d on g.transactor_id=d.user_id
@@ -236,6 +238,9 @@
         <if test="userName !=null and userName != ''">
             and d.user_name like "%"#{userName}"%"
         </if>
+        <if test="isSendMailAuto != null">
+            and g.is_send_mail_auto = #{isSendMailAuto}
+        </if>
         order by g.create_time desc
     </select>
 
@@ -308,7 +313,7 @@
         insert into prm_coop_agreement_settlement (settlement_id,agreement_id,coop_id,settlement_type,settlement_period,unit_price,receive_charge,min_charge,
               max_charge,quantity_confirm_days,quantity_confirm_id,bill_confirm_days,bill_confirm_id,need_email,creator_id,create_time,creator_name,org_id,dept_id,payment_method,settlement_mod_bill_month,
               base_quantity,unit_price_excessive,head_office_confirm_id,group_id,settlement_state,departure_station,service_id,remark,arrival_departur_type,aircraft_classification,it_code,sales_collaborative_id,
-              regional_head_id,review_it_need,start_charge_time
+              regional_head_id,review_it_need,is_new_business,start_charge_time
               <if test="beginDate != null and beginDate != '' ">
                     ,begin_date
               </if>
@@ -320,7 +325,7 @@
        #{quantityConfirmDays},#{quantityConfirmId},#{billConfirmDays},#{billConfirmId},#{needEmail},
        #{creatorId},#{createTime},#{creatorName},#{orgId},#{deptId},#{paymentMethod},#{settlementModBillMonth},#{baseQuantity},#{unitPriceExcessive},
        #{headOfficeConfirmId},#{settlementId1},'待审核',#{departureStation},#{serviceId},#{remark},#{arrivalDeparturType},#{aircraftClassification},#{itCode},#{salesCollaborativeId},
-       #{regionalHeadId},#{reviewItNeed1},#{startChargeTime}
+       #{regionalHeadId},#{reviewItNeed1},#{isNewBusiness},#{startChargeTime}
              <if test="beginDate != null and beginDate != '' ">
                ,#{beginDate}
              </if>
@@ -333,12 +338,12 @@
     <insert id="createCoopAgreementSettlementGroup" parameterType="com.efreight.prm.entity.CoopAgreementSettlement" useGeneratedKeys="true" keyProperty="settlementId">
         insert into prm_coop_agreement_settlement (settlement_id,coop_id,min_charge,
         max_charge,creator_id,create_time,creator_name,org_id,dept_id,settlement_state,settlement_type,settlement_period,
-        quantity_confirm_days,quantity_confirm_id,bill_confirm_days,bill_confirm_id,bill_template,settlement_mod_name,transactor_id,begin_date,invoice_title,invoice_type,invoice_remark
+        quantity_confirm_days,quantity_confirm_id,bill_confirm_days,bill_confirm_id,bill_template,is_send_mail_auto,settlement_mod_name,transactor_id,begin_date,invoice_title,invoice_type,invoice_remark
         <if test="endDate != null and endDate != '' ">
             ,end_date
         </if>
         )
-        values (#{settlementId},#{coopId},#{minCharge},#{maxCharge},#{creatorId},#{createTime},#{creatorName},#{orgId},#{deptId},'未生效','-1','0',0,0,0,0,#{billTemplate},#{settlementModName},#{transactorId},#{beginDate},
+        values (#{settlementId},#{coopId},#{minCharge},#{maxCharge},#{creatorId},#{createTime},#{creatorName},#{orgId},#{deptId},'未生效','-1','0',0,0,0,0,#{billTemplate},#{isSendMailAuto},#{settlementModName},#{transactorId},#{beginDate},
                 #{invoiceTitle},#{invoiceType},#{invoiceRemark}
         <if test="endDate != null and endDate != '' ">
             ,#{endDate}
@@ -407,6 +412,9 @@
             </if>
             <if test="invoiceRemark != null">
                 invoice_remark = #{invoiceRemark},
+            </if>
+            <if test="isSendMailAuto != null">
+                is_send_mail_auto = #{isSendMailAuto},
             </if>
         </trim>
         where settlement_id = #{settlementId}
@@ -487,6 +495,7 @@
             regional_head_id = #{regionalHeadId},
             review_it_need = #{reviewItNeed1},
             start_charge_time = #{startChargeTime},
+            is_new_business = #{isNewBusiness},
             departure_station = #{departureStation},
             <if test="quantityConfirmDays != null">
                 quantity_confirm_days = #{quantityConfirmDays},
@@ -671,6 +680,9 @@
         </if>
         <if test="userName !=null and userName != ''">
             and A.group_id IN ( SELECT DISTINCT se.settlement_id FROM prm_coop_agreement_settlement se LEFT JOIN hrs_user U5 ON U5.user_id = se.transactor_id WHERE U5.user_name LIKE "%"#{userName}"%" )
+        </if>
+        <if test="isSendMailAuto != null">
+            and A1.is_send_mail_auto = #{isSendMailAuto}
         </if>
         ORDER BY A1.bill_template ,B.coop_name;
     </select>

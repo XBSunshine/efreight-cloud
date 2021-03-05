@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.io.Serializable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -161,7 +162,9 @@ public class DebitNote implements Serializable {
      * 账单本币金额
      */
     private BigDecimal functionalAmount;
+    @TableField(strategy = FieldStrategy.IGNORED)
     private BigDecimal functionalAmountWriteoff;
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer writeoffComplete;
 
     /**
@@ -256,6 +259,14 @@ public class DebitNote implements Serializable {
     @TableField(exist = false)
     private String billStatus4;
     @TableField(exist = false)
+    private String billStatus5;
+    @TableField(exist = false)
+    private String billStatus6;
+    @TableField(exist = false)
+    private String billStatus7;
+    @TableField(exist = false)
+    private Integer invoiceQuery;
+    @TableField(exist = false)
     private String columnStrs;
     @TableField(exist = false)
     private String shippingMethod;
@@ -263,5 +274,42 @@ public class DebitNote implements Serializable {
     private String businessMethod;
     @TableField(exist = false)
     private String productType;
+    @TableField(exist = false)
+    private Integer invoiceStatus;
+    @TableField(exist = false)
+    private String currencyStr;
+    @TableField(exist = false)
+    private String socialCreditCode;
+    /**
+     * 账单公司抬头ID
+     */
+    private Integer orgBankConfigId;
+    @TableField(exist = false)
+    private Integer statementInvoiceStatus;
+    @TableField(exist = false)
+    private Integer invoiceDebitNoteId;
+    @TableField(exist = false)
+    private String  mapAmountOne;
+    @TableField(exist = false)
+    private String coopAddress;
+    @TableField(exist = false)
+    private String phoneNumber;
+    @TableField(exist = false)
+    private String bankNumber;
+    @TableField(exist = false)
+    private String bankName;
+    @TableField(exist = false)
+    private String invoiceCreatorName;
+    @TableField(exist = false)
+    private LocalDateTime invoiceCreateTime;
+    @TableField(exist = false)
+    private String invoiceCreateTimeStart;
+    @TableField(exist = false)
+    private String invoiceCreateTimeEnd;
     
+    /**
+     * 发票备注 兼容老版
+     */
+    @TableField(exist = false)
+    private String applyRemark;
 }

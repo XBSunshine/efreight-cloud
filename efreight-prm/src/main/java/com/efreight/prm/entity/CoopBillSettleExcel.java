@@ -30,6 +30,7 @@ public class CoopBillSettleExcel {
     private String invoiceWriteoffUserName;
     private String invoiceWriteoffDate;
     private String startChargeTime;
+    private String isNewBusiness;
     private String validBeginDate;
     private String validEndDate;
     private String itCode;

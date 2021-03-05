@@ -99,51 +99,51 @@ public class AEOperateOrder implements Serializable {
     /**
      * 客户代码
      */
-    private transient String customerCode;
+//    private String customerCode;
     /**
      * 客户名称
      */
-    private String coopName;
-    /**
-     * 运单来源代码
-     */
-    private transient String supplierCode;
-    /**
-     * 运单来源
-     */
-    private String awbFromName;
-    /**
-     * 提货服务
-     */
-    private String pickUpDeliveryService;
-    /**
-     * 库内操作
-     */
-    private String warehouseService;
-    /**
-     * 外场服务
-     */
-    private String outfieldService;
-    /**
-     * 报关服务
-     */
-    private String customsClearanceService;
-    /**
-     * 目的港清关
-     */
-    private String arrivalCustomsClearanceService;
-    /**
-     * 目的港派送
-     */
-    private String deliveryService;
+//    private String coopName;
+//    /**
+//     * 运单来源代码
+//     */
+//    private String supplierCode;
+//    /**
+//     * 运单来源
+//     */
+//    private String awbFromName;
+//    /**
+//     * 提货服务
+//     */
+//    private String pickUpDeliveryService;
+//    /**
+//     * 库内操作
+//     */
+//    private String warehouseService;
+//    /**
+//     * 外场服务
+//     */
+//    private String outfieldService;
+//    /**
+//     * 报关服务
+//     */
+//    private String customsClearanceService;
+//    /**
+//     * 目的港清关
+//     */
+//    private String arrivalCustomsClearanceService;
+//    /**
+//     * 目的港派送
+//     */
+//    private String deliveryService;
     /**
      * 客户单号
      */
-    private String customerNumber;
+//    private String customerNumber;
     /**
      * 服务产品
      */
-    private String businessProduct;
+//    private String businessProduct;
     /**
      * 分单数
      */
@@ -152,7 +152,7 @@ public class AEOperateOrder implements Serializable {
      * 货站/库房
      */
     private String departureWarehouseName;
-    private String departureStorehouseName;
+//    private String departureStorehouseName;
 
     /**
      * 中文品名
@@ -167,14 +167,14 @@ public class AEOperateOrder implements Serializable {
      */
     private String batteryType;
 
-    /**
-     * 责任销售
-     */
-    private String salesName;
-    /**
-     * 责任客服
-     */
-    private String servicerName;
+//    /**
+//     * 责任销售
+//     */
+//    private String salesName;
+//    /**
+//     * 责任客服
+//     */
+//    private String servicerName;
     /**
      * 责任操作
      */

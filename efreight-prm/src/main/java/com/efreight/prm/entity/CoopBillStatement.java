@@ -66,6 +66,10 @@ public class CoopBillStatement implements Serializable {
     private Date confirmCustomerTime;
     private String confirmCustomerName;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date confirmSalerTime;
+    private String confirmSalerName;
+
     private String confirmCustomerTime_begin;
     private String confirmCustomerTime_end;
 
@@ -77,4 +81,6 @@ public class CoopBillStatement implements Serializable {
     private String invoiceDate_end;
     private String isNeedUpdateInvoiceDate;
     private String billManualMailTo;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date mailSendTime;
 }

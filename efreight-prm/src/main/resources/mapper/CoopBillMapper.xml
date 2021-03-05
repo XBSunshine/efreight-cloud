@@ -599,9 +599,9 @@
     <insert id="insertStatement" parameterType="com.efreight.prm.entity.CoopBillStatement" useGeneratedKeys="true"
             keyProperty="statement_id">
         insert into prm_coop_statement (statement_id,org_id, coop_id, statement_name,statement_status,statement_number,statement_date,amount_receivable,
-        amount_received,creator_id,creator_name,create_time,confirm_customer_name,confirm_customer_time,invoice_title,invoice_type,invoice_remark,invoice_mail_to,bill_manual_mail_to)
+        amount_received,creator_id,creator_name,create_time,confirm_customer_name,confirm_customer_time,invoice_title,invoice_type,invoice_remark,invoice_mail_to,bill_manual_mail_to,bill_template)
         values (#{statement_id},#{orgId}, #{coopId},#{statementName},#{statementStatus},#{statementNumber},#{billName},#{acturalCharge},
-        #{invoiceAmount},#{creatorId},#{creatorName},#{createTime},#{confirmCustomerName},#{confirmCustomerTime},#{invoiceTitle},#{invoiceType},#{invoiceRemark},#{invoiceMailTo},#{billManualMailTo})
+        #{invoiceAmount},#{creatorId},#{creatorName},#{createTime},#{confirmCustomerName},#{confirmCustomerTime},#{invoiceTitle},#{invoiceType},#{invoiceRemark},#{invoiceMailTo},#{billManualMailTo},#{billTemplate})
     </insert>
 
     <select id="getCurrentBillStatementNumber" parameterType="com.efreight.prm.entity.CoopBillStatement" resultType="java.lang.String">
@@ -651,6 +651,18 @@
         set statement_mail_date = #{statementMailDate},
         statement_mail_sender_id = #{statementMailSenderId},
         statement_mail_sender_name = #{statementMailSenderName}
+        <if test="confirmSalerName != null and confirmSalerName != '' ">
+            , confirm_saler_name = #{confirmSalerName}
+        </if>
+        <if test="confirmSalerTime != null ">
+            , confirm_saler_time = #{confirmSalerTime}
+        </if>
+        <if test="mailSendTime != null ">
+            , mail_send_time = #{mailSendTime}
+        </if>
+        <if test="statementStatus != null and statementStatus != '' ">
+            , statement_status = #{statementStatus}
+        </if>
         where statement_id = #{statement_id}
     </update>
 
@@ -938,7 +950,8 @@
         s.amount_receivable planCharge,
         s.amount_received invoiceAmount,
         s.amount_received_discount discount,
-        s.statement_name serviceName
+        s.statement_name serviceName,
+        p.is_send_mail_auto isSendMailAuto
         FROM
         prm_coop_statement s
         LEFT JOIN prm_coop_agreement_settlement p on s.settlement_id=p.settlement_id
@@ -1091,7 +1104,7 @@
             b.payment_method AS paymentMethod,
             b.unit_price AS unitPrice,
             b.fill_number AS fillNumber,
-            b.actural_charge AS acturalCharge,
+            b.settlement_charge AS acturalCharge,
             b.departure_station AS departureStation,
             b.bill_status billStatus,
             date_format(IFNULL(se.begin_date,se1.begin_date), '%Y-%m-%d' ) AS validBeginDate,
@@ -1101,7 +1114,8 @@
             SUBSTRING_INDEX(s.invoice_writeoff_user_name, ' ',  1) invoiceWriteoffUserName,
             s.confirm_customer_time AS confirmCustomerTime,
             U3.user_name AS salesCollaborativeName,
-            CASE WHEN se2.start_charge_time IS NOT NULL  THEN left(se2.start_charge_time,7) ELSE '' END AS startChargeTime
+            se2.is_new_business AS isNewBusiness,
+            CASE WHEN se2.start_charge_time IS NOT NULL  THEN left(se2.start_charge_time,7) ELSE s.statement_date END AS startChargeTime
         FROM
             prm_coop_statement s
             INNER JOIN prm_coop_bill b ON s.statement_id = b.statement_id
@@ -1168,6 +1182,9 @@
             </if>
             <if test="paymentMethod != null and paymentMethod != '' " >
                 AND b.payment_method = #{paymentMethod}
+            </if>
+            <if test="isNewBusiness != null and isNewBusiness != '' " >
+                AND se2.is_new_business = #{isNewBusiness }
             </if>
         ORDER BY
             s.statement_id,s.statement_date,p.coop_name,s.statement_name
@@ -1238,8 +1255,8 @@
             CASE WHEN se2.start_charge_time IS NOT NULL  THEN left(se2.start_charge_time,7) ELSE '' END AS startChargeTime,
             s.confirm_customer_time AS confirmCustomerTime,
             SUBSTRING_INDEX(s.invoice_writeoff_user_name, ' ',  1) invoiceWriteoffUserName,
-            SUBSTRING_INDEX(s.invoice_writeoff_date, ' ',  1) invoiceWriteoffDate
-
+            SUBSTRING_INDEX(s.invoice_writeoff_date, ' ',  1) invoiceWriteoffDate,
+            IF(se2.is_new_business, '√', '') AS isNewBusiness
             FROM
             prm_coop_statement s
             INNER JOIN prm_coop_bill b ON s.statement_id = b.statement_id
@@ -1306,7 +1323,10 @@
             <if test="paymentMethod != null and paymentMethod != '' " >
                 AND b.payment_method = #{paymentMethod}
             </if>
-            ORDER BY
+            <if test="isNewBusiness != null and isNewBusiness != '' " >
+                AND se2.is_new_business = #{isNewBusiness }
+            </if>
+        ORDER BY
             s.statement_id,s.statement_date,p.coop_name,s.statement_name) aa
         ;
     </select>
@@ -1370,7 +1390,8 @@
             statement_mail_sender_id = #{statementMailSenderId},
             statement_mail_sender_name = #{statementMailSenderName},
             confirm_head_office_name = #{confirmHeadOfficeName},
-            confirm_head_office_time = #{confirmHeadOfficeTime}
+            confirm_head_office_time = #{confirmHeadOfficeTime},
+            mail_send_time = #{mailSendTime}
         where statement_id = #{statementId}
     </update>
 
@@ -1388,7 +1409,8 @@
             statement_mail_sender_id = #{statementMailSenderId},
             statement_mail_sender_name = #{statementMailSenderName},
             confirm_saler_name = #{confirmSalerName},
-            confirm_saler_time = #{confirmSalerTime}
+            confirm_saler_time = #{confirmSalerTime},
+            mail_send_time = #{mailSendTime}
         where statement_id = #{statementId}
     </update>
 
@@ -1701,5 +1723,43 @@
         select GROUP_CONCAT(DISTINCT email) AS emails from prm_coop_contacts where contacts_id in (${billManualMailTo}) GROUP BY coop_id
 
     </select>
+
+    <select id="getAutoSendList" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT
+            s.statement_id
+        FROM
+            prm_coop_statement s
+            LEFT JOIN prm_coop_agreement_settlement sett ON s.settlement_id = sett.settlement_id
+        WHERE
+            s.statement_status = '数据已填充'
+            AND s.mail_send_time IS NULL
+            AND s.statement_date = #{billMonth}
+            AND sett.is_send_mail_auto = 1
+    </select>
+
+    <select id="getAllBillByStatementId" parameterType="java.lang.Integer" resultType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        select bill_id AS billId,statement_id AS statementId,actural_charge AS acturalCharge from prm_coop_bill where statement_id = #{statementId} order by bill_number
+    </select>
+
+    <update id="updateBillByStatementId" parameterType="java.lang.Integer">
+        update prm_coop_bill
+        set
+            settlement_charge = actural_charge
+        where statement_id = #{statementId}
+    </update>
+
+    <update id="updateBillByBillId" parameterType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        update prm_coop_bill
+        set
+            settlement_charge = #{settlementCharge}
+        where bill_id = #{billId}
+    </update>
+
+    <update id="updateOtherBillByBillId" parameterType="com.efreight.prm.entity.CoopUnConfirmBillDetail">
+        update prm_coop_bill
+        set
+            settlement_charge = actural_charge
+        where statement_id = #{statementId} and bill_id != #{billId}
+    </update>
 
 </mapper>

@@ -106,4 +106,6 @@ public class CssPReportSettleAfProcedure {
 
 	@TableField("transit_station_2")
 	private String transitStation2;
+
+	private Integer workgroupId;
 }

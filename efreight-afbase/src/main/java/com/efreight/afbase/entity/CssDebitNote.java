@@ -155,10 +155,16 @@ public class CssDebitNote implements Serializable {
      * 修改时间
      */
     private LocalDateTime editTime;
+
+    /**
+     * 账单公司抬头ID
+     */
+    private Integer orgBankConfigId;
     
     private transient String incomeIds;
     private transient String incomeRowUuids;
     private transient List<CssDebitNoteCurrency> debitCurrencyList;
+    
 
 
 }

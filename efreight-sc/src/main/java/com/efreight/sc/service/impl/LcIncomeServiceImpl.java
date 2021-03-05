@@ -104,20 +104,6 @@ public class LcIncomeServiceImpl extends ServiceImpl<LcIncomeMapper, LcIncome> i
             throw new RuntimeException("该订单不存在");
         }
 
-        //更改订单状态
-        boolean flag = false;
-        if ("未录收入".equals(lcOrder.getIncomeStatus()) || "已录收入".equals(lcOrder.getIncomeStatus())) {
-            lcOrder.setIncomeStatus(incomeCostList.getIncomeStatus());
-            flag = true;
-        }
-        if ("未录成本".equals(lcOrder.getCostStatus()) || "已录成本".equals(lcOrder.getCostStatus())) {
-            lcOrder.setCostStatus(incomeCostList.getCostStatus());
-            flag = true;
-        }
-        if (flag) {
-            lcOrderService.modify(lcOrder);
-        }
-
         //日志
         LcLog logBean = new LcLog();
         logBean.setPageName("费用录入");
@@ -170,63 +156,77 @@ public class LcIncomeServiceImpl extends ServiceImpl<LcIncomeMapper, LcIncome> i
         });
 
         //状态更新
-        if (StrUtil.isNotBlank(flag1.toString())) {
-            if ("核销完毕".equals(lcOrder.getIncomeStatus())) {
-                lcOrder.setIncomeStatus("部分核销");
-                lcOrderService.modify(lcOrder);
-            }
-        } else if (incomeCostList.getIncomeDeleteList().size() > 0) {
-            List<Map<String, Object>> billList = baseMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), incomeCostList.getOrderId());
+//        if (StrUtil.isNotBlank(flag1.toString())) {
+//            if ("核销完毕".equals(lcOrder.getIncomeStatus())) {
+//                lcOrder.setIncomeStatus("部分核销");
+//                lcOrderService.modify(lcOrder);
+//            }
+//        } else if (incomeCostList.getIncomeDeleteList().size() > 0) {
+//            List<Map<String, Object>> billList = baseMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), incomeCostList.getOrderId());
+//
+//            int incomeStatus = 1;
+//            for (int i = 0; i < billList.size(); i++) {
+//                Map<String, Object> bill = billList.get(i);
+//                if (bill.get("writeoff_complete") == null || (Integer) bill.get("writeoff_complete") == 0) {
+//                    incomeStatus = 0;
+//                    break;
+//                }
+//            }
+//            LambdaQueryWrapper<LcIncome> lcIncomeLambdaQueryWrapper = Wrappers.<LcIncome>lambdaQuery();
+//            lcIncomeLambdaQueryWrapper.eq(LcIncome::getOrderId, incomeCostList.getOrderId()).eq(LcIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNull(LcIncome::getDebitNoteId);
+//            List<LcIncome> listNoBill = list(lcIncomeLambdaQueryWrapper);
+//
+//            LambdaQueryWrapper<LcIncome> lcIncomeWrapper = Wrappers.<LcIncome>lambdaQuery();
+//            lcIncomeWrapper.eq(LcIncome::getOrderId, incomeCostList.getOrderId()).eq(LcIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNotNull(LcIncome::getDebitNoteId);
+//            List<LcIncome> listCompleteBill = list(lcIncomeWrapper);
+//            if (listNoBill.size() == 0 && listCompleteBill.size() > 0 && incomeStatus == 1) {
+//                lcOrder.setIncomeStatus("核销完毕");
+//                lcOrderService.modify(lcOrder);
+//            }
+//        }
+        //新 订单收入情况变更
+        List<Map> listMap = baseMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), incomeCostList.getOrderId().toString(),"LC");
+		if(listMap!=null&&listMap.size()>0) {
+			for(Map map:listMap) {
+//				baseMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),"LC");
+				lcOrder.setIncomeStatus(map.get("income_status").toString());
+			}
+		}
+		
+//        if (StrUtil.isNotBlank(flag2.toString())) {
+//            LcOrder order = lcOrderService.getById(incomeCostList.getOrderId());
+//            if ("核销完毕".equals(order.getCostStatus())) {
+//                order.setCostStatus("部分核销");
+//                lcOrderService.modify(order);
+//            }
+//        } else {
+//            LambdaQueryWrapper<LcCost> lcCostLambdaQueryWrapper = Wrappers.<LcCost>lambdaQuery();
+//            lcCostLambdaQueryWrapper.eq(LcCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(LcCost::getOrderId, incomeCostList.getOrderId());
+//            List<LcCost> list = lcCostService.list(lcCostLambdaQueryWrapper);
+//            boolean ifCostCompleteWriteoff = true;
+//            try {
+//                if (list.size() > 0) {
+//                    list.stream().forEach(lcCost -> {
+//                        if (lcCost.getCostAmountWriteoff() == null || lcCost.getCostAmount().compareTo(lcCost.getCostAmountWriteoff()) != 0 || lcCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
+//                            throw new RuntimeException();
+//                        }
+//                    });
+//                } else {
+//                    ifCostCompleteWriteoff = false;
+//                }
+//            } catch (Exception e) {
+//                ifCostCompleteWriteoff = false;
+//            }
+//            if (ifCostCompleteWriteoff) {
+//                LcOrder order = lcOrderService.getById(incomeCostList.getOrderId());
+//                order.setCostStatus("核销完毕");
+//                lcOrderService.modify(order);
+//            }
+//        }
 
-            int incomeStatus = 1;
-            for (int i = 0; i < billList.size(); i++) {
-                Map<String, Object> bill = billList.get(i);
-                if (bill.get("writeoff_complete") == null || (Integer) bill.get("writeoff_complete") == 0) {
-                    incomeStatus = 0;
-                    break;
-                }
-            }
-            LambdaQueryWrapper<LcIncome> lcIncomeLambdaQueryWrapper = Wrappers.<LcIncome>lambdaQuery();
-            lcIncomeLambdaQueryWrapper.eq(LcIncome::getOrderId, incomeCostList.getOrderId()).eq(LcIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNull(LcIncome::getDebitNoteId);
-            List<LcIncome> listNoBill = list(lcIncomeLambdaQueryWrapper);
-
-            LambdaQueryWrapper<LcIncome> lcIncomeWrapper = Wrappers.<LcIncome>lambdaQuery();
-            lcIncomeWrapper.eq(LcIncome::getOrderId, incomeCostList.getOrderId()).eq(LcIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNotNull(LcIncome::getDebitNoteId);
-            List<LcIncome> listCompleteBill = list(lcIncomeWrapper);
-            if (listNoBill.size() == 0 && listCompleteBill.size() > 0 && incomeStatus == 1) {
-                lcOrder.setIncomeStatus("核销完毕");
-                lcOrderService.modify(lcOrder);
-            }
-        }
-        if (StrUtil.isNotBlank(flag2.toString())) {
-            LcOrder order = lcOrderService.getById(incomeCostList.getOrderId());
-            if ("核销完毕".equals(order.getCostStatus())) {
-                order.setCostStatus("部分核销");
-                lcOrderService.modify(order);
-            }
-        } else {
-            LambdaQueryWrapper<LcCost> lcCostLambdaQueryWrapper = Wrappers.<LcCost>lambdaQuery();
-            lcCostLambdaQueryWrapper.eq(LcCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(LcCost::getOrderId, incomeCostList.getOrderId());
-            List<LcCost> list = lcCostService.list(lcCostLambdaQueryWrapper);
-            boolean ifCostCompleteWriteoff = true;
-            try {
-                if (list.size() > 0) {
-                    list.stream().forEach(lcCost -> {
-                        if (lcCost.getCostAmountWriteoff() == null || lcCost.getCostAmount().compareTo(lcCost.getCostAmountWriteoff()) != 0 || lcCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
-                            throw new RuntimeException();
-                        }
-                    });
-                } else {
-                    ifCostCompleteWriteoff = false;
-                }
-            } catch (Exception e) {
-                ifCostCompleteWriteoff = false;
-            }
-            if (ifCostCompleteWriteoff) {
-                LcOrder order = lcOrderService.getById(incomeCostList.getOrderId());
-                order.setCostStatus("核销完毕");
-                lcOrderService.modify(order);
-            }
-        }
+        //新 订单成本状态变更
+		 lcOrder.setRowUuid(UUID.randomUUID().toString());
+		 lcOrder.setCostStatus(lcCostService.getOrderCostStatusForLC(incomeCostList.getOrderId()));
+		 lcOrderService.updateById(lcOrder);
     }
 }

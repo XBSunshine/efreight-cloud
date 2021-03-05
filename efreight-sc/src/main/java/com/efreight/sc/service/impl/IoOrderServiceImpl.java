@@ -52,6 +52,8 @@ public class IoOrderServiceImpl extends ServiceImpl<IoOrderMapper, IoOrder> impl
 
     private final IoOrderShipperConsigneeService ioOrderShipperConsigneeService;
 
+    private final IoOrderContainerDetailsService orderContainerDetailsService;
+
     @Override
     public IPage getPage(Page page, IoOrder ioOrder) {
         ioOrder.setCurrentUserId(SecurityUtils.getUser().getId());
@@ -182,6 +184,16 @@ public class IoOrderServiceImpl extends ServiceImpl<IoOrderMapper, IoOrder> impl
             consignee.setOrderId(ioOrder.getOrderId());
             ioOrderShipperConsigneeService.save(consignee);
         }
+
+        //保存集装箱量明细
+        if (ioOrder.getContainerDetails().size() != 0) {
+            ioOrder.getContainerDetails().stream().forEach(orderContainerDetail -> {
+                orderContainerDetail.setOrderId(ioOrder.getOrderId());
+                orderContainerDetail.setOrgId(SecurityUtils.getUser().getOrgId());
+            });
+            orderContainerDetailsService.saveBatch(ioOrder.getContainerDetails());
+        }
+
         //保存日志
         IoLog ioLog = new IoLog();
         ioLog.setOrderId(ioOrder.getOrderId());
@@ -271,6 +283,20 @@ public class IoOrderServiceImpl extends ServiceImpl<IoOrderMapper, IoOrder> impl
                 ioOrderShipperConsigneeService.removeById(consignee.getOrderScId());
             }
         }
+
+        //保存集装箱量明细
+        LambdaQueryWrapper<IoOrderContainerDetails> orderContainerDetailsWrapper = Wrappers.lambdaQuery();
+        orderContainerDetailsWrapper.eq(IoOrderContainerDetails::getOrderId, order.getOrderId())
+                .eq(IoOrderContainerDetails::getOrgId, SecurityUtils.getUser().getOrgId());
+        orderContainerDetailsService.remove(orderContainerDetailsWrapper);
+        if (ioOrder.getContainerDetails() != null) {
+            ioOrder.getContainerDetails().stream().forEach(orderContainerDetail -> {
+                orderContainerDetail.setOrderId(order.getOrderId());
+                orderContainerDetail.setOrgId(SecurityUtils.getUser().getOrgId());
+            });
+            orderContainerDetailsService.saveBatch(ioOrder.getContainerDetails());
+        }
+
         //保存日志
         IoLog ioLog = new IoLog();
         ioLog.setOrderId(ioOrder.getOrderId());
@@ -321,6 +347,11 @@ public class IoOrderServiceImpl extends ServiceImpl<IoOrderMapper, IoOrder> impl
             consignee.setScPrintRemark("");
         }
         ioOrder.setConsignee(consignee);
+
+        LambdaQueryWrapper<IoOrderContainerDetails> orderContainerDetailsWrapper = Wrappers.lambdaQuery();
+        orderContainerDetailsWrapper.eq(IoOrderContainerDetails::getOrderId, orderId).eq(IoOrderContainerDetails::getOrgId, SecurityUtils.getUser().getOrgId());
+        List<IoOrderContainerDetails> orderContainerDetails = orderContainerDetailsService.list(orderContainerDetailsWrapper);
+        ioOrder.setContainerDetails(orderContainerDetails);
 
         return ioOrder;
     }
@@ -624,10 +655,10 @@ public class IoOrderServiceImpl extends ServiceImpl<IoOrderMapper, IoOrder> impl
         if (ioOrder.getCostRecorded() != null && !ioOrder.getCostRecorded()) {
             wrapper.and(i -> i.eq(IoOrder::getCostRecorded, ioOrder.getCostRecorded()).or(j -> j.isNull(IoOrder::getCostRecorded)));
         }
-        if (ioOrder.getOrderPermission() == 1) {
+        if (ioOrder.getOrderPermission() != null && ioOrder.getOrderPermission() == 1) {
             wrapper.and(i -> i.eq(IoOrder::getCreatorId, ioOrder.getCurrentUserId()).or(j -> j.eq(IoOrder::getSalesId, ioOrder.getCurrentUserId())).or(k -> k.eq(IoOrder::getServicerId, ioOrder.getCurrentUserId())));
         }
-        if (ioOrder.getOrderPermission() == 2) {
+        if (ioOrder.getOrderPermission() != null && ioOrder.getOrderPermission() == 2) {
             List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(ioOrder.getCurrentUserId());
             wrapper.and(i -> i.eq(IoOrder::getCreatorId, ioOrder.getCurrentUserId()).or(j -> j.eq(IoOrder::getSalesId, ioOrder.getCurrentUserId())).or(k -> k.eq(IoOrder::getServicerId, ioOrder.getCurrentUserId())).or(m -> m.in(IoOrder::getWorkgroupId, WorkgroupIds)));
         }
@@ -670,6 +701,30 @@ public class IoOrderServiceImpl extends ServiceImpl<IoOrderMapper, IoOrder> impl
             ioOrder.setPlanWeightStr(ioOrder.getPlanWeight() == null ? "" : FormatUtils.formatWithQWFNoBit(ioOrder.getPlanWeight()));
             ioOrder.setPlanChargeWeightStr(ioOrder.getPlanChargeWeight() == null ? "" : FormatUtils.formatWithQWFNoBit(ioOrder.getPlanChargeWeight()));
             ioOrder.setPlanVolumeStr(ioOrder.getPlanVolume() == null ? "" : FormatUtils.formatWithQWFNoBit(ioOrder.getPlanVolume()));
+
+            StringBuffer buffer = new StringBuffer();
+            LambdaQueryWrapper<IoOrderContainerDetails> orderContainerDetailsLambdaQueryWrapper = Wrappers.lambdaQuery();
+            orderContainerDetailsLambdaQueryWrapper.eq(IoOrderContainerDetails::getOrgId, SecurityUtils.getUser().getOrgId()).eq(IoOrderContainerDetails::getOrderId, ioOrder.getOrderId());
+            orderContainerDetailsService.list(orderContainerDetailsLambdaQueryWrapper).stream().forEach(orderContainerDetails -> {
+                if (buffer.length() == 0) {
+                    if (StrUtil.isNotBlank(orderContainerDetails.getContainerNumber()) && StrUtil.isNotBlank(orderContainerDetails.getContainerSealNo())) {
+                        buffer.append(orderContainerDetails.getContainerNumber()).append(" / ").append(orderContainerDetails.getContainerSealNo());
+                    } else if (StrUtil.isNotBlank(orderContainerDetails.getContainerNumber())) {
+                        buffer.append(orderContainerDetails.getContainerNumber());
+                    } else if (StrUtil.isNotBlank(orderContainerDetails.getContainerSealNo())) {
+                        buffer.append(orderContainerDetails.getContainerSealNo());
+                    }
+                } else {
+                    if (StrUtil.isNotBlank(orderContainerDetails.getContainerNumber()) && StrUtil.isNotBlank(orderContainerDetails.getContainerSealNo())) {
+                        buffer.append("\n").append(orderContainerDetails.getContainerNumber()).append(" / ").append(orderContainerDetails.getContainerSealNo());
+                    } else if (StrUtil.isNotBlank(orderContainerDetails.getContainerNumber())) {
+                        buffer.append("\n").append(orderContainerDetails.getContainerNumber());
+                    } else if (StrUtil.isNotBlank(orderContainerDetails.getContainerSealNo())) {
+                        buffer.append("\n").append(orderContainerDetails.getContainerSealNo());
+                    }
+                }
+            });
+            ioOrder.setContainerNumberAndContainerSealNo(buffer.toString());
         });
     }
 

@@ -205,6 +205,8 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 		    cost.setCreatorName(SecurityUtils.getUser().buildOptName());
 		    cost.setCreateTime(LocalDateTime.now());
 		    afCostMapper.insert(cost);
+		    //更新订单应付情况状态
+		    afOrderMapper.updateOrderCostStatus(SecurityUtils.getUser().getOrgId(), order.getOrderUuid(), "已录成本", UUID.randomUUID().toString());
 		    //更新订单日志
 		    LogBean logBean = new LogBean();
 	        logBean.setPageName("AE订单");
@@ -265,6 +267,15 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 			order.setOrderStatus("货物出重");
 		}else {
 			order.setOrderStatus("舱位确认");
+		}
+		
+		if("已录成本".equals(order.getCostStatus())) {
+			List<AfCost> list2 = baseMapper.getCostByWhere3(SecurityUtils.getUser().getOrgId(),bean.getOrderId());
+			if(list2!=null&&list2.size()>0) {
+				//todo
+			}else {
+				order.setCostStatus("未录成本");
+			}
 		}
 		order.setRowUuid(UUID.randomUUID().toString());
 		order.setEditorId(SecurityUtils.getUser().getId());

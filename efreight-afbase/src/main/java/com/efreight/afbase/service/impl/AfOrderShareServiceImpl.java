@@ -298,6 +298,7 @@ public class AfOrderShareServiceImpl extends ServiceImpl<AfOrderShareMapper, AfO
 			    shareOrderInbound.setConfirmPieces(orderInbound.getConfirmPieces());
 			    shareOrderInbound.setConfirmVolume(orderInbound.getConfirmVolume());
 			    shareOrderInbound.setConfirmWeight(orderInbound.getConfirmWeight());
+				shareOrderInbound.setConfirmDimensions(orderInbound.getConfirmDimensions());
 			    shareOrderInbound.setRowUuid(UUID.randomUUID().toString());
 			    if("财务锁账".equals(shareOrderInbound.getOrderStatus())) {
 			    	

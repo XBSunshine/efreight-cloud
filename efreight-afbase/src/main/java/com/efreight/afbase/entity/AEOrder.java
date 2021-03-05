@@ -73,6 +73,14 @@ public class AEOrder implements Serializable {
      */
     private String confirmDensity;
     /**
+     * 预报尺寸
+     */
+    private String planDimensions;
+    /**
+     * 实际尺寸
+     */
+    private String confirmDimensions;
+    /**
      * 航班号
      */
     private String expectFlight;

@@ -8,7 +8,6 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -54,4 +53,6 @@ public class CoopBillSettle implements Serializable {
     private String invoiceWriteoffDateEnd;
     private String salesCollaborativeName;
     private String startChargeTime;
+    private Boolean isNewBusiness;
+
 }

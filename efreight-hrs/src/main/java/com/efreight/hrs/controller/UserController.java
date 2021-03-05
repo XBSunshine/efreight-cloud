@@ -652,8 +652,8 @@ public class UserController {
 
     @Inner
     @GetMapping("/phone/{phone}")
-    public MessageInfo<UserBaseVO> findByUserPhone(@PathVariable("phone")String phone){
-        UserBaseVO userBase = userService.findByUserPhone(phone);
+    public MessageInfo<UserBaseVO> findByUserPhone(@PathVariable("phone")String phone, @RequestParam("internationalCountryCode") String internationalCountryCode){
+        UserBaseVO userBase = userService.findByUserPhone(phone, internationalCountryCode);
         return MessageInfo.ok(userBase);
     }
 

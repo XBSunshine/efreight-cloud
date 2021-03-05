@@ -90,5 +90,11 @@ public interface UserService extends IService<User> {
 
     List<Integer> getUserWorkgroupDetail(Integer userId);
 
-    UserBaseVO findByUserPhone(String phone);
+    /**
+     *  根据手机号+区号查询数据
+     * @param phone 手机号
+     * @param internationalCountryCode 区号
+     * @return
+     */
+    UserBaseVO findByUserPhone(String phone, String internationalCountryCode);
 }

@@ -77,6 +77,9 @@ public class AfVPrmCoop implements Serializable {
     @TableField("business_scope_TE")
     private String businessScopeTE;
 
+    @TableField("business_scope_TI")
+    private String businessScopeTI;
+
     @TableField("business_scope_LC")
     private String businessScopeLC;
 

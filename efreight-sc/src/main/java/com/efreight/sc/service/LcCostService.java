@@ -24,4 +24,6 @@ public interface LcCostService extends IService<LcCost> {
     void delete(Integer costId);
 
     LcCost view(Integer costId);
+
+    String getOrderCostStatusForLC(Integer orderId);
 }

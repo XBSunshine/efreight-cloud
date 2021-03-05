@@ -894,11 +894,48 @@ public class AfOperateOrder implements Serializable {
      * 搬运公司
      */
     private String outfieldDeliveryHandlingCompany;
-    
+    /**
+     * 入仓公司
+     */
+    private String wareName;
     //
     private Integer storagePieces;
     private BigDecimal storageWeight;
     private LocalDateTime storageTime;
     
     private String specialHandleCodeM3;
+    /**
+     * 货物性质
+     */
+    private String cargoType;
+    
+    /**
+     * 托盘材质
+     */
+    @TableField(exist = false)
+    private String palletMaterial;
+
+    /**
+     * 特货包装
+     */
+    @TableField(exist = false)
+    private String specialPackage;
+
+    /**
+     * 温度要求
+     */
+    @TableField(exist = false)
+    private String celsiusRequire;
+
+    /**
+     * 温度计
+     */
+    @TableField(exist = false)
+    private Integer thermometer;
+
+    /**
+     * 是否有温度要求
+     */
+    @TableField(exist = false)
+    private Boolean isCelsiusRequire;
 }

@@ -1,20 +1,15 @@
 package com.efreight.afbase.dao;
 
 
-import java.util.List;
-import java.util.Map;
-
-import com.efreight.afbase.entity.LogBean;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
-
-import com.efreight.afbase.entity.AwbNumber;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.efreight.afbase.entity.AwbNumber;
+import com.efreight.afbase.entity.LogBean;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
+import java.util.Map;
 
 public interface AwbNumberMapper extends BaseMapper<AwbNumber> {
 
@@ -37,7 +32,7 @@ public interface AwbNumberMapper extends BaseMapper<AwbNumber> {
             "</script>"})
     List<Map<String, Object>> selectCategory2(@Param("category") String category, @Param("businessScope") String businessScope);
     @Select({"<script>",
-    	"select param_text value,param_text label from af_category_pro\n",
+    	"select param_text value,param_text label,EDICode1 code from af_category_pro\n",
     	"		where ap_code=#{departureStation} and category_name = #{category}\n",
     	"ORDER BY param_ranking",
     "</script>"})
@@ -154,7 +149,7 @@ public interface AwbNumberMapper extends BaseMapper<AwbNumber> {
                     "\tpage_name pageName,\n" +
                     "\tpage_function pageFunction,\n" +
                     "\tCONCAT(order_number,' ', log_remark) logRemark,\n" +
-                    "\tcreator_name creatorName,\n" +
+                    "IF(LOCATE('@', creator_name) > 0, REPLACE(creator_name, substring_index(creator_name, ' ', -1), ''), creator_name) AS creatorName," +
                     "\tcreat_time creatTime\n" +
                     "FROM\n" +
                     "\taf_log \n" +
@@ -168,7 +163,7 @@ public interface AwbNumberMapper extends BaseMapper<AwbNumber> {
                     "\t'主单号管理' pageName,\n" +
                     "\t'主单创建' pageFunction,\n" +
                     "\tCONCAT('主运单号：', awb_number) logRemark,\n" +
-                    "\tcreator_name creatorName,\n" +
+                    "IF(LOCATE('@', creator_name) > 0, REPLACE(creator_name, substring_index(creator_name, ' ', -1), ''), creator_name) AS creatorName," +
                     "\tcreat_time creatTime\n" +
                     "FROM\n" +
                     "\taf_awb_number \n" +

@@ -358,12 +358,13 @@ public class CoopBillServiceImpl implements CoopBillService {
                     }
                     mailSendService.sendAttachmentsMailNew(false, recipientEmail, ccEmail, null, title, builder.toString(), fileList, null);
                 }
-                //更新 prm_coop_statement statement_mail_date = 当前时间
+                //更新 prm_coop_statement
                 CoopBillStatement cst = new CoopBillStatement();
                 cst.setStatement_id(statement_id);
                 cst.setStatementMailDate(new Date());
                 cst.setStatementMailSenderName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                 cst.setStatementMailSenderId(SecurityUtils.getUser().getId());
+                cst.setMailSendTime(new Date());
                 coopBillMapper.updateStatementMailDate(cst);
             }
         }
@@ -382,6 +383,130 @@ public class CoopBillServiceImpl implements CoopBillService {
             logService.doSave(bean);
         } catch (Exception e) {
             throw new RuntimeException("翌飞账单确认成功,日志更新失败!");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void autoSendBill(String billMonth) throws ClassNotFoundException, SQLException, IOException {
+        //查询需要自动发送邮件的账单
+        List<Integer> autoSendList = coopBillMapper.getAutoSendList(billMonth);
+        if(autoSendList != null && autoSendList.size() > 0){
+            for (int j = 0; j < autoSendList.size(); j++) {
+
+                Integer statement_id = autoSendList.get(j);
+                Map<String, Object> param = new HashMap<>();
+                param.put("statement_id", statement_id);
+                List<List<CoopBillEmail>> list = coopBillMapper.getPdfFields(param);
+                if (list != null && list.size() > 0) {
+                    if (list.get(0) != null && list.get(0).size() > 0) {
+                        CoopBillEmail coopBillEmail = new CoopBillEmail();
+                        List<CoopBillEmail> listDetail = new ArrayList<CoopBillEmail>();
+                        if (list != null && list.size() > 0) {
+                            //拼接PDF表头
+                            List<CoopBillEmail> list1 = list.get(0);
+                            coopBillEmail.setTxt_01(list1.get(0).getTxt_01());
+                            coopBillEmail.setTxt_02(list1.get(0).getTxt_02());
+                            coopBillEmail.setTxt_03(list1.get(0).getTxt_03());
+                            coopBillEmail.setTxt_04(list1.get(0).getTxt_04());
+                            coopBillEmail.setTxt_05(list1.get(0).getTxt_05());
+                            coopBillEmail.setTxt_06(list1.get(0).getTxt_06());
+                            coopBillEmail.setTxt_07(list1.get(0).getTxt_07());
+                            coopBillEmail.setTxt_08(list1.get(0).getTxt_08());
+                            coopBillEmail.setTxt_09(list1.get(0).getTxt_09());
+                            coopBillEmail.setTxt_10(list1.get(0).getTxt_10());
+                            coopBillEmail.setMail_cc(list1.get(0).getMail_cc());
+                            coopBillEmail.setMail_to(list1.get(0).getMail_to());
+                            coopBillEmail.setMailAttachment(list1.get(0).getMailAttachment());
+                            coopBillEmail.setMailTitle(list1.get(0).getMailTitle());
+                            coopBillEmail.setPrintTemplate(list1.get(0).getPrintTemplate());
+                            coopBillEmail.setMailBody(list1.get(0).getMailBody());
+
+                            //拼接账单明细
+                            listDetail = list.get(1);
+                        }
+                        if (coopBillEmail != null) {
+                            List<File> files = new ArrayList<File>();
+                            //生成PDF并放入附件
+                            String pdfPath = "";
+                            try {
+                                pdfPath = PDFUtils.fillTemplate(coopBillEmail, listDetail, parentPath);//生成PDF
+                                File file = new File(pdfPath);
+                                files.add(file);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            //是否有明细附件，如果有放入附件
+                            String filePathMimeName = "";
+                            ArrayList<Map<String, String>> fileList = new ArrayList<>();
+                            Map<String, String> map = new HashMap<>();
+                            map.put("path", PDFUtils.filePath + pdfPath);//账单路径放入map
+                            map.put("name", pdfPath.substring(pdfPath.lastIndexOf("/") + 1, pdfPath.length()));//账单附件名称放入map
+                            map.put("flag", "local");
+                            fileList.add(map);
+                            //从明细中拿附件路径和名称
+                            if (listDetail != null && listDetail.size() > 0) {
+                                for (int i = 0; i < listDetail.size(); i++) {
+                                    if (!StrUtil.isBlank(listDetail.get(i).getMailAttachmentUrl())) {
+                                        String mailAttachmentUrl = listDetail.get(i).getMailAttachmentUrl();
+                                        filePathMimeName = listDetail.get(i).getMailAttachmentName() + mailAttachmentUrl.substring(mailAttachmentUrl.lastIndexOf("."), mailAttachmentUrl.length());
+                                        Map<String, String> map1 = new HashMap<>();
+                                        map1.put("path", mailAttachmentUrl);//账单路径放入map
+                                        map1.put("name", filePathMimeName);//账单附件名称放入map
+                                        map1.put("flag", "upload");
+                                        fileList.add(map1);
+                                    }
+                                }
+                            }
+                            //生成邮件
+                            //生成收件人数组
+                            String recipientEmails = coopBillEmail.getMail_to();
+                            String[] recipientEmail = new String[0];
+                            if (recipientEmails != null && !"".equals(recipientEmails)) {
+                                recipientEmail = recipientEmails.split(",");
+                            }
+                            String title = coopBillEmail.getMailTitle();
+                            String mailBody = coopBillEmail.getMailBody();
+                            StringBuilder builder = new StringBuilder();
+                            builder.append(mailBody);
+                            //生成抄送人数组
+                            String ccEmails = coopBillEmail.getMail_cc();
+                            String[] ccEmail = null;
+                            if (ccEmails != null && !"".equals(ccEmails)) {
+                                ccEmail = ccEmails.split(",");
+                            }
+                            mailSendService.sendAttachmentsMailNew(false, recipientEmail, ccEmail, null, title, builder.toString(), fileList, null);
+                        }
+                        //更新 prm_coop_statement
+                        CoopBillStatement cst = new CoopBillStatement();
+                        cst.setStatement_id(statement_id);
+                        cst.setStatementMailDate(new Date());
+                        cst.setStatementMailSenderName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
+                        cst.setStatementMailSenderId(SecurityUtils.getUser().getId());
+                        cst.setConfirmSalerTime(new Date());
+                        cst.setConfirmSalerName("系统");
+                        cst.setMailSendTime(new Date());
+                        cst.setStatementStatus("账单已发送");
+                        coopBillMapper.updateStatementMailDate(cst);
+                    }
+                }
+
+                try {
+                    LogBean bean = new LogBean();
+                    bean.setOrg_id(SecurityUtils.getUser().getOrgId());
+                    bean.setDept_id(SecurityUtils.getUser().getDeptId());
+                    bean.setCreator_id(SecurityUtils.getUser().getId());
+                    bean.setCreate_time(new Date());
+                    bean.setCreator_name("");
+                    bean.setOp_type("自动发送账单");
+                    bean.setOp_level("高");
+                    bean.setOp_name("翌飞账单");
+                    bean.setOp_info("账单号" + statement_id + "已发送");
+                    logService.doSave(bean);
+                } catch (Exception e) {
+                    throw new RuntimeException("翌飞账单确认成功,日志更新失败!");
+                }
+            }
         }
     }
 
@@ -1010,6 +1135,7 @@ public class CoopBillServiceImpl implements CoopBillService {
                 if (coopUnConfirmBillDetailList != null && coopUnConfirmBillDetailList.size() > 0) {
                     for (int j = 0; j < coopUnConfirmBillDetailList.size(); j++) {
                         coopUnConfirmBillDetailList.get(j).setId(UUID.randomUUID().toString());
+                        coopUnConfirmBillDetailList.get(j).setIsSendMailAuto(paramList.get(i).getIsSendMailAuto());
                     }
                     paramList.get(i).setCoopUnConfirmBillDetail(coopUnConfirmBillDetailList);
                 } else {
@@ -1052,6 +1178,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         paramMap.put("invoiceWriteoffDateBegin", coopBillSettle.getInvoiceWriteoffDateBegin());
         paramMap.put("invoiceWriteoffDateEnd", coopBillSettle.getInvoiceWriteoffDateEnd());
         paramMap.put("paymentMethod", coopBillSettle.getPaymentMethod());
+        paramMap.put("isNewBusiness", coopBillSettle.getIsNewBusiness());
         if (coopBillSettle.getServiceNameOne() != null && !"".equals(coopBillSettle.getServiceNameOne()))
             paramMap.put("serviceNameOne", coopBillSettle.getServiceNameOne().split(","));
         if (coopBillSettle.getServiceNameTwo() != null && !"".equals(coopBillSettle.getServiceNameTwo()))
@@ -1083,6 +1210,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         paramMap.put("invoiceWriteoffDateBegin", coopBillSettle.getInvoiceWriteoffDateBegin());
         paramMap.put("invoiceWriteoffDateEnd", coopBillSettle.getInvoiceWriteoffDateEnd());
         paramMap.put("paymentMethod", coopBillSettle.getPaymentMethod());
+        paramMap.put("isNewBusiness", coopBillSettle.getIsNewBusiness());
         if (coopBillSettle.getServiceNameOne() != null && !"".equals(coopBillSettle.getServiceNameOne()))
             paramMap.put("serviceNameOne", coopBillSettle.getServiceNameOne().split(","));
         if (coopBillSettle.getServiceNameTwo() != null && !"".equals(coopBillSettle.getServiceNameTwo()))
@@ -1135,6 +1263,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         paramMap.put("invoiceWriteoffDateBegin", bean.getInvoiceWriteoffDateBegin());
         paramMap.put("invoiceWriteoffDateEnd", bean.getInvoiceWriteoffDateEnd());
         paramMap.put("paymentMethod", bean.getPaymentMethod());
+        paramMap.put("isNewBusiness", bean.getIsNewBusiness());
         if (bean.getServiceNameOne() != null && !"".equals(bean.getServiceNameOne()))
             paramMap.put("serviceNameOne", bean.getServiceNameOne().split(","));
         if (bean.getServiceNameTwo() != null && !"".equals(bean.getServiceNameTwo()))
@@ -1199,6 +1328,27 @@ public class CoopBillServiceImpl implements CoopBillService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirmBill(CoopUnConfirmBillGroup coopUnConfirmBillGroup) {
+        //更新 账单明细 的 结算金额2021-03-02添加
+        //1.如果账单金额 = SUM(明细金额)
+        if(coopUnConfirmBillGroup.getActuralCharge().equals(coopUnConfirmBillGroup.getActuralChargeAll())){
+            coopBillMapper.updateBillByStatementId(coopUnConfirmBillGroup.getStatementId());
+        }else{
+            //根据账单ID查询相应的账单明细
+            List<CoopUnConfirmBillDetail> detailList = coopBillMapper.getAllBillByStatementId(coopUnConfirmBillGroup.getStatementId());
+            Double diff = subDouble(coopUnConfirmBillGroup.getActuralCharge(),coopUnConfirmBillGroup.getActuralChargeAll());
+            if(detailList != null && detailList.size() == 1){
+                CoopUnConfirmBillDetail det = detailList.get(0);
+                det.setSettlementCharge(addDouble1(diff,det.getActuralCharge()));
+                coopBillMapper.updateBillByBillId(det);
+            }else if(detailList != null && detailList.size() > 1){
+                CoopUnConfirmBillDetail det = detailList.get(0);
+                det.setSettlementCharge(addDouble1(diff,det.getActuralCharge()));
+                coopBillMapper.updateBillByBillId(det);
+                //更新其他明细
+                coopBillMapper.updateOtherBillByBillId(det);
+            }
+        }
+
         coopUnConfirmBillGroup.setEditorId(SecurityUtils.getUser().getId());
         coopUnConfirmBillGroup.setEditTime(new Date());
         coopUnConfirmBillGroup.setEditorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
@@ -1221,6 +1371,7 @@ public class CoopBillServiceImpl implements CoopBillService {
                 coopUnConfirmBillGroup.setConfirmHeadOfficeTime(new Date());
                 coopUnConfirmBillGroup.setConfirmHeadOfficeName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                 coopUnConfirmBillGroup.setStatementStatus("账单已发送");
+                coopUnConfirmBillGroup.setMailSendTime(new Date());
                 coopBillMapper.updateStatementByStatementId1(coopUnConfirmBillGroup);
 
                 Map<String, Object> param = new HashMap<>();
@@ -1298,15 +1449,6 @@ public class CoopBillServiceImpl implements CoopBillService {
                             String mailBody = coopBillEmail.getMailBody();
                             StringBuilder builder = new StringBuilder();
                             builder.append(mailBody);
-
-
-                    /*String content="您好，<br>" +
-                            "账单请参看附件，如有问题随时与我们联系，<br>"+
-                            "此邮件为系统自动邮件，请全部答复或联系我们的销售人员，<br>" +
-                            "谢谢。<br>";
-                    String web="<br>Web: www.efreight.cn";
-                    builder.append(content);
-                    builder.append(web);*/
                             //生成抄送人数组
                             String ccEmails = coopBillEmail.getMail_cc();
                             String[] ccEmail = null;
@@ -1347,6 +1489,7 @@ public class CoopBillServiceImpl implements CoopBillService {
                     coopUnConfirmBillGroup.setConfirmSalerTime(new Date());
                     coopUnConfirmBillGroup.setConfirmSalerName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
                     coopUnConfirmBillGroup.setStatementStatus("账单已发送");
+                    coopUnConfirmBillGroup.setMailSendTime(new Date());
                     coopBillMapper.updateStatementByStatementId2(coopUnConfirmBillGroup);
 
                     Map<String, Object> param = new HashMap<>();
@@ -1584,6 +1727,7 @@ public class CoopBillServiceImpl implements CoopBillService {
             coopBillStatement.setInvoiceMailTo(coopManualBill.getInvoiceMailTo());
             coopBillStatement.setInvoiceRemark(coopManualBill.getInvoiceRemark());
             coopBillStatement.setBillManualMailTo(coopManualBill.getBillManualMailTo());
+            coopBillStatement.setBillTemplate(coopManualBill.getBillTemplate());
             //获取选择月份下属于本签约公司的账单号的最大值
             String currentBillNumber = coopBillMapper.getCurrentBillStatementNumber(coopBillStatement);
             String billNumber = "";
@@ -1743,6 +1887,14 @@ public class CoopBillServiceImpl implements CoopBillService {
                         e.printStackTrace();
                     }
                 }
+                //更新 prm_coop_statement
+                CoopBillStatement cst = new CoopBillStatement();
+                cst.setStatement_id(statement_id);
+                cst.setStatementMailDate(new Date());
+                cst.setStatementMailSenderName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
+                cst.setStatementMailSenderId(SecurityUtils.getUser().getId());
+                cst.setMailSendTime(new Date());
+                coopBillMapper.updateStatementMailDate(cst);
             }
         }
     }
@@ -1773,5 +1925,23 @@ public class CoopBillServiceImpl implements CoopBillService {
         }
         Assert.hasLength(delimiter, "未指定分割符!");
         return str.trim().split(delimiter);
+    }
+
+    public static double addDouble(double m1, double m2) {
+        BigDecimal p1 = new BigDecimal(Double.toString(m1));
+        BigDecimal p2 = new BigDecimal(Double.toString(m2));
+        return p1.add(p2).doubleValue();
+    }
+
+    public static BigDecimal addDouble1(double m1, BigDecimal m2) {
+        BigDecimal p1 = new BigDecimal(Double.toString(m1));
+        //BigDecimal p2 = new BigDecimal(Double.toString(m2));
+        return p1.add(m2);
+    }
+
+    public static double subDouble(double m1, double m2) {
+        BigDecimal p1 = new BigDecimal(Double.toString(m1));
+        BigDecimal p2 = new BigDecimal(Double.toString(m2));
+        return p1.subtract(p2).doubleValue();
     }
 }

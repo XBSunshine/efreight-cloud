@@ -60,9 +60,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
     		pageSize = 10;
     	EUserDetails user = SecurityUtils.getUser();
         String apiType = APIType.AE_CD_IMP_HAWB;
-        OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
+		String type = APIType.getAPIType(apiType);
+		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
         if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
     	List<FhlOperation> list = new ArrayList<FhlOperation>();
 
@@ -179,9 +180,11 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 			pageSize = 10;
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.AE_CD_IMP_HAWB;
+		String type = APIType.getAPIType(apiType);
+		
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		List<BranchLine> list = new ArrayList<BranchLine>();
 		
@@ -270,9 +273,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 			pageSize = 10;
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.ALL_WORK;
+		String type = APIType.getAPIType(apiType);
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		List<OperationLook> list = new ArrayList<OperationLook>();
  
@@ -340,8 +344,9 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.ALL_WORK;
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
+		String type = APIType.getAPIType(apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		List<Map<String,Object>> list = new ArrayList<Map<String,Object>>();
 		
@@ -382,8 +387,9 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.ALL_WORK;
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
+		String type = APIType.getAPIType(apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		List<Map<String,Object>> list = new ArrayList<Map<String,Object>>();
 		
@@ -460,8 +466,9 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		EUserDetails user = SecurityUtils.getUser();
         String apiType = APIType.AE_CD_IMP_HAWB;
         OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
-        if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+		String type = APIType.getAPIType(apiType);
+		if (config == null ) {
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
         StringBuilder builder = new StringBuilder();
     	builder.append("<Service>");
@@ -546,7 +553,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		        	order.setOrderCode(code + "0001");
 		        } else {
 		        	if ((code + "9999").equals(codeList.get(0).getOrderCode())) {
-		        		throw new RuntimeException("每天最多可以创建9999个AI订单");
+		        		throw new CheckedException("每天最多可以创建9999个AI订单");
 		            } else {
 		                String str = codeList.get(0).getOrderCode();
 		                str = str.substring(str.length() - 4);
@@ -659,7 +666,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		        }
 			}
 		}else {
-			throw new RuntimeException(resultMap.get("ResultContent"));
+			throw new CheckedException(resultMap.get("ResultContent"));
 		}
 		return true;
 	}
@@ -668,9 +675,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 	public Boolean doDelete(FhlOperation bean) {
 		EUserDetails user = SecurityUtils.getUser();
         String apiType = APIType.AE_CD_IMP_HAWB;
-        OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
+		String type = APIType.getAPIType(apiType);
+		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
         if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
         StringBuilder builder = new StringBuilder();
     	builder.append("<Service>");
@@ -702,7 +710,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 			String AwbNumber=bean.getAwbnumber().substring(0,3)+"-"+bean.getAwbnumber().substring(3);
 			baseMapper.deleteFhl(user.getOrgId(),AwbNumber,bean.getHwbnumber());
 		}else {
-			throw new RuntimeException(resultMap.get("ResultContent"));
+			throw new CheckedException(resultMap.get("ResultContent"));
 		}
 		return true;
 	}
@@ -710,9 +718,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 	public Boolean doDeclare(FhlOperation bean) {
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.AE_CD_IMP_HAWB;
+		String type = APIType.getAPIType(apiType);
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		StringBuilder builder = new StringBuilder();
 		builder.append("<Service>");
@@ -742,7 +751,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		if ("1".equals(resultMap.get("ResultCode")) || "010601".equals(resultMap.get("ResultCode"))  ) {
 			
 		}else {
-			throw new RuntimeException(resultMap.get("ResultContent"));
+			throw new CheckedException(resultMap.get("ResultContent"));
 		}
 		return true;
 	}
@@ -802,9 +811,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 	public Boolean doMerge(BranchLine bean) {
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.AE_CD_IMP_HAWB;
+		String type = APIType.getAPIType(apiType);
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		String strs[]=bean.getRearchid().split(",");
 		StringBuilder builder = new StringBuilder();
@@ -843,7 +853,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		if ("1".equals(resultMap.get("ResultCode")) || "010601".equals(resultMap.get("ResultCode"))  ) {
 			
 		}else {
-			throw new RuntimeException(resultMap.get("ResultContent"));
+			throw new CheckedException(resultMap.get("ResultContent"));
 		}
 		return true;
 	}
@@ -851,9 +861,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 	public Boolean doReset(BranchLine bean) {
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.AE_CD_IMP_HAWB;
+		String type = APIType.getAPIType(apiType);
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		StringBuilder builder = new StringBuilder();
 		builder.append("<Service>");
@@ -889,7 +900,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		if ("1".equals(resultMap.get("ResultCode")) || "010601".equals(resultMap.get("ResultCode"))  ) {
 			
 		}else {
-			throw new RuntimeException(resultMap.get("ResultContent"));
+			throw new CheckedException(resultMap.get("ResultContent"));
 		}
 		return true;
 	}
@@ -897,9 +908,10 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 	public Boolean doSplit(BranchLine bean) {
 		EUserDetails user = SecurityUtils.getUser();
 		String apiType = APIType.AE_CD_IMP_HAWB;
+		String type = APIType.getAPIType(apiType);
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {
-			throw new CheckedException("没有配置，请联系管理员");
+			throw new CheckedException("对不起，贵司没有开通"+type+"的权限，请联系管理员开通相关权限！");
 		}
 		StringBuilder builder = new StringBuilder();
 		builder.append("<Service>");
@@ -936,7 +948,7 @@ public class FhlOperationServiceImpl extends ServiceImpl<FhlOperationMapper, AfO
 		if ("1".equals(resultMap.get("ResultCode")) || "010601".equals(resultMap.get("ResultCode"))  ) {
 			
 		}else {
-			throw new RuntimeException(resultMap.get("ResultContent"));
+			throw new CheckedException(resultMap.get("ResultContent"));
 		}
 		return true;
 	}

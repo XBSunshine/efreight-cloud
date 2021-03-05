@@ -2,11 +2,8 @@ package com.efreight.afbase.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.efreight.afbase.entity.AfCost;
-import com.efreight.afbase.entity.CssCostWriteoffDetail;
-import com.efreight.afbase.entity.CssPayment;
+import com.efreight.afbase.entity.*;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.efreight.afbase.entity.PaymentBatchDetail;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -54,4 +51,8 @@ public interface CssPaymentService extends IService<CssPayment> {
     void downloadModel();
 
     void savePaymentBatch(PaymentBatchDetail paymentBatchDetail);
+
+    void writeoff(CssCostInvoiceDetail cssCostInvoiceDetail);
+
+    CssPayment checkIfCanWriteoff(Integer paymentId, String rowUuid);
 }

@@ -131,4 +131,14 @@ public interface CoopBillMapper {
     void insertBill(CoopUnConfirmBillDetail coopUnConfirmBillDetail);
 
     String getEmailByContactId(CoopBillStatement coopBillStatement);
+
+    List<Integer> getAutoSendList(String billMonth);
+
+    List<CoopUnConfirmBillDetail> getAllBillByStatementId(Integer statementId);
+
+    void updateBillByStatementId(Integer statementId);
+
+    void updateBillByBillId(CoopUnConfirmBillDetail det);
+
+    void updateOtherBillByBillId(CoopUnConfirmBillDetail det);
 }

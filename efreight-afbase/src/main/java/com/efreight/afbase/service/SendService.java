@@ -26,5 +26,11 @@ public interface SendService extends IService<AfOrder> {
 	Map<String, Object> doOneDecleare_ForSend(String hasMwb, String orderUUID, String letterIds);
 	Map<String, Object> doMft2201_Decleare(String hasMwb, String orderUUID, String letterIds);
 	Map<String, Object> doEAWB_AMS(String hasMwb, String orderUUID, String letterIds);
+	Map<String, Object> doEAWB_TB(String hasMwb, String orderUUID, String letterIds);
 	Map<String, Object> doSendGoodsName(Integer orderId, String orderUUID,String awbNumber);
+    Map<String, Object> doMft2201_Delete(String awbNumber,String hawbNumber, String orderCode,String contactTel, String deleteReason);
+    Map<String, Object> doSendVEEntry(Integer entryOrderId);
+    Map<String, Object> doVEEntryConfirm(Integer entryOrderId);
+    Map<String, Object> doSendVEAppoint(Integer entryOrderId);
+    Map<String, Object> doVEEntryQuery(Integer entryOrderId);
 }

@@ -84,5 +84,7 @@ public class OrgOrderConfig implements Serializable {
     private Integer rountingSign;
     //航线签单支持的服务产品
     private String rountingSignBusinessProduct;
+    //预配舱单是否暂存（AE）,1：是，0否，默认否
+    private  Boolean mft2201Save;
 
 }

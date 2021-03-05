@@ -23,13 +23,13 @@ public interface OrderFilesService extends IService<OrderFiles> {
 
     void insertBatch(OrderFiles orderFiles);
 
-    void delete(Integer orderFilesId,String businessScope);
+    void delete(OrderFiles bean);
 
     List<OrderFiles> getList(Integer orderId,String businessScope);
     List<OrderFiles> getListByWhere(OrderFiles orderFiles);
     
 
-    void showFile(Integer orderFilesId,String businessScope,Integer isDisplay);
+    void showFile(OrderFiles bean);
 
     void insertBatchForAF(List<OrderFiles> orderFilesList);
 }

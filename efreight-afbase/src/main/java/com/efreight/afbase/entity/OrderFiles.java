@@ -89,5 +89,7 @@ public class OrderFiles implements Serializable {
 
     private Integer isDisplay;
 
-
+    private transient String pageName;
+    private transient String orderCode;
+    private transient String orderUuid;
 }

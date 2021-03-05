@@ -389,22 +389,21 @@ public class OrderLockOrUnlockServiceImpl implements OrderLockOrUnlockService {
                 } else {
                     orderStatus = "订单创建";
                 }
+            }else {
+                if (order.getDeliverySignDate() != null) {
+                    orderStatus = "目的港签收";
+                } else if (order.getArrivalCustomsClearanceDate() != null) {
+                    orderStatus = "目的港放行";
+                } else if (order.getArrivalCustomsInspectionDate() != null) {
+                    orderStatus = "目的港查验";
+                } else if (order.getCustomsClearanceDate() != null) {
+                    orderStatus = "海关放行";
+                } else if (order.getCustomsInspectionDate() != null) {
+                    orderStatus = "海关查验";
+                } else {
+                    orderStatus = "订单创建";
+                }
             }
-//            else {
-//                if (order.getDeliverySignDate() != null) {
-//                    orderStatus = "派送签收";
-//                } else if (order.getOutboundDate() != null) {
-//                    orderStatus = "货物出库";
-//                } else if (order.getCustomsClearanceDate() != null) {
-//                    orderStatus = "海关放行";
-//                } else if (order.getCustomsInspectionDate() != null) {
-//                    orderStatus = "海关查验";
-//                } else if (order.getInboundDate() != null) {
-//                    orderStatus = "货物入库";
-//                } else {
-//                    orderStatus = "订单创建";
-//                }
-//            }
             orderLockOrUnlockMapper.unlockOrderForTC(orderId, SecurityUtils.getUser().getOrgId(), LocalDateTime.now(), SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail(), SecurityUtils.getUser().getId(), UUID.randomUUID().toString(), orderStatus);
             //保存日志
             log.setOrderNumber(order.getOrderCode());

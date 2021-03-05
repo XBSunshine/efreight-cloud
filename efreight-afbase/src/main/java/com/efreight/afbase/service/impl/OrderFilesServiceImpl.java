@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.efreight.afbase.entity.LogBean;
 import com.efreight.afbase.entity.OrderFiles;
 import com.efreight.afbase.entity.ScOrderFiles;
 import com.efreight.afbase.entity.TcOrderFiles;
 import com.efreight.afbase.dao.OrderFilesMapper;
 import com.efreight.afbase.dao.ScOrderFilesMapper;
 import com.efreight.afbase.dao.TcOrderFilesMapper;
+import com.efreight.afbase.service.LogService;
 import com.efreight.afbase.service.OrderFilesService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.common.core.feign.RemoteServiceToSC;
@@ -44,6 +46,7 @@ public class OrderFilesServiceImpl extends ServiceImpl<OrderFilesMapper, OrderFi
     private final ScOrderFilesMapper scOrderFilesMapper;
     private final TcOrderFilesMapper tcOrderFilesMapper;
     private final RemoteServiceToSC remoteServiceToSC;
+    private final LogService logService;
 
     @Override
     public IPage getPage(Page page, OrderFiles orderFiles) {
@@ -122,6 +125,17 @@ public class OrderFilesServiceImpl extends ServiceImpl<OrderFilesMapper, OrderFi
                 throw new RuntimeException(messageInfo.getMessageInfo());
             }
         }
+      //添加日志
+//  		LogBean logBean = new LogBean();
+//  		logBean.setPageName(orderFiles.getPageName());
+//  		logBean.setPageFunction("上传电子单证");
+//  		logBean.setBusinessScope(businessScope);
+//  		
+//  		logBean.setOrderNumber(orderFiles.getOrderCode());
+//  		logBean.setLogRemark("附件名称："+orderFiles.getFileName());
+//  		logBean.setOrderId(orderFiles.getOrderId());
+//  		logBean.setOrderUuid(orderFiles.getOrderUuid());
+//  		logService.saveLog(logBean);
     }
 
     @Override
@@ -231,10 +245,23 @@ public class OrderFilesServiceImpl extends ServiceImpl<OrderFilesMapper, OrderFi
                 }
             }
         }
+      //添加日志
+//  		LogBean logBean = new LogBean();
+//  		logBean.setPageName(orderFiles.getPageName());
+//  		logBean.setPageFunction("批量上传");
+//  		logBean.setBusinessScope(businessScope);
+//  		
+//  		logBean.setOrderNumber(orderFiles.getOrderCode());
+//  		logBean.setLogRemark("总共上传"+orderFiles.getFileLists().size()+"个电子单证");
+//  		logBean.setOrderId(orderFiles.getOrderId());
+//  		logBean.setOrderUuid(orderFiles.getOrderUuid());
+//  		logService.saveLog(logBean);
     }
 
     @Override
-    public void delete(Integer orderFilesId, String businessScope) {
+    public void delete(OrderFiles bean) {
+    	Integer orderFilesId=bean.getOrderFileId();
+    	String businessScope=bean.getBusinessScope();
         if ("AE".equals(businessScope) || "AI".equals(businessScope)) {
             removeById(orderFilesId);
         } else if ("SE".equals(businessScope) || "SI".equals(businessScope)) {
@@ -251,10 +278,25 @@ public class OrderFilesServiceImpl extends ServiceImpl<OrderFilesMapper, OrderFi
                 throw new RuntimeException(messageInfo.getMessageInfo());
             }
         }
+        
+      //添加日志
+//  		LogBean logBean = new LogBean();
+//  		logBean.setPageName(bean.getPageName());
+//  		logBean.setPageFunction("删除电子单证");
+//  		logBean.setBusinessScope(businessScope);
+//  		
+//  		logBean.setOrderNumber(bean.getOrderCode());
+//  		logBean.setLogRemark("附件名称："+bean.getFileName());
+//  		logBean.setOrderId(bean.getOrderId());
+//  		logBean.setOrderUuid(bean.getOrderUuid());
+//  		logService.saveLog(logBean);
     }
 
     @Override
-    public void showFile(Integer orderFilesId, String businessScope, Integer isDisplay) {
+    public void showFile(OrderFiles bean) {
+    	Integer orderFilesId=bean.getOrderFileId();
+    	Integer isDisplay=bean.getIsDisplay();
+    	String businessScope=bean.getBusinessScope();
         if ("AE".equals(businessScope) || "AI".equals(businessScope)) {
             baseMapper.upDateShowFile(orderFilesId, isDisplay);
         } else if ("SE".equals(businessScope) || "SI".equals(businessScope)) {
@@ -289,6 +331,23 @@ public class OrderFilesServiceImpl extends ServiceImpl<OrderFilesMapper, OrderFi
                 throw new RuntimeException(messageInfo.getMessageInfo());
             }
         }
+      //添加日志
+//  		LogBean logBean = new LogBean();
+//  		logBean.setPageName(bean.getPageName());
+//  		String function="";
+//  		if (isDisplay==1) {
+//  			function="显示";
+//		} else {
+//			function="不显示";
+//		}
+//  		logBean.setPageFunction(function);
+//  		logBean.setBusinessScope(businessScope);
+//  		
+//  		logBean.setOrderNumber(bean.getOrderCode());
+//  		logBean.setLogRemark("附件名称："+bean.getFileName());
+//  		logBean.setOrderId(bean.getOrderId());
+//  		logBean.setOrderUuid(bean.getOrderUuid());
+//  		logService.saveLog(logBean);
     }
 
     @Override

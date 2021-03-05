@@ -43,6 +43,8 @@ public class CssPReportSettleAfExcelSEForConstitute implements Serializable{
 	private String deptName;
 	
 	private String servicerName;
+
+	private String workgroupName;
 	
 	private String goodsType;
 	

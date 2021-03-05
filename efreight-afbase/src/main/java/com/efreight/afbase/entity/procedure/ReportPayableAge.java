@@ -27,4 +27,10 @@ public class ReportPayableAge implements Serializable {
     
     private Integer otherOrg;
 
+    private String salesName;
+
+    private Integer currentUserId;
+
+    private Integer orderPermission;
+
 }

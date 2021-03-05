@@ -65,7 +65,7 @@ public class OrgCouldUserServiceImpl extends ServiceImpl<OrgCouldUserMapper, Org
 		if(excelUser!=null&&excelUser.size()>0) {
 			list = excelUser.stream().map(o->{
 				OrgCouldUserExcel excel = new OrgCouldUserExcel();
-				excel.setOrgType(o.getOrgType()==1?"个人":"公司");
+				excel.setOrgType(o.getOrgType()==1?"公司":"个人");
 				excel.setOrgCode(o.getOrgCode());
 				excel.setOrgName(o.getOrgName());
 //				excel.setOneStopCode(o.getOneStopCode());
@@ -73,7 +73,11 @@ public class OrgCouldUserServiceImpl extends ServiceImpl<OrgCouldUserMapper, Org
 				if(o.getIntendedUser() == null){
 					o.setIntendedUser(-1);
 				}
-				if(o.getOrgEditionName().indexOf("内部")>0 || "标准版".equals(o.getOrgEditionName())  || "专业版".equals(o.getOrgEditionName())){
+				if(o.getOrgEditionName().indexOf("内部")>0
+						|| "标准版".equals(o.getOrgEditionName())
+						|| "旗舰版".equals(o.getOrgEditionName())
+						|| "创业版".equals(o.getOrgEditionName())
+						|| "专业版".equals(o.getOrgEditionName())){
 					flagUser = false;
 				}
 
@@ -119,6 +123,7 @@ public class OrgCouldUserServiceImpl extends ServiceImpl<OrgCouldUserMapper, Org
 				excel.setAdminEmail(o.getAdminEmail());
 				excel.setAdminTel(o.getAdminTel());
 				excel.setOrgRemark(o.getOrgRemark());
+				excel.setOrgFromRemark(o.getOrgFromRemark());
 			  return excel;
 			}).collect(Collectors.toList());
 			

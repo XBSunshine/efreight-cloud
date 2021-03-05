@@ -90,7 +90,7 @@ public class CssPReportCustomerContributionServiceImpl implements CssPReportCust
     	}else {
     		bean.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
-		if("TE".equals(bean.getBusinessScope())) {
+		if("TE".equals(bean.getBusinessScope()) || "TI".equals(bean.getBusinessScope())) {
 			return mapper.getTcList(bean);
 		}else if("LC".equals(bean.getBusinessScope())) {
 			return mapper.getLcList(bean);
@@ -221,7 +221,7 @@ public class CssPReportCustomerContributionServiceImpl implements CssPReportCust
 		if(StringUtils.isEmpty(bean.getCustomerName())) {
 			bean.setCustomerName(null);
 		}
-		if("TE".equals(bean.getBusinessScope())) {
+		if("TE".equals(bean.getBusinessScope()) || "TI".equals(bean.getBusinessScope())) {
 			return mapper.getTcListDetail(bean);
 		}else if("LC".equals(bean.getBusinessScope())) {
 			return mapper.getLcListDetail(bean);

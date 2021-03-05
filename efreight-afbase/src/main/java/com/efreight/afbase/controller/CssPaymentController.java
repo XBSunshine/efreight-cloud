@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.efreight.afbase.entity.*;
 import com.efreight.afbase.service.CssPaymentService;
+import com.efreight.common.core.annotation.ResponseResult;
 import com.efreight.common.core.utils.ExcelExportUtils;
 import com.efreight.common.core.utils.FieldValUtils;
 import com.efreight.common.security.util.MessageInfo;
@@ -228,11 +229,18 @@ public class CssPaymentController {
                             } else {
                                 map.put("createTime", "");
                             }
-                        } else if ("creatorName".equals(colunmStrs[j])) {
-                            if (!StringUtils.isEmpty(cssPayment.getCreatorName())) {
-                                map.put("creatorName", cssPayment.getCreatorName().split(" ")[0]);
+                        } else if ("invoiceTime".equals(colunmStrs[j])) {
+                            if (cssPayment.getInvoiceTime() != null) {
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                                map.put("invoiceTime", formatter.format(cssPayment.getInvoiceTime()));
                             } else {
-                                map.put("creatorName", "");
+                                map.put("invoiceTime", "");
+                            }
+                        } else if ("creatorName".equals(colunmStrs[j]) || "invoiceCreatorName".equals(colunmStrs[j])) {
+                            if (!StringUtils.isEmpty(FieldValUtils.getFieldValueByFieldName(colunmStrs[j], cssPayment))) {
+                                map.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j], cssPayment).split(" ")[0]);
+                            } else {
+                                map.put(colunmStrs[j], "");
                             }
                         } else {
                             map.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j], cssPayment));
@@ -240,6 +248,7 @@ public class CssPaymentController {
                     }
                     listExcel.add(map);
                 }
+                listExcel.get(list.size() - 1).put(colunmStrs[0], "合计：");
             }
 
             ExcelExportUtils u = new ExcelExportUtils();
@@ -302,7 +311,6 @@ public class CssPaymentController {
 
     /**
      * 批量对账模板下载
-     *
      */
     @PostMapping("/downloadModel")
     public void downloadModel() {
@@ -330,5 +338,27 @@ public class CssPaymentController {
         }
     }
 
+    /**
+     * 账单层面核销
+     *
+     * @param cssCostInvoiceDetail
+     */
+    @PostMapping("/writeoff")
+    @ResponseResult
+    public void writeoff(@RequestBody CssCostInvoiceDetail cssCostInvoiceDetail) {
+        cssPaymentService.writeoff(cssCostInvoiceDetail);
+    }
+
+    /**
+     * 校验账单是否满足直接核销条件
+     *
+     * @param paymentId
+     * @param rowUuid
+     */
+    @GetMapping("/checkIfCanWriteoff/{paymentId}/{rowUuid}")
+    @ResponseResult
+    public void checkIfCanWriteoff(@PathVariable("paymentId") Integer paymentId, @PathVariable("rowUuid") String rowUuid) {
+        cssPaymentService.checkIfCanWriteoff(paymentId, rowUuid);
+    }
 }
 

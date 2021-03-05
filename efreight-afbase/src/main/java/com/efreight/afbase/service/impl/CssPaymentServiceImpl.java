@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.efreight.afbase.dao.CssCostInvoiceMapper;
 import com.efreight.afbase.entity.*;
-import com.efreight.afbase.dao.CssCostWriteoffMapper;
 import com.efreight.afbase.dao.CssPaymentMapper;
 import com.efreight.afbase.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -66,9 +66,13 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
     private final IoCostService ioCostService;
     private final RemoteCoopService remoteCoopService;
 
-    private final CssCostWriteoffMapper cssCostWriteoffMapper;
-
     private final ServiceService serviceService;
+
+    private final CssCostInvoiceMapper cssCostInvoiceMapper;
+
+    private final CssCostInvoiceDetailService cssCostInvoiceDetailService;
+
+    private final CssCostInvoiceDetailWriteoffService cssCostInvoiceDetailWriteoffService;
 
     @Override
     public IPage getPage(Page page, CssPayment cssPayment) {
@@ -145,6 +149,40 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 wrapper.in(CssPayment::getPaymentId, paymentIds);
             }
         }
+        if (StrUtil.isNotBlank(cssPayment.getInvoiceNum())) {
+            LambdaQueryWrapper<CssCostInvoiceDetail> cssCostInvoiceDetailWrapper = Wrappers.<CssCostInvoiceDetail>lambdaQuery();
+            cssCostInvoiceDetailWrapper.eq(CssCostInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId());
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceNum())) {
+                cssCostInvoiceDetailWrapper.like(CssCostInvoiceDetail::getInvoiceNum, cssPayment.getInvoiceNum());
+            }
+            List<Integer> paymentIds = cssCostInvoiceDetailService.list(cssCostInvoiceDetailWrapper).stream().map(CssCostInvoiceDetail::getPaymentId).distinct().collect(Collectors.toList());
+            if (paymentIds.size() == 0) {
+                page.setTotal(0);
+                page.setRecords(new ArrayList());
+                return page;
+            }
+            wrapper.in(CssPayment::getPaymentId, paymentIds);
+        }
+        if (StrUtil.isNotBlank(cssPayment.getInvoiceCreatorName()) || StrUtil.isNotBlank(cssPayment.getInvoiceDateStart()) || StrUtil.isNotBlank(cssPayment.getInvoiceDateEnd())) {
+            LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+            cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId());
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceCreatorName())) {
+                cssCostInvoiceWrapper.like(CssCostInvoice::getCreatorName, cssPayment.getInvoiceCreatorName());
+            }
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceDateStart())) {
+                cssCostInvoiceWrapper.ge(CssCostInvoice::getCreateTime, cssPayment.getInvoiceDateStart());
+            }
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceDateEnd())) {
+                cssCostInvoiceWrapper.le(CssCostInvoice::getCreateTime, cssPayment.getInvoiceDateEnd());
+            }
+            List<Integer> paymentIds = cssCostInvoiceMapper.selectList(cssCostInvoiceWrapper).stream().map(CssCostInvoice::getPaymentId).collect(Collectors.toList());
+            if (paymentIds.size() == 0) {
+                page.setTotal(0);
+                page.setRecords(new ArrayList());
+                return page;
+            }
+            wrapper.in(CssPayment::getPaymentId, paymentIds);
+        }
         wrapper.eq(CssPayment::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPayment::getBusinessScope, cssPayment.getBusinessScope());
         if (StrUtil.isNotBlank(cssPayment.getCurrency())) {
             wrapper.eq(CssPayment::getCurrency, cssPayment.getCurrency());
@@ -161,47 +199,67 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
         if (cssPayment.getPaymentDateEnd() != null) {
             wrapper.le(CssPayment::getPaymentDate, cssPayment.getPaymentDateEnd());
         }
-        if (StrUtil.isNotBlank(cssPayment.getWriteoffCompletes())) {
-            if (cssPayment.getWriteoffCompletes().contains("2")) {
-                wrapper.and(i -> i.in(CssPayment::getWriteoffComplete, cssPayment.getWriteoffCompletes().split(",")).or(j -> j.isNull(CssPayment::getWriteoffComplete)));
-            } else {
-                wrapper.in(CssPayment::getWriteoffComplete, cssPayment.getWriteoffCompletes().split(","));
-            }
-        }
         if (StrUtil.isNotBlank(cssPayment.getCreatorName())) {
             wrapper.like(CssPayment::getCreatorName, cssPayment.getCreatorName());
         }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceNum())) {
-            wrapper.like(CssPayment::getInvoiceNum, cssPayment.getInvoiceNum());
+        if (StrUtil.isNotBlank(cssPayment.getWriteoffCompletes())) {
+            StringBuffer lastSql = new StringBuffer(" and (");
+            if (cssPayment.getWriteoffCompletes().contains("2")) {
+                lastSql.append(" payment_id not in (select payment_id from css_cost_invoice where org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("3")) {
+                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=-1 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("4")) {
+                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=0 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("5")) {
+                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=1 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("0")) {
+                lastSql.append(" writeoff_complete=0 or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("1")) {
+                lastSql.append(" writeoff_complete=1 or");
+            }
+            wrapper.last(lastSql.substring(0, lastSql.length() - 3) + ") ORDER BY payment_num DESC");
+        } else {
+            wrapper.orderByDesc(CssPayment::getPaymentNum);
         }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceTitle())) {
-            wrapper.like(CssPayment::getInvoiceTitle, cssPayment.getInvoiceTitle());
-        }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceDateStart())) {
-            wrapper.ge(CssPayment::getInvoiceDate, cssPayment.getInvoiceDateStart());
-        }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceDateEnd())) {
-            wrapper.le(CssPayment::getInvoiceDate, cssPayment.getInvoiceDateEnd());
-        }
-        wrapper.orderByDesc(CssPayment::getPaymentNum);
+
+//        if (StrUtil.isNotBlank(cssPayment.getWriteoffCompletes())) {
+//            if (cssPayment.getWriteoffCompletes().contains("2")) {
+//                wrapper.and(i -> i.in(CssPayment::getWriteoffComplete, cssPayment.getWriteoffCompletes().split(",")).or(j -> j.isNull(CssPayment::getWriteoffComplete)));
+//            } else {
+//                wrapper.in(CssPayment::getWriteoffComplete, cssPayment.getWriteoffCompletes().split(","));
+//            }
+//        }
         IPage<CssPayment> iPage = baseMapper.selectPage(page, wrapper);
         iPage.getRecords().stream().forEach(item -> {
-
+            //拼接发票号
+            LambdaQueryWrapper<CssCostInvoiceDetail> cssCostInvoiceDetailLambdaQueryWrapper = Wrappers.<CssCostInvoiceDetail>lambdaQuery();
+            cssCostInvoiceDetailLambdaQueryWrapper.eq(CssCostInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoiceDetail::getPaymentId, item.getPaymentId());
+            List<CssCostInvoiceDetail> cssCostInvoiceDetails = cssCostInvoiceDetailService.list(cssCostInvoiceDetailLambdaQueryWrapper);
+            StringBuffer invoiceNumBuffer = new StringBuffer();
+            cssCostInvoiceDetails.stream().forEach(cssCostInvoiceDetail -> {
+                invoiceNumBuffer.append(cssCostInvoiceDetail.getInvoiceDetailId());
+                invoiceNumBuffer.append(" ");
+                invoiceNumBuffer.append(cssCostInvoiceDetail.getInvoiceNum()).append("（").append(cssCostInvoiceDetail.getInvoiceDate().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))).append("）");
+                invoiceNumBuffer.append("  ");
+            });
+            item.setInvoiceNum(invoiceNumBuffer.toString());
             //取核销单号
-            LambdaQueryWrapper<CssCostWriteoff> cssCostWriteoffLambdaQueryWrapper = Wrappers.<CssCostWriteoff>lambdaQuery();
-            cssCostWriteoffLambdaQueryWrapper.eq(CssCostWriteoff::getPaymentId, item.getPaymentId()).eq(CssCostWriteoff::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostWriteoff::getBusinessScope, item.getBusinessScope());
-            List<CssCostWriteoff> cssCostWriteoffList = cssCostWriteoffMapper.selectList(cssCostWriteoffLambdaQueryWrapper);
-            StringBuffer writeoffNumbuffer = new StringBuffer("");
-            if (cssCostWriteoffList != null && cssCostWriteoffList.size() > 0) {
-                for (int i = 0; i < cssCostWriteoffList.size(); i++) {
-                    CssCostWriteoff cssCostWriteoff = cssCostWriteoffList.get(i);
-                    writeoffNumbuffer.append(cssCostWriteoff.getCostWriteoffId());
-                    writeoffNumbuffer.append(" ");
-                    writeoffNumbuffer.append(cssCostWriteoff.getWriteoffNum());
-                    writeoffNumbuffer.append("  ");
-                }
-            }
-            item.setWriteoffNum(writeoffNumbuffer.toString());
+            LambdaQueryWrapper<CssCostInvoiceDetailWriteoff> cssCostInvoiceDetailWriteoffLambdaQueryWrapper = Wrappers.<CssCostInvoiceDetailWriteoff>lambdaQuery();
+            cssCostInvoiceDetailWriteoffLambdaQueryWrapper.eq(CssCostInvoiceDetailWriteoff::getPaymentId, item.getPaymentId()).eq(CssCostInvoiceDetailWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+            List<CssCostInvoiceDetailWriteoff> cssCostInvoiceDetailWriteoffs = cssCostInvoiceDetailWriteoffService.list(cssCostInvoiceDetailWriteoffLambdaQueryWrapper);
+            StringBuffer writeoffNumBuffer = new StringBuffer();
+            cssCostInvoiceDetailWriteoffs.stream().forEach(cssCostInvoiceDetailWriteoff -> {
+                writeoffNumBuffer.append(cssCostInvoiceDetailWriteoff.getInvoiceDetailWriteoffId());
+                writeoffNumBuffer.append(" ");
+                writeoffNumBuffer.append(cssCostInvoiceDetailWriteoff.getWriteoffNum());
+                writeoffNumBuffer.append("  ");
+            });
+            item.setWriteoffNum(writeoffNumBuffer.toString());
 
             if (item.getAmountPayment() != null) {
                 item.setAmountPaymentStr(formatWith2AndQFW(item.getAmountPayment()) + " (" + item.getCurrency() + ")");
@@ -214,13 +272,35 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 }
                 item.setAmountPaymentNoWriteoffStr(formatWith2AndQFW(item.getAmountPaymentNoWriteoff()) + " (" + item.getCurrency() + ")");
             }
+
+            LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+            cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoice::getPaymentId, item.getPaymentId());
+            CssCostInvoice cssCostInvoice = cssCostInvoiceMapper.selectOne(cssCostInvoiceWrapper);
+            if (cssCostInvoice != null) {
+                item.setInvoiceTime(cssCostInvoice.getCreateTime());
+                item.setInvoiceCreatorName(cssCostInvoice.getCreatorName());
+                item.setInvoiceInqurityRemark(cssCostInvoice.getApplyRemark());
+            }
+            if (StrUtil.isBlank(item.getInvoiceInqurityRemark())) {
+                item.setInvoiceInqurityRemark(item.getInvoiceRemark());
+            }
             if (item.getWriteoffComplete() == null) {
-                item.setPaymentStatus("已对账");
+                if (cssCostInvoice == null) {
+                    item.setPaymentStatus("已对账");
+                } else if (cssCostInvoice.getInvoiceStatus() == -1) {
+                    item.setPaymentStatus("待收票");
+                } else if (cssCostInvoice.getInvoiceStatus() == 1) {
+                    item.setPaymentStatus("收票完毕");
+                } else if (cssCostInvoice.getInvoiceStatus() == 0) {
+                    item.setPaymentStatus("部分收票");
+                }
+            } else if (item.getWriteoffComplete() == 1) {
+                item.setPaymentStatus("核销完毕");
             } else if (item.getWriteoffComplete() == 0) {
                 item.setPaymentStatus("部分核销");
-            } else {
-                item.setPaymentStatus("核销完毕");
             }
+
+
         });
         //拼接合计
         if (iPage.getRecords().size() != 0) {
@@ -1008,6 +1088,13 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
             throw new RuntimeException("对账单已核销，无法修改");
         }
 
+        //校验如何已经发票申请不可修改
+        LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+        cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoice::getPaymentId, payment.getPaymentId());
+        CssCostInvoice cssCostInvoice = cssCostInvoiceMapper.selectOne(cssCostInvoiceWrapper);
+        if (cssCostInvoice != null) {
+            throw new RuntimeException(payment.getPaymentNum() + "对账单 已申请付款，不能修改。");
+        }
         //1.删除对账明细
         LambdaQueryWrapper<CssPaymentDetail> detailWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
         detailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getPaymentId, cssPayment.getPaymentId());
@@ -1379,7 +1466,7 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                     cost.setRowUuid(UUID.randomUUID().toString());
                     scCostService.updateById(cost);
                 }
-                if ("TE".equals(cssPayment.getBusinessScope())) {
+                if (cssPayment.getBusinessScope().startsWith("T")) {
                     TcCost cost = tcCostService.getById(costId);
                     cost.setCostAmountPayment(sumMap.get("sum") == null ? BigDecimal.ZERO : sumMap.get("sum"));
                     //修复汇率，本币金额，条件：币种!=CNY
@@ -1512,7 +1599,7 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                     afOrderService.updateOrderCostStatusForSC(orderId);
                 });
             }
-            if ("TE".equals(cssPayment.getBusinessScope())) {
+            if ("TE".equals(cssPayment.getBusinessScope()) || "TI".equals(cssPayment.getBusinessScope())) {
                 orderIds.stream().distinct().forEach(orderId -> {
                     TcOrder order = tcOrderService.getById(orderId);
                     order.setCostStatus(afOrderService.getOrderCostStatusForTC(orderId));
@@ -1553,7 +1640,13 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
         if (cssPayment.getWriteoffComplete() != null) {
             throw new RuntimeException("对账单已核销，无法删除");
         }
-
+        //校验如何已经发票申请不可删除
+        LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+        cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoice::getPaymentId, cssPayment.getPaymentId());
+        CssCostInvoice cssCostInvoice = cssCostInvoiceMapper.selectOne(cssCostInvoiceWrapper);
+        if (cssCostInvoice != null) {
+            throw new RuntimeException(cssPayment.getPaymentNum() + "对账单 已申请付款，不能删除。");
+        }
         //删除对账单
         removeById(paymentId);
         //删除明细
@@ -2096,11 +2189,22 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
             //对账状态
             CssPayment cp = baseMapper.selectById(cssPaymentDetail.getPaymentId());
             if (cp.getWriteoffComplete() == null) {
-                paymentExcel.setPaymentStatus("已对账");
+                LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+                cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoice::getPaymentId, cp.getPaymentId());
+                CssCostInvoice cssCostInvoice = cssCostInvoiceMapper.selectOne(cssCostInvoiceWrapper);
+                if (cssCostInvoice == null) {
+                    paymentExcel.setPaymentStatus("已对账");
+                } else if (cssCostInvoice.getInvoiceStatus() == -1) {
+                    paymentExcel.setPaymentStatus("待收票");
+                } else if (cssCostInvoice.getInvoiceStatus() == 1) {
+                    paymentExcel.setPaymentStatus("收票完毕");
+                } else if (cssCostInvoice.getInvoiceStatus() == 0) {
+                    paymentExcel.setPaymentStatus("部分收票");
+                }
+            } else if (cp.getWriteoffComplete() == 1) {
+                paymentExcel.setPaymentStatus("核销完毕");
             } else if (cp.getWriteoffComplete() == 0) {
                 paymentExcel.setPaymentStatus("部分核销");
-            } else {
-                paymentExcel.setPaymentStatus("核销完毕");
             }
             //主单号为空取订单号
             if (StringUtils.isEmpty(paymentExcel.getAwbNumber())) {
@@ -2115,12 +2219,18 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
         }).collect(Collectors.toList());
         ExportExcel<PaymentExcel> ex = new ExportExcel<PaymentExcel>();
         String[] headers = null;
-        if (payment.getBusinessScope().startsWith("A")) {
+        if ("AE".equals(payment.getBusinessScope())) {
             headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "提单/订单号", "订单号", "始发港", "目的港", "航班号", "开航日期", "件数", "毛重", "体积", "计重", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
-        } else if (payment.getBusinessScope().startsWith("S")) {
+        } else if ("AI".equals(payment.getBusinessScope())) {
+            headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "提单/订单号", "订单号", "始发港", "目的港", "航班号", "到港日期", "件数", "毛重", "体积", "计重", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
+        } else if ("SE".equals(payment.getBusinessScope())) {
             headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "提单/订单号", "订单号", "始发港", "目的港", "船次号", "开航日期", "件数", "毛重", "体积", "计费吨", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
-        } else if (payment.getBusinessScope().startsWith("T")) {
+        } else if ("SI".equals(payment.getBusinessScope())) {
+            headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "提单/订单号", "订单号", "始发港", "目的港", "船次号", "到港日期", "件数", "毛重", "体积", "计费吨", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
+        } else if ("TE".equals(payment.getBusinessScope())) {
             headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "运单号", "订单号", "始发地", "目的地", "产品类型", "发车日期", "件数", "毛重", "体积", "计费吨", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
+        } else if ("TI".equals(payment.getBusinessScope())) {
+            headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "运单号", "订单号", "始发地", "目的地", "产品类型", "到达日期", "件数", "毛重", "体积", "计费吨", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
         } else if (payment.getBusinessScope().startsWith("L")) {
             headers = new String[]{"对账单编号", "对账日期", "对账单状态 ", "客户单号", "订单号", "始发地", "目的地", "运输方式", "用车日期", "件数", "毛重", "体积", "计重", "客户代码", "客户名称", "供应商代码", "供应商", "币种", "对账单金额", "已核销金额", "未核销金额"};
         } else if (payment.getBusinessScope().equals("IO")) {
@@ -2951,8 +3061,6 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 orderWrapper.eq(AfOrder::getOrgId, SecurityUtils.getUser().getOrgId()).and(i -> i.like(AfOrder::getAwbNumber, "%" + cssPayment.getAwbNumberOrOrderCode() + "%").or(j -> j.like(AfOrder::getOrderCode, "%" + cssPayment.getAwbNumberOrOrderCode() + "%")));
                 List<AfOrder> orderList = afOrderService.list(orderWrapper);
                 if (orderList.size() == 0) {
-                    //page.setTotal(0);
-                    //page.setRecords(new ArrayList());
                     return null;
                 }
                 orderIds = orderList.stream().map(AfOrder::getOrderId).collect(Collectors.toList());
@@ -2962,8 +3070,6 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 orderWrapper.eq(ScOrder::getOrgId, SecurityUtils.getUser().getOrgId()).and(i -> i.like(ScOrder::getMblNumber, "%" + cssPayment.getAwbNumberOrOrderCode() + "%").or(j -> j.like(ScOrder::getOrderCode, "%" + cssPayment.getAwbNumberOrOrderCode() + "%")));
                 List<ScOrder> orderList = scOrderService.list(orderWrapper);
                 if (orderList.size() == 0) {
-                    //page.setTotal(0);
-                    //page.setRecords(new ArrayList());
                     return null;
                 }
                 orderIds = orderList.stream().map(ScOrder::getOrderId).collect(Collectors.toList());
@@ -2973,8 +3079,6 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 orderWrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).and(i -> i.like(TcOrder::getRwbNumber, "%" + cssPayment.getAwbNumberOrOrderCode() + "%").or(j -> j.like(TcOrder::getOrderCode, "%" + cssPayment.getAwbNumberOrOrderCode() + "%")));
                 List<TcOrder> orderList = tcOrderService.list(orderWrapper);
                 if (orderList.size() == 0) {
-                    //page.setTotal(0);
-                    //page.setRecords(new ArrayList());
                     return null;
                 }
                 orderIds = orderList.stream().map(TcOrder::getOrderId).collect(Collectors.toList());
@@ -3003,13 +3107,41 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 detailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).in(CssPaymentDetail::getOrderId, orderIds);
                 List<CssPaymentDetail> detailList = cssPaymentDetailService.list(detailWrapper);
                 if (detailList.size() == 0) {
-                    //page.setTotal(0);
-                    //page.setRecords(new ArrayList());
                     return null;
                 }
                 List<Integer> paymentIds = detailList.stream().map(CssPaymentDetail::getPaymentId).distinct().collect(Collectors.toList());
                 wrapper.in(CssPayment::getPaymentId, paymentIds);
             }
+        }
+        if (StrUtil.isNotBlank(cssPayment.getInvoiceNum())) {
+            LambdaQueryWrapper<CssCostInvoiceDetail> cssCostInvoiceDetailWrapper = Wrappers.<CssCostInvoiceDetail>lambdaQuery();
+            cssCostInvoiceDetailWrapper.eq(CssCostInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId());
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceNum())) {
+                cssCostInvoiceDetailWrapper.like(CssCostInvoiceDetail::getInvoiceNum, cssPayment.getInvoiceNum());
+            }
+            List<Integer> paymentIds = cssCostInvoiceDetailService.list(cssCostInvoiceDetailWrapper).stream().map(CssCostInvoiceDetail::getPaymentId).distinct().collect(Collectors.toList());
+            if (paymentIds.size() == 0) {
+                return null;
+            }
+            wrapper.in(CssPayment::getPaymentId, paymentIds);
+        }
+        if (StrUtil.isNotBlank(cssPayment.getInvoiceCreatorName()) || StrUtil.isNotBlank(cssPayment.getInvoiceDateStart()) || StrUtil.isNotBlank(cssPayment.getInvoiceDateEnd())) {
+            LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+            cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId());
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceCreatorName())) {
+                cssCostInvoiceWrapper.like(CssCostInvoice::getCreatorName, cssPayment.getInvoiceCreatorName());
+            }
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceDateStart())) {
+                cssCostInvoiceWrapper.ge(CssCostInvoice::getCreateTime, cssPayment.getInvoiceDateStart());
+            }
+            if (StrUtil.isNotBlank(cssPayment.getInvoiceDateEnd())) {
+                cssCostInvoiceWrapper.le(CssCostInvoice::getCreateTime, cssPayment.getInvoiceDateEnd());
+            }
+            List<Integer> paymentIds = cssCostInvoiceMapper.selectList(cssCostInvoiceWrapper).stream().map(CssCostInvoice::getPaymentId).collect(Collectors.toList());
+            if (paymentIds.size() == 0) {
+                return null;
+            }
+            wrapper.in(CssPayment::getPaymentId, paymentIds);
         }
         wrapper.eq(CssPayment::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPayment::getBusinessScope, cssPayment.getBusinessScope());
         if (StrUtil.isNotBlank(cssPayment.getCurrency())) {
@@ -3027,48 +3159,62 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
         if (cssPayment.getPaymentDateEnd() != null) {
             wrapper.le(CssPayment::getPaymentDate, cssPayment.getPaymentDateEnd());
         }
-        if (StrUtil.isNotBlank(cssPayment.getWriteoffCompletes())) {
-            if (cssPayment.getWriteoffCompletes().contains("2")) {
-                wrapper.and(i -> i.in(CssPayment::getWriteoffComplete, cssPayment.getWriteoffCompletes().split(",")).or(j -> j.isNull(CssPayment::getWriteoffComplete)));
-            } else {
-                wrapper.in(CssPayment::getWriteoffComplete, cssPayment.getWriteoffCompletes().split(","));
-            }
-        }
         if (StrUtil.isNotBlank(cssPayment.getCreatorName())) {
             wrapper.like(CssPayment::getCreatorName, cssPayment.getCreatorName());
         }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceNum())) {
-            wrapper.like(CssPayment::getInvoiceNum, cssPayment.getInvoiceNum());
+        if (StrUtil.isNotBlank(cssPayment.getWriteoffCompletes())) {
+            StringBuffer lastSql = new StringBuffer(" and (");
+            if (cssPayment.getWriteoffCompletes().contains("2")) {
+                lastSql.append(" payment_id not in (select payment_id from css_cost_invoice where org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("3")) {
+                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=-1 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("4")) {
+                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=0 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("5")) {
+                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=1 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("0")) {
+                lastSql.append(" writeoff_complete=0 or");
+            }
+            if (cssPayment.getWriteoffCompletes().contains("1")) {
+                lastSql.append(" writeoff_complete=1 or");
+            }
+            wrapper.last(lastSql.substring(0, lastSql.length() - 3) + ") ORDER BY payment_num DESC");
+        } else {
+            wrapper.orderByDesc(CssPayment::getPaymentNum);
         }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceTitle())) {
-            wrapper.like(CssPayment::getInvoiceTitle, cssPayment.getInvoiceTitle());
-        }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceDateStart())) {
-            wrapper.ge(CssPayment::getInvoiceDate, cssPayment.getInvoiceDateStart());
-        }
-        if (StrUtil.isNotBlank(cssPayment.getInvoiceDateEnd())) {
-            wrapper.le(CssPayment::getInvoiceDate, cssPayment.getInvoiceDateEnd());
-        }
-        wrapper.orderByDesc(CssPayment::getPaymentNum);
-        //IPage<CssPayment> iPage = baseMapper.selectPage(page, wrapper);
         List<CssPayment> iPage = baseMapper.selectList(wrapper);
         iPage.stream().forEach(item -> {
 
-            //取核销单号
-            LambdaQueryWrapper<CssCostWriteoff> cssCostWriteoffLambdaQueryWrapper = Wrappers.<CssCostWriteoff>lambdaQuery();
-            cssCostWriteoffLambdaQueryWrapper.eq(CssCostWriteoff::getPaymentId, item.getPaymentId()).eq(CssCostWriteoff::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostWriteoff::getBusinessScope, item.getBusinessScope());
-            List<CssCostWriteoff> cssCostWriteoffList = cssCostWriteoffMapper.selectList(cssCostWriteoffLambdaQueryWrapper);
-            StringBuffer writeoffNumbuffer = new StringBuffer("");
-            if (cssCostWriteoffList != null && cssCostWriteoffList.size() > 0) {
-                for (int i = 0; i < cssCostWriteoffList.size(); i++) {
-                    CssCostWriteoff cssCostWriteoff = cssCostWriteoffList.get(i);
-                    //writeoffNumbuffer.append(cssCostWriteoff.getCostWriteoffId());
-                    writeoffNumbuffer.append(String.valueOf((char) 10));
-                    writeoffNumbuffer.append(cssCostWriteoff.getWriteoffNum());
-                    writeoffNumbuffer.append(String.valueOf((char) 10));
+            //拼接发票号
+            LambdaQueryWrapper<CssCostInvoiceDetail> cssCostInvoiceDetailLambdaQueryWrapper = Wrappers.<CssCostInvoiceDetail>lambdaQuery();
+            cssCostInvoiceDetailLambdaQueryWrapper.eq(CssCostInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoiceDetail::getPaymentId, item.getPaymentId());
+            List<CssCostInvoiceDetail> cssCostInvoiceDetails = cssCostInvoiceDetailService.list(cssCostInvoiceDetailLambdaQueryWrapper);
+            StringBuffer invoiceNumBuffer = new StringBuffer();
+            cssCostInvoiceDetails.stream().forEach(cssCostInvoiceDetail -> {
+                if (invoiceNumBuffer.length() == 0) {
+                    invoiceNumBuffer.append(cssCostInvoiceDetail.getInvoiceNum()).append(" (").append(cssCostInvoiceDetail.getInvoiceDate().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))).append(")");
+                } else {
+                    invoiceNumBuffer.append("\n").append(cssCostInvoiceDetail.getInvoiceNum()).append(" (").append(cssCostInvoiceDetail.getInvoiceDate().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))).append(")");
                 }
-            }
-            item.setWriteoffNum(writeoffNumbuffer.toString());
+            });
+            item.setInvoiceNum(invoiceNumBuffer.toString());
+            //取核销单号
+            LambdaQueryWrapper<CssCostInvoiceDetailWriteoff> cssCostInvoiceDetailWriteoffLambdaQueryWrapper = Wrappers.<CssCostInvoiceDetailWriteoff>lambdaQuery();
+            cssCostInvoiceDetailWriteoffLambdaQueryWrapper.eq(CssCostInvoiceDetailWriteoff::getPaymentId, item.getPaymentId()).eq(CssCostInvoiceDetailWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+            List<CssCostInvoiceDetailWriteoff> cssCostInvoiceDetailWriteoffs = cssCostInvoiceDetailWriteoffService.list(cssCostInvoiceDetailWriteoffLambdaQueryWrapper);
+            StringBuffer writeoffNumBuffer = new StringBuffer();
+            cssCostInvoiceDetailWriteoffs.stream().forEach(cssCostInvoiceDetailWriteoff -> {
+                if (writeoffNumBuffer.length() == 0) {
+                    writeoffNumBuffer.append(cssCostInvoiceDetailWriteoff.getWriteoffNum());
+                } else {
+                    writeoffNumBuffer.append("\n").append(cssCostInvoiceDetailWriteoff.getWriteoffNum());
+                }
+            });
+            item.setWriteoffNum(writeoffNumBuffer.toString());
 
             if (item.getAmountPayment() != null) {
                 item.setAmountPaymentStr(formatWith2AndQFW(item.getAmountPayment()) + " (" + item.getCurrency() + ")");
@@ -3081,12 +3227,32 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 }
                 item.setAmountPaymentNoWriteoffStr(formatWith2AndQFW(item.getAmountPaymentNoWriteoff()) + " (" + item.getCurrency() + ")");
             }
+
+            LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+            cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoice::getPaymentId, item.getPaymentId());
+            CssCostInvoice cssCostInvoice = cssCostInvoiceMapper.selectOne(cssCostInvoiceWrapper);
+            if (cssCostInvoice != null) {
+                item.setInvoiceTime(cssCostInvoice.getCreateTime());
+                item.setInvoiceCreatorName(cssCostInvoice.getCreatorName());
+                item.setInvoiceInqurityRemark(cssCostInvoice.getApplyRemark());
+            }
+            if (StrUtil.isBlank(item.getInvoiceInqurityRemark())) {
+                item.setInvoiceInqurityRemark(item.getInvoiceRemark());
+            }
             if (item.getWriteoffComplete() == null) {
-                item.setPaymentStatus("已对账");
+                if (cssCostInvoice == null) {
+                    item.setPaymentStatus("已对账");
+                } else if (cssCostInvoice.getInvoiceStatus() == -1) {
+                    item.setPaymentStatus("待收票");
+                } else if (cssCostInvoice.getInvoiceStatus() == 1) {
+                    item.setPaymentStatus("收票完毕");
+                } else if (cssCostInvoice.getInvoiceStatus() == 0) {
+                    item.setPaymentStatus("部分收票");
+                }
+            } else if (item.getWriteoffComplete() == 1) {
+                item.setPaymentStatus("核销完毕");
             } else if (item.getWriteoffComplete() == 0) {
                 item.setPaymentStatus("部分核销");
-            } else {
-                item.setPaymentStatus("核销完毕");
             }
         });
         //拼接合计
@@ -3316,6 +3482,8 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
             secondHeader = "到港日期";
         } else if ("TE".equals(paymentBatchDetail.getBusinessScope())) {
             secondHeader = "发车日期";
+        } else if ("TI".equals(paymentBatchDetail.getBusinessScope())) {
+            secondHeader = "到达日期";
         } else if ("LC".equals(paymentBatchDetail.getBusinessScope())) {
             secondHeader = "用车日期";
         } else if ("IO".equals(paymentBatchDetail.getBusinessScope())) {
@@ -3546,6 +3714,212 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
         cssPaymentDetailService.saveBatch(cssPaymentDetails);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public synchronized void writeoff(CssCostInvoiceDetail cssCostInvoiceDetail) {
+        //校验
+        CssPayment cssPayment = checkIfCanWriteoff(cssCostInvoiceDetail.getPaymentId(), cssCostInvoiceDetail.getRowUuid());
+
+        //保存付款申请
+        CssCostInvoice cssCostInvoice = new CssCostInvoice();
+        cssCostInvoice.setBusinessScope(cssPayment.getBusinessScope());
+        cssCostInvoice.setCustomerId(cssPayment.getCustomerId());
+        cssCostInvoice.setCustomerName(cssPayment.getCustomerName());
+        cssCostInvoice.setPaymentId(cssPayment.getPaymentId());
+        cssCostInvoice.setOrgId(SecurityUtils.getUser().getOrgId());
+        cssCostInvoice.setCreateTime(LocalDateTime.now());
+        cssCostInvoice.setCreatorId(SecurityUtils.getUser().getId());
+        cssCostInvoice.setCreatorName(SecurityUtils.getUser().buildOptName());
+        cssCostInvoice.setInvoiceStatus(1);
+        cssCostInvoice.setRowUuid(UUID.randomUUID().toString());
+        cssCostInvoiceMapper.insert(cssCostInvoice);
+
+        //保存收票（完全收票）
+        cssCostInvoiceDetail.setBusinessScope(cssPayment.getBusinessScope());
+        cssCostInvoiceDetail.setInvoiceId(cssCostInvoice.getInvoiceId());
+        cssCostInvoiceDetail.setPaymentId(cssPayment.getPaymentId());
+        cssCostInvoiceDetail.setCustomerId(cssPayment.getCustomerId());
+        cssCostInvoiceDetail.setCustomerName(cssPayment.getCustomerName());
+        cssCostInvoiceDetail.setWriteoffComplete(1);
+        cssCostInvoiceDetail.setCurrency(cssPayment.getCurrency());
+        cssCostInvoiceDetail.setAmount(cssPayment.getAmountPayment());
+        cssCostInvoiceDetail.setAmountWriteoff(cssPayment.getAmountPayment());
+        cssCostInvoiceDetail.setOrgId(SecurityUtils.getUser().getOrgId());
+        cssCostInvoiceDetail.setRowUuid(UUID.randomUUID().toString());
+        cssCostInvoiceDetail.setCreatorId(SecurityUtils.getUser().getId());
+        cssCostInvoiceDetail.setCreateTime(LocalDateTime.now());
+        cssCostInvoiceDetail.setCreatorName(SecurityUtils.getUser().buildOptName());
+        cssCostInvoiceDetailService.save(cssCostInvoiceDetail);
+
+        //保存核销单
+        CssCostInvoiceDetailWriteoff cssCostInvoiceDetailWriteoff = new CssCostInvoiceDetailWriteoff();
+        cssCostInvoiceDetailWriteoff.setBusinessScope(cssPayment.getBusinessScope());
+        cssCostInvoiceDetailWriteoff.setRowUuid(UUID.randomUUID().toString());
+        cssCostInvoiceDetailWriteoff.setInvoiceDetailId(cssCostInvoiceDetail.getInvoiceDetailId());
+        cssCostInvoiceDetailWriteoff.setPaymentId(cssPayment.getPaymentId());
+        cssCostInvoiceDetailWriteoff.setInvoiceId(cssCostInvoice.getInvoiceId());
+        cssCostInvoiceDetailWriteoff.setWriteoffNum(cssCostInvoiceDetailWriteoffService.getWriteoffNum(cssPayment.getBusinessScope()));
+        cssCostInvoiceDetailWriteoff.setCustomerId(cssPayment.getCustomerId());
+        cssCostInvoiceDetailWriteoff.setCustomerName(cssPayment.getCustomerName());
+        cssCostInvoiceDetailWriteoff.setCurrency(cssPayment.getCurrency());
+        cssCostInvoiceDetailWriteoff.setAmountWriteoff(cssPayment.getAmountPayment());
+        cssCostInvoiceDetailWriteoff.setFinancialAccountCode(cssCostInvoiceDetail.getFinancialAccountCode());
+        cssCostInvoiceDetailWriteoff.setFinancialAccountName(cssCostInvoiceDetail.getFinancialAccountName());
+        cssCostInvoiceDetailWriteoff.setFinancialAccountType(cssCostInvoiceDetail.getFinancialAccountType());
+        cssCostInvoiceDetailWriteoff.setWriteoffDate(cssCostInvoiceDetail.getWriteoffDate());
+        cssCostInvoiceDetailWriteoff.setWriteoffRemark(cssCostInvoiceDetail.getWriteoffRemark());
+        cssCostInvoiceDetailWriteoff.setOrgId(SecurityUtils.getUser().getOrgId());
+        cssCostInvoiceDetailWriteoff.setCreatorId(SecurityUtils.getUser().getId());
+        cssCostInvoiceDetailWriteoff.setCreatorName(SecurityUtils.getUser().buildOptName());
+        cssCostInvoiceDetailWriteoff.setCreateTime(LocalDateTime.now());
+        cssCostInvoiceDetailWriteoffService.save(cssCostInvoiceDetailWriteoff);
+
+        //更新账单
+        cssPayment.setAmountPaymentInvoice(cssPayment.getAmountPayment());
+        cssPayment.setAmountPaymentWriteoff(cssPayment.getAmountPayment());
+        cssPayment.setFunctionalAmountPaymentWriteoff(cssPayment.getFunctionalAmountPayment());
+        cssPayment.setWriteoffComplete(1);
+        cssPayment.setRowUuid(UUID.randomUUID().toString());
+        updateById(cssPayment);
+
+        //更新账单明细
+        LambdaQueryWrapper<CssPaymentDetail> cssPaymentDetailLambdaQueryWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
+        cssPaymentDetailLambdaQueryWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getPaymentId, cssPayment.getPaymentId());
+        List<CssPaymentDetail> cssPaymentDetailList = cssPaymentDetailService.list(cssPaymentDetailLambdaQueryWrapper);
+        cssPaymentDetailList.stream().forEach(cssPaymentDetail -> {
+            cssPaymentDetail.setAmountPaymentWriteoff(cssPaymentDetail.getAmountPayment());
+        });
+        cssPaymentDetailService.updateBatchById(cssPaymentDetailList);
+
+        //更新cost表
+        LambdaQueryWrapper<CssPayment> cssPaymentLambdaQueryWrapper = Wrappers.<CssPayment>lambdaQuery();
+        cssPaymentLambdaQueryWrapper.eq(CssPayment::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPayment::getBusinessScope, cssPayment.getBusinessScope());
+        List<Integer> paymentIds = list(cssPaymentLambdaQueryWrapper).stream().map(CssPayment::getPaymentId).collect(Collectors.toList());
+        HashMap<String, BigDecimal> costWriteoffAmountSum = new HashMap<>();
+        if (cssPayment.getBusinessScope().startsWith("A")) {
+            cssPaymentDetailList.stream().map(CssPaymentDetail::getCostId).collect(Collectors.toList()).stream().forEach(costId -> {
+                LambdaQueryWrapper<CssPaymentDetail> cssPaymentDetailWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
+                cssPaymentDetailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getCostId, costId).in(CssPaymentDetail::getPaymentId, paymentIds);
+                costWriteoffAmountSum.put("sum", BigDecimal.ZERO);
+                cssPaymentDetailService.list(cssPaymentDetailWrapper).stream().forEach(item -> {
+                    if (item.getAmountPaymentWriteoff() != null) {
+                        costWriteoffAmountSum.put("sum", costWriteoffAmountSum.get("sum").add(item.getAmountPaymentWriteoff()));
+                    }
+                });
+                AfCost afCost = afCostService.getById(costId);
+                afCost.setRowUuid(UUID.randomUUID().toString());
+                afCost.setCostAmountWriteoff(costWriteoffAmountSum.get("sum"));
+                afCostService.updateById(afCost);
+            });
+        } else if (cssPayment.getBusinessScope().startsWith("S")) {
+            cssPaymentDetailList.stream().map(CssPaymentDetail::getCostId).collect(Collectors.toList()).stream().forEach(costId -> {
+                LambdaQueryWrapper<CssPaymentDetail> cssPaymentDetailWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
+                cssPaymentDetailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getCostId, costId).in(CssPaymentDetail::getPaymentId, paymentIds);
+                costWriteoffAmountSum.put("sum", BigDecimal.ZERO);
+                cssPaymentDetailService.list(cssPaymentDetailWrapper).stream().forEach(item -> {
+                    if (item.getAmountPaymentWriteoff() != null) {
+                        costWriteoffAmountSum.put("sum", costWriteoffAmountSum.get("sum").add(item.getAmountPaymentWriteoff()));
+                    }
+                });
+                ScCost scCost = scCostService.getById(costId);
+                scCost.setRowUuid(UUID.randomUUID().toString());
+                scCost.setCostAmountWriteoff(costWriteoffAmountSum.get("sum"));
+                scCostService.updateById(scCost);
+            });
+        } else if (cssPayment.getBusinessScope().startsWith("T")) {
+            cssPaymentDetailList.stream().map(CssPaymentDetail::getCostId).collect(Collectors.toList()).stream().forEach(costId -> {
+                LambdaQueryWrapper<CssPaymentDetail> cssPaymentDetailWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
+                cssPaymentDetailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getCostId, costId).in(CssPaymentDetail::getPaymentId, paymentIds);
+                costWriteoffAmountSum.put("sum", BigDecimal.ZERO);
+                cssPaymentDetailService.list(cssPaymentDetailWrapper).stream().forEach(item -> {
+                    if (item.getAmountPaymentWriteoff() != null) {
+                        costWriteoffAmountSum.put("sum", costWriteoffAmountSum.get("sum").add(item.getAmountPaymentWriteoff()));
+                    }
+                });
+                TcCost tcCost = tcCostService.getById(costId);
+                tcCost.setRowUuid(UUID.randomUUID().toString());
+                tcCost.setCostAmountWriteoff(costWriteoffAmountSum.get("sum"));
+                tcCostService.updateById(tcCost);
+            });
+        } else if (cssPayment.getBusinessScope().equals("LC")) {
+            cssPaymentDetailList.stream().map(CssPaymentDetail::getCostId).collect(Collectors.toList()).stream().forEach(costId -> {
+                LambdaQueryWrapper<CssPaymentDetail> cssPaymentDetailWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
+                cssPaymentDetailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getCostId, costId).in(CssPaymentDetail::getPaymentId, paymentIds);
+                costWriteoffAmountSum.put("sum", BigDecimal.ZERO);
+                cssPaymentDetailService.list(cssPaymentDetailWrapper).stream().forEach(item -> {
+                    if (item.getAmountPaymentWriteoff() != null) {
+                        costWriteoffAmountSum.put("sum", costWriteoffAmountSum.get("sum").add(item.getAmountPaymentWriteoff()));
+                    }
+                });
+                LcCost lcCost = lcCostService.getById(costId);
+                lcCost.setRowUuid(UUID.randomUUID().toString());
+                lcCost.setCostAmountWriteoff(costWriteoffAmountSum.get("sum"));
+                lcCostService.updateById(lcCost);
+            });
+        } else if (cssPayment.getBusinessScope().equals("IO")) {
+            cssPaymentDetailList.stream().map(CssPaymentDetail::getCostId).collect(Collectors.toList()).stream().forEach(costId -> {
+                LambdaQueryWrapper<CssPaymentDetail> cssPaymentDetailWrapper = Wrappers.<CssPaymentDetail>lambdaQuery();
+                cssPaymentDetailWrapper.eq(CssPaymentDetail::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssPaymentDetail::getCostId, costId).in(CssPaymentDetail::getPaymentId, paymentIds);
+                costWriteoffAmountSum.put("sum", BigDecimal.ZERO);
+                cssPaymentDetailService.list(cssPaymentDetailWrapper).stream().forEach(item -> {
+                    if (item.getAmountPaymentWriteoff() != null) {
+                        costWriteoffAmountSum.put("sum", costWriteoffAmountSum.get("sum").add(item.getAmountPaymentWriteoff()));
+                    }
+                });
+                IoCost ioCost = ioCostService.getById(costId);
+                ioCost.setRowUuid(UUID.randomUUID().toString());
+                ioCost.setCostAmountWriteoff(costWriteoffAmountSum.get("sum"));
+                ioCostService.updateById(ioCost);
+            });
+        }
+
+        //更新订单表
+        cssPaymentDetailList.stream().map(CssPaymentDetail::getOrderId).distinct().collect(Collectors.toList()).stream().forEach(orderId -> {
+            if ("AE".equals(cssPayment.getBusinessScope()) || "AI".equals(cssPayment.getBusinessScope())) {
+                AfOrder order = afOrderService.getById(orderId);
+                order.setCostStatus(afOrderService.getOrderCostStatusForAF(orderId));
+                order.setRowUuid(UUID.randomUUID().toString());
+                afOrderService.updateById(order);
+            }
+            if ("SE".equals(cssPayment.getBusinessScope()) || "SI".equals(cssPayment.getBusinessScope())) {
+                afOrderService.updateOrderCostStatusForSC(orderId);
+            }
+            if (cssPayment.getBusinessScope().startsWith("T")) {
+                afOrderService.updateOrderCostStatusForTC(orderId);
+            }
+            if (cssPayment.getBusinessScope().startsWith("L")) {
+                LcOrder order = lcOrderService.getById(orderId);
+                order.setCostStatus(afOrderService.getOrderCostStatusForLC(orderId));
+                order.setRowUuid(UUID.randomUUID().toString());
+                lcOrderService.updateById(order);
+            }
+            if (cssPayment.getBusinessScope().equals("IO")) {
+                IoOrder order = ioOrderService.getById(orderId);
+                order.setCostStatus(afOrderService.getOrderCostStatusForIO(orderId));
+                order.setRowUuid(UUID.randomUUID().toString());
+                ioOrderService.updateById(order);
+            }
+        });
+    }
+
+    @Override
+    public CssPayment checkIfCanWriteoff(Integer paymentId, String rowUuid) {
+        CssPayment cssPayment = getById(paymentId);
+        if (cssPayment == null) {
+            throw new RuntimeException("账单不存在，请刷新页面再试");
+        }
+        if (!cssPayment.getRowUuid().equals(rowUuid)) {
+            throw new RuntimeException("账单已变更，请刷新页面重新操作");
+        }
+        LambdaQueryWrapper<CssCostInvoice> cssCostInvoiceWrapper = Wrappers.<CssCostInvoice>lambdaQuery();
+        cssCostInvoiceWrapper.eq(CssCostInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssCostInvoice::getPaymentId, paymentId);
+        CssCostInvoice cssCostInvoice = cssCostInvoiceMapper.selectOne(cssCostInvoiceWrapper);
+        if (cssCostInvoice != null) {
+            throw new RuntimeException("您好，对账单号" + cssPayment.getPaymentNum() + " 已做付款申请或已收票，请在发票页面进行核销。");
+        }
+        return cssPayment;
+    }
+
     private List<PaymentBatchDetail> parse(MultipartFile file) {
         if (!(file.getOriginalFilename().endsWith(".xls") || file.getOriginalFilename().endsWith(".xlsx"))) {
             throw new RuntimeException("请上传正确格式的文件，仅支持.xls或.xlsx");
@@ -3623,7 +3997,7 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                         paymentBatchDetail.setIsOrderCode(false);
                     }
                 }
-                paymentBatchDetail.setUploadAmount(entry.getValue().setScale(2,BigDecimal.ROUND_HALF_UP));
+                paymentBatchDetail.setUploadAmount(entry.getValue().setScale(2, BigDecimal.ROUND_HALF_UP));
                 details.add(paymentBatchDetail);
             }
             return details;

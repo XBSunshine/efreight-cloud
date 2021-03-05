@@ -39,6 +39,10 @@ public class CargoTrackQuery implements Serializable {
      * 类型
      */
     private String type;
+    /**
+     * 区号
+     */
+    private String internationalCountryCode;
 
 
     /**
@@ -56,6 +60,7 @@ public class CargoTrackQuery implements Serializable {
 
     public void validate(){
         Assert.hasText(this.phone, "手机号不能为空");
+        Assert.hasText(this.internationalCountryCode, "区号不能为空");
         Assert.hasText(this.awbNumber, "主单号不能为空");
         Assert.hasText(this.type, "查询类型不能为空");
         Assert.notNull(Type.valueOf(this.type.toUpperCase()), "查询类型不存在");

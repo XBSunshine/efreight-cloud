@@ -1,0 +1,145 @@
+package com.efreight.afbase.dao;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.efreight.afbase.entity.*;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+public interface AiOperationLookMapper extends BaseMapper<AiOperationLook> {
+    @Select({"<script>",
+            "    SELECT a.order_id,a.org_id,a.order_uuid,a.order_code,a.order_status,a.income_status,a.cost_status,a.income_recorded,a.cost_recorded,a.awb_id,a.awb_uuid,a.awb_number,a.hawb_quantity,a.hawb_number,a.customer_number,a.coop_id,a.business_scope,a.business_product,a.expect_flight,a.expect_departure,a.expect_arrival,a.departure_station,a.arrival_station,a.departure_warehouse_id,a.departure_warehouse_name,a.departure_storehouse_id,a.departure_storehouse_name,a.goods_name_cn,a.goods_name_en,a.goods_type,a.goods_source_code,a.battery_type,a.package_type,a.order_remark,a.plan_pieces,a.plan_weight,a.plan_volume,a.plan_charge_weight,a.plan_dimensions,a.plan_density,a.confirm_pieces,a.confirm_weight,a.confirm_volume,a.confirm_charge_weight,a.confirm_density,a.servicer_id,a.servicer_name,a.sales_id,a.sales_name,a.switch_awb_service,a.warehouse_service,a.customs_clearance_service,a.delivery_service,a.creator_name,a.arrival_customs_clearance_service,a.pick_up_delivery_service,a.outfield_service,a.row_uuid,",
+            "  (select routing_name from af_airport where ap_code = a.arrival_station) AS routing_name ",
+            ",b.coop_name,b.coop_code customerCode,h.coop_code supplierCode",
+            " ,c.warehouse_name_cn departureWarehouseName,d.warehouse_name_cn departureStorehouseName,e.contactName as contactName",
+            " ,f.order_charge_weight as inboundOrderChargeWeight,f.awb_charge_weight as inboundAwbChargeWeight,g.awb_from_name as awbFromName,ro.sign_state as signState,ro.routing_person_name as routingPersonName",
+            "	FROM af_order a",
+            "<when test='bean.routingName!=null and bean.routingName!=\"\"'>",
+            "  inner join (select ap_code from af_airport where routing_name=#{bean.routingName}) ap on ap.ap_code=a.arrival_station",
+            "</when>",
+            "	LEFT JOIN af_awb_number g",
+            "	ON a.awb_id=g.awb_id and g.awb_id is not null",
+            "	LEFT JOIN prm_coop h",
+            "	ON g.awb_from_id=h.coop_id",
+            "	LEFT JOIN prm_coop b",
+            "	ON a.coop_id=b.coop_id",
+            " LEFT JOIN af_warehouse c",
+            " ON a.departure_warehouse_id=c.warehouse_id",
+            " LEFT JOIN af_warehouse d",
+            " ON a.departure_storehouse_id=d.warehouse_id",
+            " LEFT JOIN (select p.order_id, GROUP_CONCAT(g.contacts_name) as contactName from af_order_contacts p LEFT JOIN prm_coop_contacts g on p.project_contacts_id = g.contacts_id where p.org_id=#{bean.orgId} GROUP BY p.order_id  ) e",
+            " ON a.order_id=e.order_id",
+            " LEFT JOIN af_inbound f",
+            " ON a.order_id=f.order_id",
+            " left join af_rounting_sign ro on ro.order_id=a.order_id",
+            " WHERE a.hawb_number is not null and a.hawb_number != '' and a.org_id=#{bean.orgId} ",
+            "<when test='bean.orderStatus!=null and bean.orderStatus==\"1\"'>",
+            " AND a.order_status = '财务锁账'",
+            "</when>",
+            "<when test='bean.orderStatus!=null and bean.orderStatus==\"0\"'>",
+            " AND a.order_status != '财务锁账' and a.order_status!='强制关闭'",
+            "</when>",
+            " and a.order_status!='强制关闭'",
+            "<when test='bean.businessScope!=null and bean.businessScope!=\"\"'>",
+            " AND a.business_scope = #{bean.businessScope}",
+            "</when>",
+            "<when test='bean.awbNumber!=null and bean.awbNumber!=\"\"'>",
+            " AND (a.awb_number like  \"%\"#{bean.awbNumber}\"%\" or a.hawb_number like  \"%\"#{bean.awbNumber}\"%\")",
+            "</when>",
+            "<when test='bean.orderCode!=null and bean.orderCode!=\"\"'>",
+            " AND a.order_code like  \"%\"#{bean.orderCode}\"%\"",
+            "</when>",
+            "<when test='bean.customerNumber!=null and bean.customerNumber!=\"\"'>",
+            " AND a.customer_number like  \"%\"#{bean.customerNumber}\"%\"",
+            "</when>",
+            "<when test='bean.businessProduct!=null and bean.businessProduct!=\"\"'>",
+            " AND a.business_product = #{bean.businessProduct}",
+            "</when>",
+            "<when test='bean.departureStation!=null and bean.departureStation!=\"\"'>",
+            " AND a.departure_station = #{bean.departureStation}",
+            "</when>",
+            "<when test='bean.arrivalStation!=null and bean.arrivalStation!=\"\"'>",
+            " AND a.arrival_station = #{bean.arrivalStation}",
+            "</when>",
+            "<when test='bean.expectFlight!=null and bean.expectFlight!=\"\"'>",
+            " AND a.expect_flight like  \"%\"#{bean.expectFlight}\"%\"",
+            "</when>",
+            "<when test='bean.flightDateBegin!=null and bean.flightDateBegin!=\"\" and bean.businessScope==\"AE\"'>",
+            " AND a.expect_departure  <![CDATA[ >= ]]> #{bean.flightDateBegin}",
+            "</when>",
+            "<when test='bean.flightDateEnd!=null and bean.flightDateEnd!=\"\" and bean.businessScope==\"AE\"'>",
+            " AND a.expect_departure <![CDATA[ <= ]]> #{bean.flightDateEnd}",
+            "</when>",
+            "<when test='bean.flightDateBegin!=null and bean.flightDateBegin!=\"\" and bean.businessScope==\"AI\"'>",
+            " AND a.expect_arrival  <![CDATA[ >= ]]> #{bean.flightDateBegin}",
+            "</when>",
+            "<when test='bean.flightDateEnd!=null and bean.flightDateEnd!=\"\" and bean.businessScope==\"AI\"'>",
+            " AND a.expect_arrival <![CDATA[ <= ]]> #{bean.flightDateEnd}",
+            "</when>",
+            "<when test='bean.createTimeBegin!=null and bean.createTimeBegin!=\"\"'>",
+            " AND a.create_time  <![CDATA[ >= ]]> #{bean.createTimeBegin}",
+            "</when>",
+            "<when test='bean.createTimeEnd!=null and bean.createTimeEnd!=\"\"'>",
+            " AND a.create_time <![CDATA[ <= ]]> #{bean.createTimeEnd}",
+            "</when>",
+            "<when test='bean.servicerName!=null and bean.servicerName!=\"\"'>",
+            " AND servicer_name like  \"%\"#{bean.servicerName}\"%\"",
+            "</when>",
+            "<when test='bean.salesName!=null and bean.salesName!=\"\"'>",
+            " AND sales_name like  \"%\"#{bean.salesName}\"%\"",
+            "</when>",
+            "<when test='bean.coopName!=null and bean.coopName!=\"\"'>",
+            " AND (b.coop_name like  \"%\"#{bean.coopName}\"%\" or b.coop_code like  \"%\"#{bean.coopName}\"%\")",
+            "</when>",
+            "<when test='bean.creatorName!=null and bean.creatorName!=\"\"'>",
+            " AND a.creator_name like  \"%\"#{bean.creatorName}\"%\"",
+            "</when>",
+            "<when test='bean.awbFromName!=null and bean.awbFromName!=\"\"'>",
+            " AND (g.awb_from_name like  \"%\"#{bean.awbFromName}\"%\" or h.coop_code like  \"%\"#{bean.awbFromName}\"%\")",
+            "</when>",
+            "<when test='bean.incomeRecorded == true'>",
+            " AND a.income_recorded = #{bean.incomeRecorded}",
+            "</when>",
+            "<when test='bean.incomeRecorded == false'>",
+            " AND (a.income_recorded = #{bean.incomeRecorded} or a.income_recorded is null)",
+            "</when>",
+            "<when test='bean.costRecorded == true'>",
+            " AND a.cost_recorded = #{bean.costRecorded}",
+            "</when>",
+            "<when test='bean.costRecorded == false'>",
+            " AND (a.cost_recorded = #{bean.costRecorded} or a.cost_recorded is null)",
+            "</when>",
+            "<when test='bean.orderPermission!=null and bean.orderPermission!=\"\" and bean.orderPermission==\"1\"'>",
+            " AND (a.creator_id = #{bean.currentUserId} or a.sales_id = #{bean.currentUserId} or a.servicer_id = #{bean.currentUserId})",
+            "</when>",
+            "<when test='bean.orderPermission!=null and bean.orderPermission!=\"\" and bean.orderPermission==\"2\"'>",
+            " AND ((a.creator_id = #{bean.currentUserId} or a.sales_id = #{bean.currentUserId} or a.servicer_id = #{bean.currentUserId}) or IFNULL(a.workgroup_id,0) in (select workgroup_id from hrs_user_workgroup_detail where user_id = #{bean.currentUserId}))",
+            "</when>",
+            " order by a.order_id desc",
+            "</script>"})
+    IPage<AfOrder> getListPage(Page page, @Param("bean") AfOrder bean);
+
+    @Select("SELECT org_api_config_id orgApiConfigId,api_type apiType,api_remark apiRemark,enable enable,appid appid,auth_token authToken,platform platform,function function,url_auth urlAuth,url_post urlPost" +
+            " FROM hrs_org_api_config "
+            + " WHERE org_id=#{org_id} and api_type=#{apiType} and enable=1 order by create_time desc limit 0,1")
+    OrgInterface getShippingBillConfig(@Param("org_id") Integer org_id, @Param("apiType") String apiType);
+    @Select("SELECT * FROM af_order WHERE awb_number=#{awbNumber} and hawb_number is not null and hawb_number != '' and order_status!='强制关闭'")
+    List<AfOrder> getHAWBList(@Param("awbNumber") String awbNumber);
+
+    @Select({"<script>",
+            "select * from af_order_shipper_consignee\n",
+            "	where order_id = #{orderId}",
+            "</script>"})
+    List<AfOrderShipperConsignee> getAfOrderShipperConsignee(@Param("orderId") Integer orderId);
+
+    @Select({"<script>","SELECT * FROM af_order where 1=1",
+            "<when test='orderCode!=null and orderCode!=\"\"'>",
+            " and order_code=#{orderCode}",
+            "</when>",
+            " and hawb_number=#{hawbCode}",
+            "</script>"})
+    AfOperateOrder getAfOperateOrderByOrderCode(ImportLook importLook);
+}

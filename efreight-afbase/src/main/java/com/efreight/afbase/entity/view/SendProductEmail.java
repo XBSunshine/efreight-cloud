@@ -1,10 +1,10 @@
 package com.efreight.afbase.entity.view;
 
-import java.io.Serializable;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+
+import java.io.Serializable;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -19,6 +19,7 @@ public class SendProductEmail implements Serializable{
 	private String userName;
 	private String productName;
 	private String fileName;
+	private String filePath;
 	private String productDescribe;
 
 }

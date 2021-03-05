@@ -50,13 +50,6 @@ public class TcProductServiceImpl extends ServiceImpl<TcProductMapper, TcProduct
         if(!StringUtils.isEmpty(bean.getProductName())) {
         	wrapper.like(TcProduct::getProductName, bean.getProductName());
         }
-        if(!StringUtils.isEmpty(bean.getBookingAgentName())) {
-        	 List<Integer> coopIds = remoteCoopService.listByCoopName(bean.getBookingAgentName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
-             if (coopIds.size() == 0) {
-                 return null;
-             }
-             wrapper.in(TcProduct::getBookingAgentId, coopIds);
-        }
         if(!StringUtils.isEmpty(bean.getDepartureStation())) {
         	wrapper.like(TcProduct::getDepartureStation, bean.getDepartureStation());
         }
@@ -70,6 +63,15 @@ public class TcProductServiceImpl extends ServiceImpl<TcProductMapper, TcProduct
         	wrapper.like(TcProduct::getArrivalStation, bean.getArrivalStation());
         }
         wrapper.orderByDesc(TcProduct::getProductId);
+
+		if(!StringUtils.isEmpty(bean.getBookingAgentName())) {
+			List<Integer> coopIds = remoteCoopService.listByCoopName(bean.getBookingAgentName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
+			if (coopIds != null && coopIds.size() > 0) {
+				wrapper.in(TcProduct::getBookingAgentId, coopIds);
+			}else{
+				wrapper.eq(TcProduct::getProductId, null);
+			}
+		}
        IPage<TcProduct> resultPage = baseMapper.selectPage(page, wrapper);
        if(resultPage!=null&&resultPage.getRecords()!=null&&resultPage.getRecords().size()>0) {
     	   resultPage.getRecords().stream().forEach(o->{

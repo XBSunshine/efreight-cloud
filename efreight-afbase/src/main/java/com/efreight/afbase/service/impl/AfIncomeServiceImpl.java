@@ -277,10 +277,12 @@ public class AfIncomeServiceImpl extends ServiceImpl<AfIncomeMapper, AfIncome> i
                     JSONObject job = jsonArr.getJSONObject(i);
                     if(("AE".equals(income.getBusinessScope()) || "SE".equals(income.getBusinessScope())) && "flightDate".equals(job.getString("prop"))){
                         headers[i] = "离港日期";
-                    }else if(income.getBusinessScope().endsWith("I") && "flightDate".equals(job.getString("prop"))){
+                    }else if(("AI".equals(income.getBusinessScope()) || "SI".equals(income.getBusinessScope())) && "flightDate".equals(job.getString("prop"))){
                         headers[i] = "到港日期";
-                    }else if(income.getBusinessScope().startsWith("T") && "flightDate".equals(job.getString("prop"))){
+                    }else if("TE".equals(income.getBusinessScope()) && "flightDate".equals(job.getString("prop"))){
                         headers[i] = "发车日期";
+                    }else if("TI".equals(income.getBusinessScope()) && "flightDate".equals(job.getString("prop"))){
+                        headers[i] = "到达日期";
                     }else if(income.getBusinessScope().endsWith("C") && "flightDate".equals(job.getString("prop"))){
                         headers[i] = "用车日期";
                     }else {
@@ -319,12 +321,14 @@ public class AfIncomeServiceImpl extends ServiceImpl<AfIncomeMapper, AfIncome> i
             String flightName = "";
             if("AE".equals(income.getBusinessScope()) || "SE".equals(income.getBusinessScope())){
                 flightName="离港日期";
-            }else if(income.getBusinessScope().endsWith("I")){
+            }else if("AI".equals(income.getBusinessScope()) || "SI".equals(income.getBusinessScope())){
                 flightName="到港日期";
             }else if(income.getBusinessScope().endsWith("C")) {
-            	flightName="用车日期";
-            }else if(income.getBusinessScope().startsWith("T")) {
+                flightName="用车日期";
+            }else if("TE".equals(income.getBusinessScope())) {
                 flightName="发车日期";
+            }else if("TI".equals(income.getBusinessScope())) {
+                flightName="到达日期";
             }else if("IO".equals(income.getBusinessScope())){
                 flightName = "业务日期";
             }
@@ -584,9 +588,11 @@ public class AfIncomeServiceImpl extends ServiceImpl<AfIncomeMapper, AfIncome> i
                     income.setFlightDate(order.getExpectArrival());
                 }
                 income.setOrderCode(order.getOrderCode());
-                CoopVo coopVo = remoteCoopService.viewCoop(order.getCoopId().toString()).getData();
-                if (coopVo != null) {
-                    income.setOrderCustomerName(coopVo.getCoop_name());
+                if(order.getCoopId() != null){
+                    CoopVo coopVo = remoteCoopService.viewCoop(order.getCoopId().toString()).getData();
+                    if (coopVo != null) {
+                        income.setOrderCustomerName(coopVo.getCoop_name());
+                    }
                 }
                 //责任销售
                 String salesName = order.getSalesName();

@@ -137,15 +137,17 @@ public interface CssDebitNoteMapper extends BaseMapper<CssDebitNote> {
 
     @Select({"<script>",
             "select * from css_debit_note A",
+            " left join css_income_invoice M on A.debit_note_id = M.debit_note_id ",
             " LEFT JOIN (SELECT debit_note_id",
             " ,GROUP_CONCAT(CONCAT('(',currency,')',FORMAT(amount,2)) separator ' ') AS currency_amount",
             " FROM css_debit_note_currency GROUP BY debit_note_id) B ON A.debit_note_id=B.debit_note_id",
-            " where A.statement_id IS NULL AND A.invoice_id IS NULL  AND A.writeoff_complete IS NULL",
+            " where A.statement_id IS NULL AND A.writeoff_complete IS NULL",
             " and A.order_uuid = #{bean.orderUuid}",
             " and A.customer_name = #{bean.customerName}",
 //			" and currency = #{bean.currency}",
 //            " and A.amount_tax_rate = #{bean.amountTaxRate}",
             " and A.org_id = #{bean.orgId}",
+            " and M.debit_note_id is null ",
             "</script>"})
     List<CssDebitNote> queryHavedBill(@Param("bean") CssDebitNote bean);
 

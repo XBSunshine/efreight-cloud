@@ -18,7 +18,7 @@ public class MpGenerator {
     public static void main(String[] args) {
         AutoGenerator mpg = new AutoGenerator();
         GlobalConfig gc = new GlobalConfig();
-        String projectPath = "D:/workspace-ideal/efreight-cloud/efreight-afbase";
+        String projectPath = "D:/workspace/efreight-cloud/efreight-afbase";
         gc.setOutputDir(projectPath + "/src/main/java");
         gc.setAuthor("xiaobo");
         gc.setOpen(false);
@@ -44,7 +44,7 @@ public class MpGenerator {
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
         strategy.setEntityLombokModel(true);
         strategy.setRestControllerStyle(true);
-        strategy.setInclude("io_cost","io_income");
+        strategy.setInclude("css_financial_account");
         strategy.setSuperEntityColumns(new String[]{"id"});
         strategy.setControllerMappingHyphenStyle(true);
         mpg.setStrategy(strategy);

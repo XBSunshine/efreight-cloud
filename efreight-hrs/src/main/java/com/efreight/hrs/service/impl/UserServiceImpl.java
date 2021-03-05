@@ -1041,7 +1041,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public UserBaseVO findByUserPhone(String phone) {
+    public UserBaseVO findByUserPhone(String phone, String internationalCountryCode) {
         if(StringUtils.isBlank(phone)){
             return null;
         }
@@ -1049,6 +1049,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         wrapper.eq(User::getPhoneNumber, phone);
         wrapper.eq(User::getIsadmin, false);
         wrapper.eq(User::getUserStatus, true);
+        if(StringUtils.isNotBlank(internationalCountryCode)){
+            wrapper.eq(User::getInternationalCountryCode, internationalCountryCode);
+        }
 
         User dbUser = this.baseMapper.selectOne(wrapper);
         UserBaseVO userBaseVO = null;

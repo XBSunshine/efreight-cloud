@@ -72,6 +72,7 @@ public class CoopAgreementSettlementServiceImpl implements CoopAgreementSettleme
                 if(coopAgreementSettlementDetailList!=null && coopAgreementSettlementDetailList.size()>0){
                     for(int j=0;j<coopAgreementSettlementDetailList.size();j++){
                         coopAgreementSettlementDetailList.get(j).setId(UUID.randomUUID().toString());
+                        coopAgreementSettlementDetailList.get(j).setIsSendMailAuto(cas.getIsSendMailAuto());
                         if(coopAgreementSettlementDetailList.get(j).getSettlementState()!=null && !"".equals(coopAgreementSettlementDetailList.get(j).getSettlementState()) && "待审核".equals(coopAgreementSettlementDetailList.get(j).getSettlementState())){
                             paramList.get(i).setSettlementState("待审核");
                         }

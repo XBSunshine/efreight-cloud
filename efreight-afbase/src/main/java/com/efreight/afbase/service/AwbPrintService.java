@@ -56,4 +56,6 @@ public interface AwbPrintService extends IService<AwbPrint> {
     String getAmsDataCheck(String type, String awbNumber, String letterId);
 
     Map<String, Object> sendAmsData(String type, String awbNumber, String letterId);
+
+    void exportExcel(AfPAwbPrintProcedure afPAwbPrintProcedure);
 }

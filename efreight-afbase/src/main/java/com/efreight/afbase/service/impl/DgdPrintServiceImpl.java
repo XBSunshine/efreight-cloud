@@ -3,17 +3,17 @@ package com.efreight.afbase.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.efreight.afbase.dao.DgdPrintMapper;
 import com.efreight.afbase.entity.AfOrder;
 import com.efreight.afbase.entity.DgdPrint;
-import com.efreight.afbase.dao.DgdPrintMapper;
 import com.efreight.afbase.entity.DgdPrintList;
-import com.efreight.afbase.entity.Inbound;
-import com.efreight.afbase.entity.procedure.AfPAwbPrintForMawbPrintProcedure;
 import com.efreight.afbase.service.AfOrderService;
 import com.efreight.afbase.service.DgdPrintListService;
 import com.efreight.afbase.service.DgdPrintService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.afbase.utils.PDFUtils;
+import com.efreight.common.core.utils.JxlsUtils;
+import com.efreight.common.security.service.EUserDetails;
 import com.efreight.common.security.util.SecurityUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -138,14 +138,8 @@ public class DgdPrintServiceImpl extends ServiceImpl<DgdPrintMapper, DgdPrint> i
         LambdaQueryWrapper<DgdPrintList> listWrapper = Wrappers.<DgdPrintList>lambdaQuery();
         listWrapper.eq(DgdPrintList::getDgdPrintId, dgdPrintId).eq(DgdPrintList::getOrgId, SecurityUtils.getUser().getOrgId());
         List<DgdPrintList> list = dgdPrintListService.list(listWrapper);
-        if (list.size() < 5) {
-            int size = list.size();
-            for (int i = 0; i < 5 - size; i++) {
-                list.add(new DgdPrintList());
-            }
-        }
         DgdPrint dgdPrint = baseMapper.selectById(dgdPrintId);
-        dgdPrint.setDgdPrintList(list.subList(0, 5));
+        dgdPrint.setDgdPrintList(list);
         return dgdPrint;
     }
 
@@ -167,7 +161,7 @@ public class DgdPrintServiceImpl extends ServiceImpl<DgdPrintMapper, DgdPrint> i
         AfOrder afOrder = afOrderService.getOne(wrapper);
         dgdPrint.setAwbNumber(afOrder.getAwbNumber());
         dgdPrint.setDgdPrintName(afOrder.getOrderCode());
-        String templateFilePath = PDFUtils.filePath + "/PDFtemplate/AF_DGD_FORMAT.pdf";
+        String templateFilePath = PDFUtils.filePath + "/PDFtemplate/dgd/AF_DGD_FORMAT.pdf";
         return fillTemplate(dgdPrint, templateFilePath, PDFUtils.filePath + "/PDFtemplate/temp/dgdMake", PDFUtils.filePath);
     }
 
@@ -179,9 +173,10 @@ public class DgdPrintServiceImpl extends ServiceImpl<DgdPrintMapper, DgdPrint> i
         AfOrder afOrder = afOrderService.getOne(wrapper);
         dgdPrint.setAwbNumber(afOrder.getAwbNumber());
         dgdPrint.setDgdPrintName(afOrder.getOrderCode());
-        String templateFilePath = PDFUtils.filePath + "/PDFtemplate/AF_DGD_PRINT.pdf";
+        String templateFilePath = PDFUtils.filePath + "/PDFtemplate/dgd/AF_DGD_PRINT.pdf";
         return fillTemplate(dgdPrint, templateFilePath, PDFUtils.filePath + "/PDFtemplate/temp/dgdMake", PDFUtils.filePath);
     }
+
 
     public static String fillTemplate(DgdPrint dgdPrint, String templateFilePath, String savePath, String replacePath) {
         String saveFilename = PDFUtils.makeFileName(dgdPrint.getDgdPrintName() + "_" + dgdPrint.getDgdPrintId() + ".pdf");
@@ -234,5 +229,60 @@ public class DgdPrintServiceImpl extends ServiceImpl<DgdPrintMapper, DgdPrint> i
             throw new RuntimeException("Exception : " + e.getMessage());
         }
         return newPDFPath.replace(replacePath, "");
+    }
+    @Override
+    public void exportExcel(Integer dgdPrintId, String type) {
+
+        DgdPrint dgdPrint = this.view(dgdPrintId);
+        LambdaQueryWrapper<AfOrder> wrapper = Wrappers.<AfOrder>lambdaQuery();
+        wrapper.eq(AfOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(AfOrder::getOrderId, dgdPrint.getOrderId());
+        AfOrder afOrder = afOrderService.getOne(wrapper);
+        dgdPrint.setAwbNumber(afOrder.getAwbNumber());
+        dgdPrint.setDgdPrintName(afOrder.getOrderCode());
+        EUserDetails user = SecurityUtils.getUser();
+
+        //寻找模板，航司是否配置打印模板
+        String templateFilePath = PDFUtils.filePath + "/PDFtemplate/dgd/AF_DGD_EXCEL_FORMAT.xlsx";
+        if ("T".equals(type)) {
+            templateFilePath = PDFUtils.filePath + "/PDFtemplate/dgd/AF_DGD_EXCEL.xlsx";
+        }
+
+        Map<String, String> valueData = new HashMap<>();
+        if (dgdPrint != null) {
+            valueData.put("Input01", StrUtil.isBlank(dgdPrint.getShipperPrint()) ? "" : dgdPrint.getShipperPrint());
+            valueData.put("Input02", StrUtil.isBlank(dgdPrint.getConsigneePrint()) ? "" : dgdPrint.getConsigneePrint());
+            valueData.put("Input03", StrUtil.isBlank(dgdPrint.getAwbNumber()) ? "" : dgdPrint.getAwbNumber());
+            valueData.put("Input04", StrUtil.isBlank(dgdPrint.getPageNumber()) ? "" : dgdPrint.getPageNumber());
+            valueData.put("Input05", StrUtil.isBlank(dgdPrint.getPagesNumber()) ? "" : dgdPrint.getPagesNumber());
+            valueData.put("Input06", StrUtil.isBlank(dgdPrint.getDepartureStationPrint()) ? "" : dgdPrint.getDepartureStationPrint());
+            valueData.put("Input07", "");
+            valueData.put("Input08", "");
+
+            valueData.put("Input09", dgdPrint.getAircraftType() == 0 ? "" : "XXXXXXXXXXX\nXXXXXXXXXXX");
+            valueData.put("Input10", dgdPrint.getAircraftType() == 1 ? "" : "XXXXXXXXXXX\nXXXXXXXXXXX");
+            valueData.put("Input11", StrUtil.isBlank(dgdPrint.getArrivalStationPrint()) ? "" : dgdPrint.getArrivalStationPrint());
+            valueData.put("Input12", dgdPrint.getShipmentType() == 0 ? "" : "XXXXXXXXXXXXXX");
+            valueData.put("Input13", dgdPrint.getShipmentType() == 1 ? "" : "XXXXXXXXXXXXXX");
+            valueData.put("Input14", StrUtil.isBlank(dgdPrint.getHandlingInfo()) ? "" : dgdPrint.getHandlingInfo());
+            valueData.put("Input15", StrUtil.isBlank(dgdPrint.getNameTitleOfSignatory()) ? "" : dgdPrint.getNameTitleOfSignatory());
+            valueData.put("Input16", StrUtil.isBlank(dgdPrint.getPlaceAndDate()) ? "" : dgdPrint.getPlaceAndDate());
+
+            HashMap<String, Integer> indexMap = new HashMap<>();
+            indexMap.put("index", 1);
+            dgdPrint.getDgdPrintList().stream().forEach(dgdPrintList -> {
+                valueData.put("InputR_" + indexMap.get("index") + "1", StrUtil.isBlank(dgdPrintList.getUnIdNo()) ? "" : dgdPrintList.getUnIdNo());
+                valueData.put("InputR_" + indexMap.get("index") + "2", StrUtil.isBlank(dgdPrintList.getProperShippingName()) ? "" : dgdPrintList.getProperShippingName());
+                valueData.put("InputR_" + indexMap.get("index") + "3", StrUtil.isBlank(dgdPrintList.getClassOrDivision()) ? "" : dgdPrintList.getClassOrDivision());
+                valueData.put("InputR_" + indexMap.get("index") + "4", StrUtil.isBlank(dgdPrintList.getPackingGroup()) ? "" : dgdPrintList.getPackingGroup());
+                valueData.put("InputR_" + indexMap.get("index") + "5", StrUtil.isBlank(dgdPrintList.getQuantityAndTypeOfPacking()) ? "" : dgdPrintList.getQuantityAndTypeOfPacking());
+                valueData.put("InputR_" + indexMap.get("index") + "6", StrUtil.isBlank(dgdPrintList.getPackingInst()) ? "" : dgdPrintList.getPackingInst());
+                valueData.put("InputR_" + indexMap.get("index") + "7", StrUtil.isBlank(dgdPrintList.getAuthorization()) ? "" : dgdPrintList.getAuthorization());
+                indexMap.put("index", indexMap.get("index") + 1);
+            });
+        }
+        HashMap<String, Object> context = new HashMap<>();
+
+        context.put("debit", valueData);
+        JxlsUtils.exportExcelWithLocalModel(templateFilePath, context);
     }
 }

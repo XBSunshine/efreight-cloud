@@ -2,6 +2,7 @@ package com.efreight.afbase.controller;
 
 
 import com.efreight.afbase.entity.DgdPrint;
+import com.efreight.afbase.entity.procedure.AfPAwbPrintProcedure;
 import com.efreight.afbase.service.DgdPrintService;
 import com.efreight.common.security.util.MessageInfo;
 import com.efreight.common.security.util.SecurityUtils;
@@ -156,6 +157,22 @@ public class DgdPrintController {
         } catch (Exception e) {
             log.info(e.getMessage());
             return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * 主单导出
+     *
+     * @param dgdPrintId
+     * @return
+     */
+    @PostMapping("/exportExcel/{dgdPrintId}/{type}")
+    public void exportExcel(@PathVariable("dgdPrintId") Integer dgdPrintId,@PathVariable("type") String type) {
+        try {
+            dgdPrintService.exportExcel(dgdPrintId,type);
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 }

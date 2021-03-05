@@ -43,11 +43,11 @@ public class InboundController {
      * @param flag
      * @return
      */
-    @DeleteMapping("/{number}/{flag}")
+    @DeleteMapping("/{number}/{flag}/{pageName}")
     @PreAuthorize("@pms.hasPermission('af_button_inbound_delete')")
-    public MessageInfo delete(@PathVariable String number,@PathVariable String flag){
+    public MessageInfo delete(@PathVariable String number,@PathVariable String flag,@PathVariable String pageName){
         try {
-            inboundService.delete(number,flag);
+            inboundService.delete(number,flag,pageName);
             return MessageInfo.ok();
         }catch (Exception e){
             log.info(e.getMessage());

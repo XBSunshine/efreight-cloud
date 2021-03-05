@@ -86,6 +86,26 @@ public class SendController {
         }
     }
     /**
+     * 删除预配
+     */
+    @PostMapping(value = "/doMft2201_Delete/{AWBNumber}/{hawbNumber}/{orderCode}/{contactTel}/{deleteReason}")
+    public MessageInfo doMft2201_Delete(@PathVariable("AWBNumber") String AWBNumber,
+                                        @PathVariable("hawbNumber") String hawbNumber,
+                                        @PathVariable("orderCode") String orderCode,
+                                        @PathVariable("contactTel") String contactTel,
+                                        @PathVariable("deleteReason") String deleteReason) {
+        try {
+            Map<String, Object> sendCallbackData = service.doMft2201_Delete(AWBNumber,hawbNumber,orderCode,contactTel,deleteReason);
+    		return MessageInfo.ok(sendCallbackData);
+    	} catch (CheckedException e){
+            log.error("异常："+ e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }catch (Exception e){
+            log.error("系统出现异常："+ e.getMessage());
+            return MessageInfo.failed("系统出现异常，请联系管理员！");
+        }
+    }
+    /**
      * 删除主单预录入
      */
     @PostMapping(value = "/doEawbPreDeleteAwb/{AWBNumber}/{orderCode}")
@@ -117,6 +137,7 @@ public class SendController {
             return MessageInfo.failed("系统出现异常，请联系管理员！");
         }
     }
+
     /**
      * 入库
      */
@@ -193,10 +214,78 @@ public class SendController {
             return MessageInfo.failed("系统出现异常，请联系管理员！");
         }
     }
+    @PostMapping(value={"doEAWB_TB/{hasMwb}/{orderUUID}","doEAWB_TB/{hasMwb}/{orderUUID}/{letterIds}"})
+    public MessageInfo doEAWB_TB(
+    		@PathVariable("hasMwb") String hasMwb,
+    		@PathVariable("orderUUID") String orderUUID,
+    		@PathVariable(value = "letterIds",required = false) String letterIds) {
+    	try {
+    		Map<String, Object> sendCallbackData = service.doEAWB_TB(hasMwb, orderUUID, letterIds);
+    		return MessageInfo.ok(sendCallbackData);
+    	} catch (CheckedException e){
+    		log.error("异常："+ e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}catch (Exception e){
+    		log.error("系统出现异常："+ e.getMessage());
+    		return MessageInfo.failed("系统出现异常，请联系管理员！");
+    	}
+    }
     @PostMapping(value="doSendGoodsName/{orderId}/{orderUUID}/{awbNumber}")
     public MessageInfo doSendGoodsName(@PathVariable("orderId") Integer orderId,@PathVariable("orderUUID") String orderUUID,@PathVariable("awbNumber") String awbNumber) {
     	try {
     		Map<String, Object> sendCallbackData = service.doSendGoodsName(orderId, orderUUID,awbNumber);
+    		return MessageInfo.ok(sendCallbackData);
+    	} catch (CheckedException e){
+    		log.error("异常："+ e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}catch (Exception e){
+    		log.error("系统出现异常："+ e.getMessage());
+    		return MessageInfo.failed("系统出现异常，请联系管理员！");
+    	}
+    }
+    @PostMapping(value="doSendVEEntry/{entryOrderId}")
+    public MessageInfo doSendVEEntry(@PathVariable("entryOrderId") Integer entryOrderId) {
+    	try {
+    		Map<String, Object> sendCallbackData = service.doSendVEEntry(entryOrderId);
+    		return MessageInfo.ok(sendCallbackData);
+    	} catch (CheckedException e){
+    		log.error("异常："+ e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}catch (Exception e){
+    		log.error("系统出现异常："+ e.getMessage());
+    		return MessageInfo.failed("系统出现异常，请联系管理员！");
+    	}
+    }
+    @PostMapping(value="doSendVEAppoint/{entryOrderId}")
+    public MessageInfo doSendVEAppoint(@PathVariable("entryOrderId") Integer entryOrderId) {
+    	try {
+    		Map<String, Object> sendCallbackData = service.doSendVEAppoint(entryOrderId);
+    		return MessageInfo.ok(sendCallbackData);
+    	} catch (CheckedException e){
+    		log.error("异常："+ e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}catch (Exception e){
+    		log.error("系统出现异常："+ e.getMessage());
+    		return MessageInfo.failed("系统出现异常，请联系管理员！");
+    	}
+    }
+    @PostMapping(value="doVEEntryConfirm/{entryOrderId}")
+    public MessageInfo doVEEntryConfirm(@PathVariable("entryOrderId") Integer entryOrderId) {
+    	try {
+    		Map<String, Object> sendCallbackData = service.doVEEntryConfirm(entryOrderId);
+    		return MessageInfo.ok(sendCallbackData);
+    	} catch (CheckedException e){
+    		log.error("异常："+ e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}catch (Exception e){
+    		log.error("系统出现异常："+ e.getMessage());
+    		return MessageInfo.failed("系统出现异常，请联系管理员！");
+    	}
+    }
+    @PostMapping(value="doVEEntryQuery/{entryOrderId}")
+    public MessageInfo doVEEntryQuery(@PathVariable("entryOrderId") Integer entryOrderId) {
+    	try {
+    		Map<String, Object> sendCallbackData = service.doVEEntryQuery(entryOrderId);
     		return MessageInfo.ok(sendCallbackData);
     	} catch (CheckedException e){
     		log.error("异常："+ e.getMessage());

@@ -77,6 +77,8 @@ public class AfVPrmCoopServiceImpl extends ServiceImpl<AfVPrmCoopMapper, AfVPrmC
             wrapper.eq(AfVPrmCoop::getBusinessScopeSi, afVPrmCoop.getBusinessScope());
         } else if ("TE".equals(afVPrmCoop.getBusinessScope())) {
             wrapper.eq(AfVPrmCoop::getBusinessScopeTE, afVPrmCoop.getBusinessScope());
+        } else if ("TI".equals(afVPrmCoop.getBusinessScope())) {
+            wrapper.eq(AfVPrmCoop::getBusinessScopeTI, afVPrmCoop.getBusinessScope());
         } else if ("LC".equals(afVPrmCoop.getBusinessScope())) {
             wrapper.eq(AfVPrmCoop::getBusinessScopeLC, afVPrmCoop.getBusinessScope());
         } else if ("VL".equals(afVPrmCoop.getBusinessScope())) {

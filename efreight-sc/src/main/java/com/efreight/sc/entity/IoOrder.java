@@ -1,16 +1,15 @@
 package com.efreight.sc.entity;
 
-import java.math.BigDecimal;
-
 import com.baomidou.mybatisplus.annotation.*;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.io.Serializable;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -261,5 +260,19 @@ public class IoOrder implements Serializable {
      */
     @TableField(exist = false)
     private Integer currentUserId;
+
+    /**
+     * 集装箱量
+     */
+    private String containerList;
+
+    /**
+     * 集装箱量明细
+     */
+    @TableField(exist = false)
+    private List<IoOrderContainerDetails> containerDetails;
+
+    @TableField(exist = false)
+    private String containerNumberAndContainerSealNo;
 
 }

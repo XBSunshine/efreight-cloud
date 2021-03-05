@@ -300,7 +300,7 @@ public class AfOrder implements Serializable {
     /**
      * 实际尺寸
      */
-//    private String confirmDimensions;
+    private String confirmDimensions;
 
     /**
      * 入库照片
@@ -803,5 +803,40 @@ public class AfOrder implements Serializable {
      */
     @TableField(exist = false)
     private String routingPersonName;
+
+    /**
+     * 业务类型
+     */
+    private String businessType;
+
+    /**
+     * 托盘材质
+     */
+    @TableField(exist = false)
+    private String palletMaterial;
+
+    /**
+     * 特货包装
+     */
+    @TableField(exist = false)
+    private String specialPackage;
+
+    /**
+     * 温度要求
+     */
+    @TableField(exist = false)
+    private String celsiusRequire;
+
+    /**
+     * 温度计
+     */
+    @TableField(exist = false)
+    private Integer thermometer;
+
+    /**
+     * 是否有温度要求
+     */
+    @TableField(exist = false)
+    private Boolean isCelsiusRequire;
 
 }

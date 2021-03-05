@@ -28,4 +28,6 @@ public interface WarehouseService extends IService<Warehouse> {
     int deleteById(Integer warehouseId);
 
     List<Warehouse> getList(String type);
+
+    List<Warehouse> getWarehouseListByQuery(String businessScope);
 }

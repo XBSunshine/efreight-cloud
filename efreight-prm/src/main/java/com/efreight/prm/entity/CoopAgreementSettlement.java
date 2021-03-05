@@ -92,6 +92,7 @@ public class CoopAgreementSettlement {
     private Integer reviewItNeed1;
     private String isNeedVerifyIt;
     private Integer reviewIt;
+    private Boolean isNewBusiness;
     @JsonFormat(pattern = "yyyy-MM-dd",timezone = "GMT+8")
     private Date reviewFinanceTime;
     private String reviewFinanceName;
@@ -101,4 +102,5 @@ public class CoopAgreementSettlement {
     private String reviewItName;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date startChargeTime;
+    private Integer isSendMailAuto;
 }

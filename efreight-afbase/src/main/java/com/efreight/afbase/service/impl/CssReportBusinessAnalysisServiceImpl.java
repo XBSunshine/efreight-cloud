@@ -78,7 +78,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
         	
         	incomeAmountMap.put(orderName, fmtMicrometer2(String.valueOf(list.get(i).get("incomeAmount"))));
         	amountMap.put(orderName, fmtMicrometer2(String.valueOf(list.get(i).get("costAmount"))));
-        	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) || "TE".equals(bean.getBusinessScope())) {
+        	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) || "TE".equals(bean.getBusinessScope()) || "TI".equals(bean.getBusinessScope())) {
         		if("整箱".equals(bean.getContainerMethod())) {
         			totalNum5=totalNum5+Double.parseDouble(String.valueOf(list.get(i).get("containerNumber")));
             		xMap.put(orderName, fmtMicrometer2(String.valueOf(list.get(i).get("containerNumber"))));
@@ -104,7 +104,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
         amountMap.put("name", "毛利（万元）");
         resultList.add(map);
 //        resultList.add(weightMap);
-        if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) || "TE".equals(bean.getBusinessScope())) {
+        if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) || "TE".equals(bean.getBusinessScope()) || "TI".equals(bean.getBusinessScope())) {
         	if("整箱".equals(bean.getContainerMethod())) {
         		xMap.put("totalNum", fmtMicrometer2(String.valueOf(totalNum5)));
             	xMap.put("name", "标箱数量");
@@ -165,7 +165,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
 //    		weightMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer2(String.valueOf(list.get(i).get("totalWeight"))));
     		incomeAmountMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer2(String.valueOf(list.get(i).get("incomeAmount"))));
     		amountMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer2(String.valueOf(list.get(i).get("costAmount"))));
-    		if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope())) {
+    		if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope()) ||"TI".equals(bean.getBusinessScope())) {
     			if("整箱".equals(bean.getContainerMethod())) {
     				totalNum5=totalNum5+Double.parseDouble(String.valueOf(list.get(i).get("containerNumber")));
         			xMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer2(String.valueOf(list.get(i).get("containerNumber"))));
@@ -191,7 +191,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
     	amountMap.put("name", "毛利（万元）");
     	resultList.add(map);
 //    	resultList.add(weightMap);
-    	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope())) {
+    	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope()) ||"TI".equals(bean.getBusinessScope())) {
     		
     		if("整箱".equals(bean.getContainerMethod())) {
     			xMap.put("totalNum", fmtMicrometer2(String.valueOf(totalNum5)));
@@ -267,7 +267,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
 //    		weightMap.put(list.get(i).get("orderName"), fmtMicrometer33(String.valueOf(list.get(i).get("totalWeight"))));
     		incomeAmountMap.put(orderName, fmtMicrometer33(String.valueOf(list.get(i).get("incomeAmount"))));
     		amountMap.put(orderName, fmtMicrometer33(String.valueOf(list.get(i).get("costAmount"))));
-    		if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope())) {
+    		if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope()) ||"TI".equals(bean.getBusinessScope())) {
     			
     			if("整箱".equals(bean.getContainerMethod())) {
     				totalNum5=totalNum5+Double.parseDouble(String.valueOf(list.get(i).get("containerNumber")));
@@ -294,7 +294,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
     	amountMap.put("name", "毛利（万元）");
     	resultList.add(map);
 //    	resultList.add(weightMap);
-    	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope())) {
+    	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope()) ||"TI".equals(bean.getBusinessScope())) {
     		
     		if("整箱".equals(bean.getContainerMethod())) {
     			xMap.put("totalNum", fmtMicrometer33(String.valueOf(totalNum5)));
@@ -357,7 +357,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
 //    		weightMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer33(String.valueOf(list.get(i).get("totalWeight"))));
     		incomeAmountMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer33(String.valueOf(list.get(i).get("incomeAmount"))));
     		amountMap.put(getOrderName(String.valueOf(list.get(i).get("orderName"))), fmtMicrometer33(String.valueOf(list.get(i).get("costAmount"))));
-    		if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope())) {
+    		if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope()) ||"TI".equals(bean.getBusinessScope())) {
     			
     			if("整箱".equals(bean.getContainerMethod())) {
     				totalNum5=totalNum5+Double.parseDouble(String.valueOf(list.get(i).get("containerNumber")));
@@ -384,7 +384,7 @@ public class CssReportBusinessAnalysisServiceImpl extends ServiceImpl<CssReportB
     	amountMap.put("name", "毛利（万元）");
     	resultList.add(map);
 //    	resultList.add(weightMap);
-    	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope())) {
+    	if ("SE".equals(bean.getBusinessScope())||"SI".equals(bean.getBusinessScope()) ||"TE".equals(bean.getBusinessScope()) ||"TI".equals(bean.getBusinessScope())) {
     		
     		if("整箱".equals(bean.getContainerMethod())) {
     			xMap.put("totalNum", fmtMicrometer33(String.valueOf(totalNum5)));

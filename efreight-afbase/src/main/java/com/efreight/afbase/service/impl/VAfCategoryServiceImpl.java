@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -32,4 +33,8 @@ public class VAfCategoryServiceImpl extends ServiceImpl<VAfCategoryMapper, VAfCa
     	
     	return baseMapper.getscList(categoryName);
     }
+	@Override
+	public List<Map> invoiceType() {
+		return baseMapper.invoiceType();
+	}
 }

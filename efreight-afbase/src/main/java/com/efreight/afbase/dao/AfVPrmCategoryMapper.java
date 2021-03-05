@@ -20,13 +20,17 @@ public interface AfVPrmCategoryMapper extends BaseMapper<AfVPrmCategory> {
 
     @Select({"<script>",
             "SELECT param_text, param_ranking, category_name, remarks, EDICode1  FROM af_V_prm_category ",
-            "	where category_name=#{categoryName} AND EDICode1!='' AND param_text not in('TI')",
+            "	where category_name=#{categoryName} AND EDICode1!=''",
             "</script>"})
     List<AfVPrmCategory> getAfVPrmCategory(@Param("categoryName") String categoryName);
 
     @Select({"<script>",
             "SELECT param_text, param_ranking, category_name, remarks, EDICode1  FROM af_V_prm_category ",
-            "	where category_type=#{categoryType} AND EDICode1!='' AND param_text not in('TI')",
+            "	where category_type=#{categoryType}",
             "</script>"})
     List<AfVPrmCategory> queryCategoryByCategoryType(@Param("categoryType") Integer categoryType);
+
+
+    @Select("<script> SELECT param_text FROM af_V_prm_category WHERE category_type = 7 AND param_text != 'EF' </script>")
+    List<AfVPrmCategory> findDocBusinessScope();
 }

@@ -106,4 +106,8 @@ public class ReportReceivableAge implements Serializable {
     
     private Integer otherOrg;
 
+    private Integer currentUserId;
+
+    private Integer orderPermission;
+
 }

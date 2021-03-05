@@ -51,6 +51,11 @@ public class ScOrder implements Serializable {
     private String orderStatus;
 
     /**
+     * 成本状态
+     */
+    private String costStatus;
+
+    /**
      * 主提单号
      */
     private String mblNumber;
@@ -527,4 +532,6 @@ public class ScOrder implements Serializable {
     
     private Boolean incomeRecorded;
     private Boolean costRecorded;
+
+    private String rowUuid;
 }

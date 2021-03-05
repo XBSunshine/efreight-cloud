@@ -101,6 +101,9 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         if (StrUtil.isBlank(bean.getServicerName())) {
             bean.setServicerName(null);
         }
+        if (bean.getWorkgroupId() == null) {
+            bean.setWorkgroupId(null);
+        }
         if (StrUtil.isBlank(bean.getRoutingPersonName())) {
             bean.setRoutingPersonName(null);
         }
@@ -138,7 +141,7 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
             list = cssPReportSettleAfMapper.getListPage(bean);
         } else if ("SE".equals(bean.getBusinessScope()) || "SI".equals(bean.getBusinessScope())) {
             list = cssPReportSettleAfMapper.getListPageSC(bean);
-        } else if ("TE".equals(bean.getBusinessScope())) {
+        } else if ("TE".equals(bean.getBusinessScope()) || "TI".equals(bean.getBusinessScope())) {
             list = cssPReportSettleAfMapper.getListPageTC(bean);
         } else if ("LC".equals(bean.getBusinessScope())) {
             list = cssPReportSettleAfMapper.getListPageLC(bean);
@@ -228,6 +231,9 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         }
         if (StrUtil.isBlank(bean.getServicerName())) {
             bean.setServicerName(null);
+        }
+        if (bean.getWorkgroupId() == null) {
+            bean.setWorkgroupId(null);
         }
         if (StrUtil.isBlank(bean.getRoutingPersonName())) {
             bean.setRoutingPersonName(null);
@@ -374,6 +380,9 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         }
         if (StrUtil.isBlank(bean.getServicerName())) {
             bean.setServicerName(null);
+        }
+        if (bean.getWorkgroupId() == null) {
+            bean.setWorkgroupId(null);
         }
         if (StrUtil.isBlank(bean.getRoutingPersonName())) {
             bean.setRoutingPersonName(null);
@@ -522,6 +531,9 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         if (StrUtil.isBlank(bean.getServicerName())) {
             bean.setServicerName(null);
         }
+        if (bean.getWorkgroupId() == null) {
+            bean.setWorkgroupId(null);
+        }
         if (StrUtil.isBlank(bean.getOrderStatus())) {
             bean.setOrderStatus(null);
         }
@@ -662,6 +674,9 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         }
         if (StrUtil.isBlank(bean.getServicerName())) {
             bean.setServicerName(null);
+        }
+        if (bean.getWorkgroupId() == null) {
+            bean.setWorkgroupId(null);
         }
         if (StrUtil.isBlank(bean.getOrderStatus())) {
             bean.setOrderStatus(null);
@@ -805,6 +820,9 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         if (StrUtil.isBlank(bean.getServicerName())) {
             bean.setServicerName(null);
         }
+        if (bean.getWorkgroupId() == null) {
+            bean.setWorkgroupId(null);
+        }
         if (StrUtil.isBlank(bean.getOrderStatus())) {
             bean.setOrderStatus(null);
         }
@@ -834,7 +852,7 @@ public class CssPReportSettleAfServiceImpl extends ServiceImpl<CssPReportSettleA
         }
         List<List<Map<String, String>>> list = null;
         List<CssPReportSettleExcel> listR = null;
-        if ("TE".equals(bean.getBusinessScope())) {
+        if ("TE".equals(bean.getBusinessScope()) || "TI".equals(bean.getBusinessScope())) {
             list = cssPReportSettleAfMapper.getListPageTC(bean);
             listR = cssPReportSettleAfMapper.getListPageTCExcel(bean);
         }

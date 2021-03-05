@@ -89,6 +89,11 @@ public class AfAwbRouteServiceImpl extends ServiceImpl<AfAwbRouteMapper, AfAwbRo
 	}
 
 
+	/**
+	 *
+	 * @param awbNumber
+	 * @return Array array[0]:是否为新增,1为是 0为否，array[1]:数据ID
+	 */
 	private int[] saveAwbRouteInfo(String awbNumber){
 		LambdaQueryWrapper<AfAwbRoute> afAwbRouteWrapper = Wrappers.lambdaQuery();
 		afAwbRouteWrapper.eq(AfAwbRoute::getAwbNumber, awbNumber);
@@ -105,8 +110,13 @@ public class AfAwbRouteServiceImpl extends ServiceImpl<AfAwbRouteMapper, AfAwbRo
 			result[0] = 1;
 			result[1] = id;
 		}else{
+			AfAwbRoute dbAwbRoute = afAwbRouteList.get(0);
 			result[0] = 0;
-			result[1] = afAwbRouteList.get(0).getAwbRouteId();
+			result[1] = dbAwbRoute.getAwbRouteId();
+			if(dbAwbRoute.getTrackTime() != null && dbAwbRoute.getTrackTime().plusMonths(1).isBefore(LocalDateTime.now())){
+			    dbAwbRoute.setIsTrack(0);
+				this.baseMapper.updateById(dbAwbRoute);
+			}
 		}
 		return result;
 	}

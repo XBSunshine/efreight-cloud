@@ -41,6 +41,8 @@ public class CustomsDeclaration implements Serializable {
      */
     private Integer orgId;
 
+    private Integer warehouseId;
+
     /**
      * 业务范畴
      */

@@ -162,4 +162,12 @@ public class WarehouseServiceImpl extends ServiceImpl<WarehouseMapper, Warehouse
         }
         return baseMapper.selectList(wrapper);
     }
+
+    @Override
+    public List<Warehouse> getWarehouseListByQuery(String businessScope) {
+        LambdaQueryWrapper<Warehouse> wrapper = Wrappers.<Warehouse>lambdaQuery();
+        wrapper.eq(Warehouse::getOrgId, SecurityUtils.getUser().getOrgId()).eq(Warehouse::getBusinessScope, businessScope).eq(Warehouse::getWarehouseStatus,1);
+
+        return baseMapper.selectList(wrapper);
+    }
 }

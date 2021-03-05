@@ -21,6 +21,8 @@ public interface CoopBillService {
 
     void sendBill(Integer statementId) throws ClassNotFoundException, SQLException, IOException;
 
+    void autoSendBill(String billMonth) throws ClassNotFoundException, SQLException, IOException;
+
     void verify(Integer statement_id,Double acturalCharge,String invoiceWriteoffDate) throws ParseException;
 
     void fill(Integer billId, Double acturalCharge);

@@ -13,6 +13,8 @@ import java.util.List;
 @Accessors(chain = true)
 public class CssVoucherExport {
 
+    private Integer invoiceDetailId;
+    private Integer invoiceDetailWriteoffId;
     private String businessScope;
     private Boolean voucherStatus;
     private String voucherNumber;
@@ -21,36 +23,10 @@ public class CssVoucherExport {
     private LocalDate voucherDateEnd;
     private String voucherCreatorName;
     private Integer voucherCreatorId;
-    private String awbNumber;
-    private String customerNumber;
-    private String coopCode;
-    /**
-     * 收付款客户id
-     */
     private Integer customerId;
-    /**
-     * 收付款客户
-     */
     private String customerName;
-    /**
-     * 订单客户
-     */
-    private String coopName;
-    private LocalDate lockDate;
-    private LocalDate lockDateStart;
-    private LocalDate lockDateEnd;
-    private BigDecimal incomeAmount;
-    private BigDecimal incomeFunctionalAmount;
-    private BigDecimal costAmount;
-    private BigDecimal costFunctionalAmount;
-    private BigDecimal profitAmount;
-    private String incomeAmountStr;
-    private String incomeFunctionalAmountStr;
-    private String costAmountStr;
-    private String costFunctionalAmountStr;
-    private String profitAmountStr;
-    private Integer orderId;
-    private String orderCode;
+    private BigDecimal amount;
+    private String amountStr;
     private Integer orgId;
     private Integer voucherIsDetail;
 
@@ -60,15 +36,14 @@ public class CssVoucherExport {
     private LocalDate invoiceDate;
     private LocalDate invoiceDateStart;
     private LocalDate invoiceDateEnd;
-    private String invoiceNumber;
+    private String invoiceNum;
+    private String invoiceType;
     private String invoiceTitle;
-    private String invoiceRemark;
     private BigDecimal writeoffAmount;
     private String currency;
     private String writeoffAmountStr;
-    private String writeoffNumber;
+    private String writeoffNum;
     private String writeoffCreatorName;
-    private String debitnoteNumber;
     private Integer writeoffId;
     private String writeoffType;
     private String financialAccountCode;
@@ -104,4 +79,8 @@ public class CssVoucherExport {
      */
     private Integer type;
     private String columnStrs;
+
+    private String rowUuid;
+
+    private Integer paymentId;
 }

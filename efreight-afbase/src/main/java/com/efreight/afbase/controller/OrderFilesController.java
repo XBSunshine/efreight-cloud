@@ -106,7 +106,7 @@ public class OrderFilesController {
     @PostMapping("/doDelete")
     public MessageInfo delete(@RequestBody OrderFiles bean) {
         try {
-            orderFilesService.delete(bean.getOrderFileId(),bean.getBusinessScope());
+            orderFilesService.delete(bean);
             return MessageInfo.ok();
         } catch (Exception e) {
             log.info(e.getMessage());
@@ -123,7 +123,7 @@ public class OrderFilesController {
     @PostMapping("/showFile")
     public MessageInfo showFile(@RequestBody OrderFiles bean) {
         try {
-            orderFilesService.showFile(bean.getOrderFileId(),bean.getBusinessScope(),bean.getIsDisplay());
+            orderFilesService.showFile(bean);
             return MessageInfo.ok();
         } catch (Exception e) {
             log.info(e.getMessage());

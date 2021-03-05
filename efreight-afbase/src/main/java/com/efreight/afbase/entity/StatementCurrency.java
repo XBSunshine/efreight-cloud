@@ -3,7 +3,9 @@ package com.efreight.afbase.entity;
 import java.math.BigDecimal;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 
 import java.io.Serializable;
@@ -91,4 +93,8 @@ public class StatementCurrency implements Serializable {
      */
     private transient BigDecimal functionalAmountWriteoff2;
     private transient String checkBox;
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private BigDecimal amountInvoice;
+    @TableField(exist = false)
+    private BigDecimal amountInvoiceNo;
 }

@@ -8,6 +8,7 @@ import com.efreight.common.remoteVo.IncomeCostList;
 import com.efreight.common.security.util.SecurityUtils;
 import com.efreight.sc.entity.*;
 import com.efreight.sc.dao.IoIncomeMapper;
+import com.efreight.sc.dao.LcIncomeMapper;
 import com.efreight.sc.service.IoIncomeService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.sc.service.IoCostService;
@@ -41,6 +42,7 @@ public class IoIncomeServiceImpl extends ServiceImpl<IoIncomeMapper, IoIncome> i
     private final IoLogService ioLogService;
 
     private final IoCostService ioCostService;
+    private final LcIncomeMapper lcIncomeMapper;
 
     @Override
     public List<IoIncome> getList(Integer orderId) {
@@ -99,24 +101,6 @@ public class IoIncomeServiceImpl extends ServiceImpl<IoIncomeMapper, IoIncome> i
             throw new RuntimeException("该订单不存在");
         }
 
-        //更改订单状态
-        boolean flag = false;
-        if ("未录收入".equals(ioOrder.getIncomeStatus()) || "已录收入".equals(ioOrder.getIncomeStatus())) {
-            ioOrder.setIncomeStatus(incomeCostList.getIncomeStatus());
-            flag = true;
-        }
-        if ("未录成本".equals(ioOrder.getCostStatus()) || "已录成本".equals(ioOrder.getCostStatus())) {
-            ioOrder.setCostStatus(incomeCostList.getCostStatus());
-            flag = true;
-        }
-        if (flag) {
-            ioOrder.setRowUuid(UUID.randomUUID().toString());
-            ioOrder.setEditorId(SecurityUtils.getUser().getId());
-            ioOrder.setEditTime(LocalDateTime.now());
-            ioOrder.setEditorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
-            ioOrderService.updateById(ioOrder);
-        }
-
         //日志
         IoLog logBean = new IoLog();
         logBean.setPageName("费用录入");
@@ -169,63 +153,74 @@ public class IoIncomeServiceImpl extends ServiceImpl<IoIncomeMapper, IoIncome> i
         });
 
         //状态更新
-        if (StrUtil.isNotBlank(flag1.toString())) {
-            if ("核销完毕".equals(ioOrder.getIncomeStatus())) {
-                ioOrder.setIncomeStatus("部分核销");
-                ioOrderService.modify(ioOrder);
-            }
-        } else if (incomeCostList.getIncomeDeleteList().size() > 0) {
-            List<Map<String, Object>> billList = baseMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), incomeCostList.getOrderId());
-
-            int incomeStatus = 1;
-            for (int i = 0; i < billList.size(); i++) {
-                Map<String, Object> bill = billList.get(i);
-                if (bill.get("writeoff_complete") == null || (Integer) bill.get("writeoff_complete") == 0) {
-                    incomeStatus = 0;
-                    break;
-                }
-            }
-            LambdaQueryWrapper<IoIncome> ioIncomeLambdaQueryWrapper = Wrappers.<IoIncome>lambdaQuery();
-            ioIncomeLambdaQueryWrapper.eq(IoIncome::getOrderId, incomeCostList.getOrderId()).eq(IoIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNull(IoIncome::getDebitNoteId);
-            List<IoIncome> listNoBill = list(ioIncomeLambdaQueryWrapper);
-
-            LambdaQueryWrapper<IoIncome> ioIncomeWrapper = Wrappers.<IoIncome>lambdaQuery();
-            ioIncomeWrapper.eq(IoIncome::getOrderId, incomeCostList.getOrderId()).eq(IoIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNotNull(IoIncome::getDebitNoteId);
-            List<IoIncome> listCompleteBill = list(ioIncomeWrapper);
-            if (listNoBill.size() == 0 && listCompleteBill.size() > 0 && incomeStatus == 1) {
-                ioOrder.setIncomeStatus("核销完毕");
-                ioOrderService.modify(ioOrder);
-            }
-        }
-        if (StrUtil.isNotBlank(flag2.toString())) {
-            IoOrder order = ioOrderService.getById(incomeCostList.getOrderId());
-            if ("核销完毕".equals(order.getCostStatus())) {
-                order.setCostStatus("部分核销");
-                ioOrderService.modify(order);
-            }
-        } else {
-            LambdaQueryWrapper<IoCost> ioCostLambdaQueryWrapper = Wrappers.<IoCost>lambdaQuery();
-            ioCostLambdaQueryWrapper.eq(IoCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(IoCost::getOrderId, incomeCostList.getOrderId());
-            List<IoCost> list = ioCostService.list(ioCostLambdaQueryWrapper);
-            boolean ifCostCompleteWriteoff = true;
-            try {
-                if (list.size() > 0) {
-                    list.stream().forEach(ioCost -> {
-                        if (ioCost.getCostAmountWriteoff() == null || ioCost.getCostAmount().compareTo(ioCost.getCostAmountWriteoff()) != 0 || ioCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
-                            throw new RuntimeException();
-                        }
-                    });
-                } else {
-                    ifCostCompleteWriteoff = false;
-                }
-            } catch (Exception e) {
-                ifCostCompleteWriteoff = false;
-            }
-            if (ifCostCompleteWriteoff) {
-                IoOrder order = ioOrderService.getById(incomeCostList.getOrderId());
-                order.setCostStatus("核销完毕");
-                ioOrderService.modify(order);
-            }
-        }
+//        if (StrUtil.isNotBlank(flag1.toString())) {
+//            if ("核销完毕".equals(ioOrder.getIncomeStatus())) {
+//                ioOrder.setIncomeStatus("部分核销");
+//                ioOrderService.modify(ioOrder);
+//            }
+//        } else if (incomeCostList.getIncomeDeleteList().size() > 0) {
+//            List<Map<String, Object>> billList = baseMapper.getOrderBill(SecurityUtils.getUser().getOrgId(), incomeCostList.getOrderId());
+//
+//            int incomeStatus = 1;
+//            for (int i = 0; i < billList.size(); i++) {
+//                Map<String, Object> bill = billList.get(i);
+//                if (bill.get("writeoff_complete") == null || (Integer) bill.get("writeoff_complete") == 0) {
+//                    incomeStatus = 0;
+//                    break;
+//                }
+//            }
+//            LambdaQueryWrapper<IoIncome> ioIncomeLambdaQueryWrapper = Wrappers.<IoIncome>lambdaQuery();
+//            ioIncomeLambdaQueryWrapper.eq(IoIncome::getOrderId, incomeCostList.getOrderId()).eq(IoIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNull(IoIncome::getDebitNoteId);
+//            List<IoIncome> listNoBill = list(ioIncomeLambdaQueryWrapper);
+//
+//            LambdaQueryWrapper<IoIncome> ioIncomeWrapper = Wrappers.<IoIncome>lambdaQuery();
+//            ioIncomeWrapper.eq(IoIncome::getOrderId, incomeCostList.getOrderId()).eq(IoIncome::getOrgId, SecurityUtils.getUser().getOrgId()).isNotNull(IoIncome::getDebitNoteId);
+//            List<IoIncome> listCompleteBill = list(ioIncomeWrapper);
+//            if (listNoBill.size() == 0 && listCompleteBill.size() > 0 && incomeStatus == 1) {
+//                ioOrder.setIncomeStatus("核销完毕");
+//                ioOrderService.modify(ioOrder);
+//            }
+//        }
+        List<Map> listMap = lcIncomeMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), incomeCostList.getOrderId().toString(),"IO");
+		if(listMap!=null&&listMap.size()>0) {
+			for(Map map:listMap) {
+//				lcIncomeMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),"IO");
+				ioOrder.setIncomeStatus(map.get("income_status").toString());
+			}
+		}
+//        if (StrUtil.isNotBlank(flag2.toString())) {
+//            IoOrder order = ioOrderService.getById(incomeCostList.getOrderId());
+//            if ("核销完毕".equals(order.getCostStatus())) {
+//                order.setCostStatus("部分核销");
+//                ioOrderService.modify(order);
+//            }
+//        } else {
+//            LambdaQueryWrapper<IoCost> ioCostLambdaQueryWrapper = Wrappers.<IoCost>lambdaQuery();
+//            ioCostLambdaQueryWrapper.eq(IoCost::getOrgId, SecurityUtils.getUser().getOrgId()).eq(IoCost::getOrderId, incomeCostList.getOrderId());
+//            List<IoCost> list = ioCostService.list(ioCostLambdaQueryWrapper);
+//            boolean ifCostCompleteWriteoff = true;
+//            try {
+//                if (list.size() > 0) {
+//                    list.stream().forEach(ioCost -> {
+//                        if (ioCost.getCostAmountWriteoff() == null || ioCost.getCostAmount().compareTo(ioCost.getCostAmountWriteoff()) != 0 || ioCost.getCostAmount().compareTo(BigDecimal.ZERO) == 0) {
+//                            throw new RuntimeException();
+//                        }
+//                    });
+//                } else {
+//                    ifCostCompleteWriteoff = false;
+//                }
+//            } catch (Exception e) {
+//                ifCostCompleteWriteoff = false;
+//            }
+//            if (ifCostCompleteWriteoff) {
+//                IoOrder order = ioOrderService.getById(incomeCostList.getOrderId());
+//                order.setCostStatus("核销完毕");
+//                ioOrderService.modify(order);
+//            }
+//        }
+        //修改订单成本状态
+        ioOrder.setRowUuid(UUID.randomUUID().toString());
+		ioOrder.setCostStatus(ioCostService.getOrderCostStatusForIO(incomeCostList.getOrderId()));
+		ioOrderService.updateById(ioOrder);
     }
 }

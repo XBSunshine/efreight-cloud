@@ -71,4 +71,14 @@ public class SeHawMakeProcedure implements Serializable {
     private String Input048;
     private String Input049;
     private String Input050;
+    private String Input051;
+    private String Input052;
+    private String Input053;
+    private String Input054;
+    private String Input055;
+    private String Input056;
+    private String Input057;
+    private String Input058;
+    private String Input059;
+    private String Input060;
 }

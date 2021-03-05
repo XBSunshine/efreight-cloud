@@ -140,4 +140,9 @@ public class AfOrderIdentify implements Serializable {
 
 
     private transient List<AfOrderIdentifyDetail> afOrderIdentifyDetailList;
+    
+    
+    private transient String pageName;
+    private transient String orderCode;
+    private transient String orderUuid;
 }

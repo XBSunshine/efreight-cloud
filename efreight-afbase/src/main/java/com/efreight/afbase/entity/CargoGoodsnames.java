@@ -82,5 +82,7 @@ public class CargoGoodsnames implements Serializable {
 
     private String editorName;
 
-
+    private transient String pageName;
+    private transient String orderCode;
+    private transient String orderUuid;
 }

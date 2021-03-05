@@ -80,6 +80,37 @@ public class LcCostServiceImpl extends ServiceImpl<LcCostMapper, LcCost> impleme
         return getById(costId);
     }
 
+    @Override
+    public String getOrderCostStatusForLC(Integer orderId) {
+        Map<String, String> result = baseMapper.getOrderCostStatusForLC(orderId);
+        if (result == null) {
+            return "未录成本";
+        }
+        if ("1".equals(result.get("completeWriteoffFlag"))) {
+            return "核销完毕";
+        }
+        if ("1".equals(result.get("writeoffFlag"))) {
+            return "部分核销";
+        }
+        Map<String, String> invoiceStatus = baseMapper.getOrderCostStatusForLCAboutInvoiceStatus(orderId, SecurityUtils.getUser().getOrgId());
+        if ("1".equals(invoiceStatus.get("completeInvoice"))) {
+            return "完全收票";
+        }
+        if ("1".equals(invoiceStatus.get("noInvoice"))) {
+            return "付款申请";
+        }
+        if ("1".equals(invoiceStatus.get("InvoiceNoComplete"))) {
+            return "部分收票";
+        }
+        if ("1".equals(result.get("paymentFlag"))) {
+            return "已对账";
+        }
+        if ("1".equals(result.get("costFlag"))) {
+            return "已录成本";
+        }
+        return null;
+    }
+
     private Boolean checkCostIfCompleteBill(Integer costId) {
         try {
             List<Map<String, Object>> list = baseMapper.getPaymentDetailByCostId(costId, SecurityUtils.getUser().getOrgId());

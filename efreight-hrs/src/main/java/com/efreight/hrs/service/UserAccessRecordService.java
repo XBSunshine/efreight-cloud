@@ -1,6 +1,7 @@
 package com.efreight.hrs.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.efreight.hrs.entity.Org;
 import com.efreight.hrs.entity.UserAccessRecord;
 
 import java.util.List;
@@ -24,4 +25,11 @@ public interface UserAccessRecordService extends IService<UserAccessRecord> {
      * @return
      */
     List<UserAccessRecord> topAccess(Integer userId, Integer number);
+
+    /**
+     * 查询签约公司活跃指数
+     * @param
+     * @return
+     */
+    List<Org> topActiveIndex();
 }

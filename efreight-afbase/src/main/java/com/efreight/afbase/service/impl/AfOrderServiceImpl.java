@@ -325,15 +325,15 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         }
         EUserDetails user = SecurityUtils.getUser();
         Integer orgId = user.getOrgId();
-        String awbNumber= bean.getAwbNumber();
+        String awbNumber = bean.getAwbNumber();
         int isHaveAWB = 0;
         bean.setOrderStatus("订单创建");
         if (bean.getAwbNumber() != null && !"".equals(bean.getAwbNumber())) {
-            List<AwbNumber> awbList = baseMapper.selectAwb(orgId,awbNumber );
+            List<AwbNumber> awbList = baseMapper.selectAwb(orgId, awbNumber);
 
             if (awbList.size() == 0) {//主单号不存在
                 checkCoop(bean, user, orgId, awbNumber);
-            }else{
+            } else {
                 bean.setAwbId(awbList.get(0).getAwbId());
                 bean.setAwbUuid(awbList.get(0).getAwbUuid());
                 //状态
@@ -392,6 +392,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 //            bean.setConfirmChargeWeight(bean.getPlanChargeWeight());
 //        }
         baseMapper.insert(bean);
+
+        //插入出口订单 附属表
+        baseMapper.insertOrderExtend(orgId, bean);
 
         //联系人
         for (int i = 0; i < bean.getOrderContacts().size(); i++) {
@@ -612,31 +615,31 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         afRountingSign.setEditorName(user.getUserCname() + " " + user.getUserEmail());
         //查询当前汇率
         BigDecimal currencyRate = null;
-        if(!"".equals(bean.getMsrCurrecnyCode())){
-            currencyRate = baseMapper.getCurrencyRate(orgId,bean.getMsrCurrecnyCode());
+        if (!"".equals(bean.getMsrCurrecnyCode())) {
+            currencyRate = baseMapper.getCurrencyRate(orgId, bean.getMsrCurrecnyCode());
         }
-        if(bean.getMsrUnitprice() != null){
-            if(currencyRate != null){
+        if (bean.getMsrUnitprice() != null) {
+            if (currencyRate != null) {
                 BigDecimal msrUnitprice = BigDecimal.valueOf(bean.getMsrUnitprice()).multiply(currencyRate);
                 afRountingSign.setMsrUnitprice(msrUnitprice.setScale(2, BigDecimal.ROUND_HALF_UP));
                 BigDecimal msrAmountWriteoff = BigDecimal.valueOf(bean.getPlanChargeWeight()).multiply(msrUnitprice);
                 afRountingSign.setMsrAmountWriteoff(msrAmountWriteoff.setScale(2, BigDecimal.ROUND_HALF_UP));
-            }else{
+            } else {
                 afRountingSign.setMsrUnitprice(new BigDecimal("0.00"));
                 afRountingSign.setMsrAmountWriteoff(new BigDecimal("0.00"));
             }
             afRountingSign.setIncomeWeight(bean.getPlanChargeWeight());
-        }else if(bean.getMsrAmount() != null){
-            if(currencyRate != null){
+        } else if (bean.getMsrAmount() != null) {
+            if (currencyRate != null) {
                 BigDecimal msrUnitprice = BigDecimal.valueOf(bean.getMsrAmount()).multiply(currencyRate);
                 afRountingSign.setMsrUnitprice(msrUnitprice.setScale(2, BigDecimal.ROUND_HALF_UP));
                 afRountingSign.setMsrAmountWriteoff(msrUnitprice.setScale(2, BigDecimal.ROUND_HALF_UP));
-            }else{
+            } else {
                 afRountingSign.setMsrUnitprice(new BigDecimal("0.00"));
                 afRountingSign.setMsrAmountWriteoff(new BigDecimal("0.00"));
             }
             afRountingSign.setIncomeWeight(1.00);
-        }else{
+        } else {
             afRountingSign.setMsrUnitprice(new BigDecimal("0.00"));
             afRountingSign.setMsrAmountWriteoff(new BigDecimal("0.00"));
             afRountingSign.setIncomeWeight(bean.getPlanChargeWeight());
@@ -970,7 +973,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
                 List<AwbNumber> awbList = baseMapper.selectAwb(orgId, awbNumber);
                 if (awbList.size() == 0) {//主单号不存在
                     checkCoop(bean, user, orgId, awbNumber);
-                }else{
+                } else {
                     bean.setAwbId(awbList.get(0).getAwbId());
                     bean.setAwbUuid(awbList.get(0).getAwbUuid());
                     baseMapper.updateAwbStatus(awbList.get(0).getAwbId(), "已配单", orgId);
@@ -1030,6 +1033,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         for (int i = 0; i < bean.getOrderContacts().size(); i++) {
             baseMapper.insertOrderContacts(orgId, bean.getOrderId(), bean.getOrderContacts().get(i));
         }
+        //附属表先删除在增加
+        baseMapper.deleteOrderExtend(orgId, bean.getOrderId());
+        baseMapper.insertOrderExtend(orgId, bean);
         //收发货人修改
         AfOrderShipperConsignee afOrderShipperConsignee = bean.getAfOrderShipperConsignee1();
         if (afOrderShipperConsignee != null) {
@@ -1120,8 +1126,8 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             afOrderShipperConsigneeService.saveBatch(afOrderShipperList);
         }
         //修改签单信息
-        if(bean.getRountingSign()!=null&&bean.getRountingSign() == 1){
-            if(bean.getSignState() != null && bean.getSignState() == 0 && bean.getBusinessProduct() != null && bean.getRountingSignBusinessProduct().contains(bean.getBusinessProduct())){
+        if (bean.getRountingSign() != null && bean.getRountingSign() == 1) {
+            if (bean.getSignState() != null && bean.getSignState() == 0 && bean.getBusinessProduct() != null && bean.getRountingSignBusinessProduct().contains(bean.getBusinessProduct())) {
                 AfRountingSign afRountingSign = new AfRountingSign();
                 afRountingSign.setRountingSignId(bean.getRountingSignId());
                 afRountingSign.setEditorId(user.getId());
@@ -1129,39 +1135,39 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
                 afRountingSign.setEditorName(user.getUserCname() + " " + user.getUserEmail());
                 //查询当前汇率
                 BigDecimal currencyRate = null;
-                if(!"".equals(bean.getMsrCurrecnyCode())){
-                    currencyRate = baseMapper.getCurrencyRate(orgId,bean.getMsrCurrecnyCode());
+                if (!"".equals(bean.getMsrCurrecnyCode())) {
+                    currencyRate = baseMapper.getCurrencyRate(orgId, bean.getMsrCurrecnyCode());
                 }
-                if(bean.getMsrUnitprice() != null){
-                    if(currencyRate != null){
+                if (bean.getMsrUnitprice() != null) {
+                    if (currencyRate != null) {
                         BigDecimal msrUnitprice = BigDecimal.valueOf(bean.getMsrUnitprice()).multiply(currencyRate);
                         afRountingSign.setMsrUnitprice(msrUnitprice.setScale(2, BigDecimal.ROUND_HALF_UP));
                         BigDecimal msrAmountWriteoff = BigDecimal.valueOf(bean.getConfirmChargeWeight() == null ? bean.getPlanChargeWeight() : bean.getConfirmChargeWeight()).multiply(msrUnitprice);
                         afRountingSign.setMsrAmountWriteoff(msrAmountWriteoff.setScale(2, BigDecimal.ROUND_HALF_UP));
-                    }else{
+                    } else {
                         afRountingSign.setMsrUnitprice(new BigDecimal("0.00"));
                         afRountingSign.setMsrAmountWriteoff(new BigDecimal("0.00"));
                     }
                     afRountingSign.setIncomeWeight(bean.getConfirmChargeWeight() == null ? bean.getPlanChargeWeight() : bean.getConfirmChargeWeight());
-                }else if(bean.getMsrAmount() != null){
-                    if(currencyRate != null){
+                } else if (bean.getMsrAmount() != null) {
+                    if (currencyRate != null) {
                         BigDecimal msrUnitprice = BigDecimal.valueOf(bean.getMsrAmount()).multiply(currencyRate);
                         afRountingSign.setMsrUnitprice(msrUnitprice.setScale(2, BigDecimal.ROUND_HALF_UP));
                         afRountingSign.setMsrAmountWriteoff(msrUnitprice.setScale(2, BigDecimal.ROUND_HALF_UP));
-                    }else{
+                    } else {
                         afRountingSign.setMsrUnitprice(new BigDecimal("0.00"));
                         afRountingSign.setMsrAmountWriteoff(new BigDecimal("0.00"));
                     }
                     afRountingSign.setIncomeWeight(1.00);
-                }else{
+                } else {
                     afRountingSign.setMsrUnitprice(new BigDecimal("0.00"));
                     afRountingSign.setMsrAmountWriteoff(new BigDecimal("0.00"));
                     afRountingSign.setIncomeWeight(bean.getConfirmChargeWeight() == null ? bean.getPlanChargeWeight() : bean.getConfirmChargeWeight());
                 }
                 afRountingSignMapper.updateById(afRountingSign);
             }
-        }else {
-            if(bean.getRountingSignId() != null){
+        } else {
+            if (bean.getRountingSignId() != null) {
                 AfRountingSign afRountingSign = new AfRountingSign();
                 afRountingSign.setRountingSignId(bean.getRountingSignId());
                 afRountingSign.setSignState(0);
@@ -1172,9 +1178,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 //                afRountingSign.setEditorName(user.getUserCname() + " " + user.getUserEmail());
                 //查询cost表有没有干线运输-空运费
                 BigDecimal costFunctionalAmount = null;
-                costFunctionalAmount = baseMapper.getAostFunctionalAmount(orgId,bean.getOrderId());
-                afRountingSign.setMsrUnitprice(costFunctionalAmount == null? new BigDecimal("0.00") : costFunctionalAmount);
-                afRountingSign.setMsrAmountWriteoff(costFunctionalAmount == null? new BigDecimal("0.00") : costFunctionalAmount);
+                costFunctionalAmount = baseMapper.getAostFunctionalAmount(orgId, bean.getOrderId());
+                afRountingSign.setMsrUnitprice(costFunctionalAmount == null ? new BigDecimal("0.00") : costFunctionalAmount);
+                afRountingSign.setMsrAmountWriteoff(costFunctionalAmount == null ? new BigDecimal("0.00") : costFunctionalAmount);
                 afRountingSign.setIncomeWeight(1.00);
                 afRountingSignMapper.updateById(afRountingSign);
             }
@@ -1183,19 +1189,19 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     }
 
     private void checkCoop(AfOrder bean, EUserDetails user, Integer orgId, String awbNumber) {
-        String awbNumberThree = awbNumber.substring(0,3);
+        String awbNumberThree = awbNumber.substring(0, 3);
         //@author limr 20201222 校验互为代理/干线承运人若只存在一个，直接保存
-        List<Map<String, Object>> list=awbservice.selectCarrier(awbNumberThree);
-        if (list.size()==0) {
-            throw new RuntimeException(awbNumberThree+"航司不存在");
+        List<Map<String, Object>> list = awbservice.selectCarrier(awbNumberThree);
+        if (list.size() == 0) {
+            throw new RuntimeException(awbNumberThree + "航司不存在");
         }
         //校验后八位
         String awbNumberEnd = awbNumber.substring(4);
-        if(awbNumberEnd.length()!=8 || (Integer.parseInt(awbNumberEnd.substring(0,7)) % 7 != Integer.parseInt(awbNumberEnd.substring(7)))){
+        if (awbNumberEnd.length() != 8 || (Integer.parseInt(awbNumberEnd.substring(0, 7)) % 7 != Integer.parseInt(awbNumberEnd.substring(7)))) {
             throw new RuntimeException("主单号不符合规则");
         }
-        List<CoopVo> coopList = remoteCoopService.selectPrmCoopsForAwb(orgId,"AE").getData();
-        if (coopList != null && coopList.size()==1) {
+        List<CoopVo> coopList = remoteCoopService.selectPrmCoopsForAwb(orgId, "AE").getData();
+        if (coopList != null && coopList.size() == 1) {
             AwbNumber awbNumberBean = new AwbNumber();
             awbNumberBean.setCreatTime(new Date());
             awbNumberBean.setCreatorName(user.getUserCname() + " " + user.getUserEmail());
@@ -1203,7 +1209,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             awbNumberBean.setOrgId(orgId);
 
             awbNumberBean.setAwbNumber(awbNumber);
-            CoopVo vo  = coopList.get(0);
+            CoopVo vo = coopList.get(0);
             awbNumberBean.setAwbFromId(String.valueOf(vo.getCoop_id()));
             awbNumberBean.setAwbFromName(vo.getCoop_name());
             awbNumberBean.setAwbFromType(vo.getCoop_type());
@@ -1213,7 +1219,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             bean.setAwbId(awbNumberBean.getAwbId());
             bean.setAwbUuid(awbNumberBean.getAwbUuid());
 
-        }else{
+        } else {
             throw new RuntimeException("主单号不存在");
         }
     }
@@ -1653,6 +1659,15 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean doUninstall(AfOrder bean) {
+        //校验订单是否变更
+        AfOrder afOrder = getById(bean.getOrderId());
+        if (afOrder == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (!afOrder.getRowUuid().equals(bean.getRowUuid())) {
+            throw new RuntimeException("卸载的主单不是最新数据，请刷新后重试。");
+        }
+
         //财务锁账已做的 ，不能重复做
         bean.setBusinessScope("AE");
         List<Integer> list = this.getOrderStatus(bean);
@@ -1701,13 +1716,21 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         } else {
             nodeName = "订单创建";
         }
-        baseMapper.updateOrderNumber(bean.getOrderUuid(), nodeName, SecurityUtils.getUser().getOrgId());
+        baseMapper.updateOrderNumber(bean.getOrderUuid(), nodeName, SecurityUtils.getUser().getOrgId(), UUID.randomUUID().toString());
         return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Boolean doStop(AfOrder bean) {
+        //校验订单是否变更
+        AfOrder afOrder = getById(bean.getOrderId());
+        if (afOrder == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (!afOrder.getRowUuid().equals(bean.getRowUuid())) {
+            throw new RuntimeException("卸载的主单不是最新数据，请刷新后重试。");
+        }
         //财务锁账已做的 ，不能重复做
         bean.setBusinessScope("AE");
         List<Integer> list = this.getOrderStatus(bean);
@@ -1757,7 +1780,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         } else {
             nodeName = "订单创建";
         }
-        baseMapper.updateOrderNumber(bean.getOrderUuid(), nodeName, SecurityUtils.getUser().getOrgId());
+        baseMapper.updateOrderNumber(bean.getOrderUuid(), nodeName, SecurityUtils.getUser().getOrgId(), UUID.randomUUID().toString());
         //根据AwbId和org_id物理删除
         baseMapper.deleteByAwbId(bean.getAwbId(), SecurityUtils.getUser().getOrgId());
         return true;
@@ -1767,14 +1790,24 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     public AfOrder getOrderById(Integer orderId, Integer letterId) {
 
         AfOrder bean = baseMapper.selectById(orderId);
-        if(bean.getAwbId()!=null) {
-        	AwbNumber awbN = awbservice.getById(bean.getAwbId());
-        	bean.setAwbFromId(Integer.valueOf(awbN.getAwbFromId()));
-        	bean.setAwbFromName(awbN.getAwbFromName());
+        if (bean.getAwbId() != null) {
+            AwbNumber awbN = awbservice.getById(bean.getAwbId());
+            bean.setAwbFromId(Integer.valueOf(awbN.getAwbFromId()));
+            bean.setAwbFromName(awbN.getAwbFromName());
         }
         //联系人
         bean.setCoopName(baseMapper.getCoopName(bean.getCoopId()));
         bean.setOrderContacts(baseMapper.getorderContacts(bean.getOrgId(), orderId));
+
+        //订单附属表
+        AfOrderExtend extend = baseMapper.getOrderExtend(bean.getOrgId(), orderId);
+        if (extend != null) {
+            bean.setPalletMaterial(extend.getPalletMaterial());
+            bean.setSpecialPackage(extend.getSpecialPackage());
+            bean.setCelsiusRequire(extend.getCelsiusRequire());
+            bean.setThermometer(extend.getThermometer());
+            bean.setIsCelsiusRequire(extend.getIsCelsiusRequire());
+        }
 
         AfOrderShipperConsignee bean1 = baseMapper.getAfOrderShipperConsignee(bean.getOrgId(), orderId, 1);
         AfOrderShipperConsignee bean2 = baseMapper.getAfOrderShipperConsignee(bean.getOrgId(), orderId, 0);
@@ -1818,7 +1851,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         bean.setShipperLetters(afShipperLetters);
         //签单信息
         AfRountingSign afRountingSign = baseMapper.getSignByOrderId(orderId);
-        if(afRountingSign != null){
+        if (afRountingSign != null) {
             bean.setSignState(afRountingSign.getSignState());
             bean.setRountingSignId(afRountingSign.getRountingSignId());
         }
@@ -1892,15 +1925,15 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
     @Override
     public String printOrderLetter1(String orderUuid, Integer orgId, String userId) throws IOException, DocumentException {
-        try{
+        try {
             List<OrderLetters> letterList = baseMapper.printOrderLetter(orgId, orderUuid, userId);
             ArrayList<String> newFilePaths = new ArrayList<>();
             String awbOrOrderNum = "";
             if (letterList.size() > 0 && letterList != null) {
                 OrderLetters ol = letterList.get(0);
-                if(StringUtils.isNotEmpty(ol.getInput18())){
+                if (StringUtils.isNotEmpty(ol.getInput18())) {
                     awbOrOrderNum = ol.getInput18();
-                }else {
+                } else {
                     awbOrOrderNum = ol.getInput04();
                 }
                 for (int i = 0; i < letterList.size(); i++) {
@@ -1911,7 +1944,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             String lastFilePath = PDFUtils.filePath + "/PDFtemplate/temp/printBillTemp/BOOKING_" + awbOrOrderNum + "_" + new Date().getTime() + ".pdf";
             PDFUtils.loadAllPDFForFile(newFilePaths, lastFilePath, null);
             return lastFilePath.replace(PDFUtils.filePath, "");
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
         }
@@ -2098,7 +2131,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     @Override
     public String awbSubmit(String orderUuid, Integer orgId) throws IOException, DocumentException {
         LambdaQueryWrapper<AfOrder> wrapper = Wrappers.<AfOrder>lambdaQuery();
-         wrapper.eq(AfOrder::getOrderUuid, orderUuid).eq(AfOrder::getOrgId, orgId);
+        wrapper.eq(AfOrder::getOrderUuid, orderUuid).eq(AfOrder::getOrgId, orgId);
         AfOrder order = getOne(wrapper);
         ArrayList<String> newFilePaths = new ArrayList<>();
         //查询主单信息
@@ -2118,7 +2151,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             }
         }
 
-        String lastFilePath = PDFUtils.filePath + "/PDFtemplate/temp/order/MAWB_" +(StrUtil.isBlank(order.getAwbNumber())?order.getOrderCode():order.getAwbNumber())+"_"+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmmss")) + ".pdf";
+        String lastFilePath = PDFUtils.filePath + "/PDFtemplate/temp/order/MAWB_" + (StrUtil.isBlank(order.getAwbNumber()) ? order.getOrderCode() : order.getAwbNumber()) + "_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmmss")) + ".pdf";
         PDFUtils.loadAllPDFForFile(newFilePaths, lastFilePath, null);
         return lastFilePath.replace(PDFUtils.filePath, "");
         /*HashMap<String, String> order = new HashMap<>();
@@ -2596,8 +2629,8 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         String hawbNumber = afOrder.getHawbNumber();
 
         //AI业务时只获取当前订单主单号与分单号的轨迹信息。 分单号是否为空 ? 返回主单舱单信息 : 返回主单舱单信息+与分单号相同的舱单信息
-        if(CommonConstants.BUSINESS_SCOPE.AI.equals(businessScope)){
-            manifestList = manifestList.stream().filter((item)->
+        if (CommonConstants.BUSINESS_SCOPE.AI.equals(businessScope)) {
+            manifestList = manifestList.stream().filter((item) ->
                     StringUtils.isBlank(hawbNumber) ? StringUtils.isBlank(item.getHawbNumber()) : (StringUtils.isBlank(item.getHawbNumber()) || hawbNumber.equals(item.getHawbNumber()))
             ).collect(Collectors.toList());
         }
@@ -2635,13 +2668,15 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     public ShippingBillData getMasterShippingBill(Integer orgId, String orderUUID) throws Exception {
         return this.getShippingBill(orgId, orderUUID, APIType.AE_CD_POST_MAWB);
     }
+
     @Override
     public ShippingBillData getShippersData(String hasMwb, String orderUUID, String letterIds) throws Exception {
         return this.getShippersData(hasMwb, orderUUID, APIType.AE_CD_POST_MAWB, letterIds);
     }
+
     @Override
     public Map<String, Object> sendShippersData(String hasMwb, String orderUUID, String letterIds) throws Exception {
-        Map<String,Object> map = new HashMap();
+        Map<String, Object> map = new HashMap();
         EUserDetails user = SecurityUtils.getUser();
         String apiType = APIType.AE_CD_AWB;
         OrgInterfaceVo config = getShippingBillConfig(user.getOrgId(), apiType);
@@ -2649,25 +2684,25 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         String mawbXML = "";
         //获取分单数据xml
         String hawbXML = "";
-        if(!"hawb".equals(hasMwb)){
+        if (!"hawb".equals(hasMwb)) {
             mawbXML = this.baseMapper.getNewMAWBXML(orderUUID, user.getId(), apiType);
         }
-        if("all".equals(hasMwb) || StringUtils.isNotEmpty(letterIds)){
+        if ("all".equals(hasMwb) || StringUtils.isNotEmpty(letterIds)) {
             hawbXML = this.baseMapper.getNewHAWBXML(orderUUID, letterIds, user.getId(), apiType);
         }
         StringBuilder builder = new StringBuilder();
         builder.append("<data>");
         if (StringUtils.isNotBlank(mawbXML)) {
-            mawbXML=mawbXML.substring(0,mawbXML.indexOf("<CargoTerminal>"))+"<IsOverride>1</IsOverride>"+  mawbXML.substring(mawbXML.indexOf("<CargoTerminal>"));
+            mawbXML = mawbXML.substring(0, mawbXML.indexOf("<CargoTerminal>")) + "<IsOverride>1</IsOverride>" + mawbXML.substring(mawbXML.indexOf("<CargoTerminal>"));
             builder.append(mawbXML);
         }
         if (StringUtils.isNotBlank(hawbXML)) {
-            if (mawbXML.length()>0) {
-                builder= new StringBuilder(builder.toString().replace("</AirwayBill>",
-                        "<ConsolidationList>"+hawbXML.substring(hawbXML.indexOf("<ConsolidationList>")+19, hawbXML.indexOf("</ConsolidationList>"))+"</ConsolidationList>"));
+            if (mawbXML.length() > 0) {
+                builder = new StringBuilder(builder.toString().replace("</AirwayBill>",
+                        "<ConsolidationList>" + hawbXML.substring(hawbXML.indexOf("<ConsolidationList>") + 19, hawbXML.indexOf("</ConsolidationList>")) + "</ConsolidationList>"));
                 builder.append("</AirwayBill>");
             } else {
-                hawbXML=hawbXML.substring(0,hawbXML.indexOf("<CargoTerminal>"))+"<IsOverride>1</IsOverride>"+  hawbXML.substring(hawbXML.indexOf("<CargoTerminal>"));
+                hawbXML = hawbXML.substring(0, hawbXML.indexOf("<CargoTerminal>")) + "<IsOverride>1</IsOverride>" + hawbXML.substring(hawbXML.indexOf("<CargoTerminal>"));
                 builder.append(hawbXML);
             }
         }
@@ -2680,18 +2715,18 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 //        }
         builder.append("</data>");
 
-        ResponseEntity<String> responseEntity = RemoteSendUtils.sendToThirdUrl(config,builder.toString());
+        ResponseEntity<String> responseEntity = RemoteSendUtils.sendToThirdUrl(config, builder.toString());
         String objStr = responseEntity.getBody();
         JSONObject jsonO = JSONObject.parseObject(objStr);
-        String message  = jsonO.getString("messageInfo");
-        map.put("status","success");
-        map.put("message","发送舱单成功");
+        String message = jsonO.getString("messageInfo");
+        map.put("status", "success");
+        map.put("message", "发送舱单成功");
 
         if (!HttpStatus.OK.equals(responseEntity.getStatusCode())) {
-            map.put("message","发送舱单第三方接口调用异常：" + message);
-            map.put("status","error");
+            map.put("message", "发送舱单第三方接口调用异常：" + message);
+            map.put("status", "error");
         }
-        if("01".equals(jsonO.getString("code"))) {
+        if ("01".equals(jsonO.getString("code"))) {
             LogBean logBean = new LogBean();
             logBean.setHasMwb(hasMwb);
             logBean.setOrderUuid(orderUUID);
@@ -2699,16 +2734,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             logBean.setPageFunction("发送舱单");
             logBean.setLogRemarkLarge(builder.toString());
             insertLogAfterSendShipper(logBean);
-        }else{
-            map.put("message","发送舱单 报文异常：" + message);
-            map.put("status","exception");
+        } else {
+            map.put("message", "发送舱单 报文异常：" + message);
+            map.put("status", "exception");
         }
         return map;
     }
 
     @Override
-    public Map<String,Object> deleteShipper(String orderUUID, String letterId) {
-        Map<String,Object> map = new HashMap();
+    public Map<String, Object> deleteShipper(String orderUUID, String letterId) {
+        Map<String, Object> map = new HashMap();
         EUserDetails user = SecurityUtils.getUser();
         String apiType = APIType.AE_CD_AWB;
         OrgInterfaceVo config = getShippingBillConfig(user.getOrgId(), apiType);
@@ -2723,19 +2758,19 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
         RestTemplate restTemplate = new RestTemplate();
         LinkedMultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("data",builder.toString());
+        body.add("data", builder.toString());
 
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity(config.getUrlPost()+"Mft2201_Delete", body, String.class);
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(config.getUrlPost() + "Mft2201_Delete", body, String.class);
         String objStr = responseEntity.getBody();
         JSONObject jsonO = JSONObject.parseObject(objStr);
-        String message  = jsonO.getString("messageInfo");
-        map.put("status","success");
-        map.put("message","删除成功");
+        String message = jsonO.getString("messageInfo");
+        map.put("status", "success");
+        map.put("message", "删除成功");
         if (!HttpStatus.OK.equals(responseEntity.getStatusCode())) {
-            map.put("message","删除舱单第三方接口调用异常：" + message);
-            map.put("status","error");
+            map.put("message", "删除舱单第三方接口调用异常：" + message);
+            map.put("status", "error");
         }
-        if("01".equals(jsonO.getString("code"))) {
+        if ("01".equals(jsonO.getString("code"))) {
             LogBean logBean = new LogBean();
             logBean.setHasMwb(null);
             logBean.setOrderUuid(orderUUID);
@@ -2743,9 +2778,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             logBean.setPageFunction("删除舱单");
             logBean.setLogRemarkLarge(builder.toString());
             insertLogAfterSendShipper(logBean);
-        }else{
+        } else {
             map.put("message", "删除舱单 报文异常：" + message);
-            map.put("status","exception");
+            map.put("status", "exception");
         }
         return map;
     }
@@ -2757,8 +2792,8 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
 
     @Override
-    public Map<String,Object> getAiOrderById(Integer orderId) {
-        Map<String,Object> bean = baseMapper.selectByOrderId(orderId);
+    public Map<String, Object> getAiOrderById(Integer orderId) {
+        Map<String, Object> bean = baseMapper.selectByOrderId(orderId);
         return bean;
     }
 
@@ -2791,8 +2826,8 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             }
         }
 
-        List<List<Map<String, Object>>> list  = baseMapper.getOperationLookPageList(bean, null, null);
-        if(list.size() != 2){
+        List<List<Map<String, Object>>> list = baseMapper.getOperationLookPageList(bean, null, null);
+        if (list.size() != 2) {
             throw new IllegalArgumentException("数据查询失败");
         }
         //列表数据
@@ -2802,9 +2837,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
         //数据重构
         LinkedHashMap<String, Object> exportSummary = new LinkedHashMap<>(1);
-        List<LinkedHashMap> exportData = dataList.stream().map((item)-> {
+        List<LinkedHashMap> exportData = dataList.stream().map((item) -> {
             LinkedHashMap<String, Object> temp = new LinkedHashMap<>();
-            keyList.forEach((key)->{
+            keyList.forEach((key) -> {
                 temp.put(key, item.get(key));
                 exportSummary.put(key, summaryData.get(key));
             });
@@ -2813,9 +2848,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
         //数据处理
         String[] processKey = new String[]{"audit", "arrived", "passed", "checked", "tag"};
-        exportData.stream().forEach((item)->{
+        exportData.stream().forEach((item) -> {
             for (String key : processKey) {
-                if(item.containsKey(key)){
+                if (item.containsKey(key)) {
                     item.put(key, Objects.equals(item.get(key).toString(), "1") ? "√" : "");
                 }
             }
@@ -2848,7 +2883,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         trackQuery.validate();
         trackQuery.setAwbNumber(formatNumber(trackQuery.getAwbNumber()));
 
-        UserBaseVO userBase = getUserByPhone(trackQuery.getPhone());
+        UserBaseVO userBase = getUserByPhone(trackQuery);
         Assert.notNull(userBase, "用户不存在");
 
         //订阅数据
@@ -2867,7 +2902,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         return cargoTrack;
     }
 
-    private void addServiceMeal(CargoTrack cargoTrack, Integer orgId){
+    private void addServiceMeal(CargoTrack cargoTrack, Integer orgId) {
         OrgServiceMealConfigVo orgServiceMealConfig = awbSubscriptionService.orgAdditionalService(orgId, CommonConstants.ORG_ADDITIONAL_SERVICE_TYPE.TRACK_AE_AI);
         cargoTrack.setTotal(orgServiceMealConfig != null ? orgServiceMealConfig.getServiceNumberMax() : 0);
         cargoTrack.setUsed(orgServiceMealConfig != null ? orgServiceMealConfig.getServiceNumberUsed() : 0);
@@ -2878,14 +2913,14 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         orderTrackQuery.setHawbNumber(trackQuery.getHawbNumber());
 
         OrderTrack orderTrack = this.getOrderTrack(orderTrackQuery);
-        if(null == orderTrack){
+        if (null == orderTrack) {
             return;
         }
         cargoTrack.setManifestList(orderTrack.getManifestList());
 
         //舱单信息
-        List<AfAwbRouteTrackManifest> routeTrackManifestList =  orderTrack.getTrackManifest();
-        List<CargoRoute> routeTrackList = routeTrackManifestList.stream().map((item)->{
+        List<AfAwbRouteTrackManifest> routeTrackManifestList = orderTrack.getTrackManifest();
+        List<CargoRoute> routeTrackList = routeTrackManifestList.stream().map((item) -> {
             CargoRoute cargoRoute = new CargoRoute();
             cargoRoute.setAwbNumber(item.getAwbNumber());
             cargoRoute.setHawbNumber(item.getHawbNumber());
@@ -2900,10 +2935,10 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
         //轨迹信息
         List<AfAwbRouteTrackAwb> routeTracks = orderTrack.getRouteTracks();
-        List<CargoRoute> cargoRoutes = routeTracks.stream().map((item)->{
+        List<CargoRoute> cargoRoutes = routeTracks.stream().map((item) -> {
             CargoRoute cargoRoute = new CargoRoute();
             cargoRoute.setAwbNumber(item.getAwbNumber());
-            Optional.ofNullable(item.getEventTime()).ifPresent((date)->{
+            Optional.ofNullable(item.getEventTime()).ifPresent((date) -> {
                 cargoRoute.setEventTime(LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
             });
             cargoRoute.setQuantity(item.getQuantity());
@@ -2921,9 +2956,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
     }
 
-    private UserBaseVO getUserByPhone(String phone){
-        MessageInfo<UserBaseVO> result = remoteServiceToHRS.findUserByPhone(phone, SecurityConstants.FROM_IN);
-        if(null == result || result.getCode() != 0){
+    private UserBaseVO getUserByPhone(CargoTrackQuery query) {
+        MessageInfo<UserBaseVO> result = remoteServiceToHRS.findUserByPhone(query.getPhone(), query.getInternationalCountryCode(), SecurityConstants.FROM_IN);
+        if (null == result || result.getCode() != 0) {
             throw new RuntimeException("用户信息加载失败");
         }
         return result.getData();
@@ -2961,6 +2996,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         if ("1".equals(result.get("writeoffFlag"))) {
             return "部分核销";
         }
+        Map<String, String> invoiceStatus = baseMapper.getOrderCostStatusForAFAboutInvoiceStatus(orderId, SecurityUtils.getUser().getOrgId());
+        if ("1".equals(invoiceStatus.get("completeInvoice"))) {
+            return "完全收票";
+        }
+        if ("1".equals(invoiceStatus.get("noInvoice"))) {
+            return "付款申请";
+        }
+        if ("1".equals(invoiceStatus.get("InvoiceNoComplete"))) {
+            return "部分收票";
+        }
         if ("1".equals(result.get("paymentFlag"))) {
             return "已对账";
         }
@@ -2981,6 +3026,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         }
         if ("1".equals(result.get("writeoffFlag"))) {
             return "部分核销";
+        }
+        Map<String, String> invoiceStatus = baseMapper.getOrderCostStatusForLCAboutInvoiceStatus(orderId, SecurityUtils.getUser().getOrgId());
+        if ("1".equals(invoiceStatus.get("completeInvoice"))) {
+            return "完全收票";
+        }
+        if ("1".equals(invoiceStatus.get("noInvoice"))) {
+            return "付款申请";
+        }
+        if ("1".equals(invoiceStatus.get("InvoiceNoComplete"))) {
+            return "部分收票";
         }
         if ("1".equals(result.get("paymentFlag"))) {
             return "已对账";
@@ -3003,6 +3058,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         if ("1".equals(result.get("writeoffFlag"))) {
             return "部分核销";
         }
+        Map<String, String> invoiceStatus = baseMapper.getOrderCostStatusForIOAboutInvoiceStatus(orderId, SecurityUtils.getUser().getOrgId());
+        if ("1".equals(invoiceStatus.get("completeInvoice"))) {
+            return "完全收票";
+        }
+        if ("1".equals(invoiceStatus.get("noInvoice"))) {
+            return "付款申请";
+        }
+        if ("1".equals(invoiceStatus.get("InvoiceNoComplete"))) {
+            return "部分收票";
+        }
         if ("1".equals(result.get("paymentFlag"))) {
             return "已对账";
         }
@@ -3024,6 +3089,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         if ("1".equals(result.get("writeoffFlag"))) {
             return "部分核销";
         }
+        Map<String, String> invoiceStatus = baseMapper.getOrderCostStatusForSCAboutInvoiceStatus(orderId, SecurityUtils.getUser().getOrgId());
+        if ("1".equals(invoiceStatus.get("completeInvoice"))) {
+            return "完全收票";
+        }
+        if ("1".equals(invoiceStatus.get("noInvoice"))) {
+            return "付款申请";
+        }
+        if ("1".equals(invoiceStatus.get("InvoiceNoComplete"))) {
+            return "部分收票";
+        }
         if ("1".equals(result.get("paymentFlag"))) {
             return "已对账";
         }
@@ -3043,6 +3118,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         }
         if ("1".equals(result.get("writeoffFlag"))) {
             return "部分核销";
+        }
+        Map<String, String> invoiceStatus = baseMapper.getOrderCostStatusForTCAboutInvoiceStatus(orderId, SecurityUtils.getUser().getOrgId());
+        if ("1".equals(invoiceStatus.get("completeInvoice"))) {
+            return "完全收票";
+        }
+        if ("1".equals(invoiceStatus.get("noInvoice"))) {
+            return "付款申请";
+        }
+        if ("1".equals(invoiceStatus.get("InvoiceNoComplete"))) {
+            return "部分收票";
         }
         if ("1".equals(result.get("paymentFlag"))) {
             return "已对账";
@@ -3160,7 +3245,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
     @Override
     public Boolean shippingSendCheckHasSend(String orderUUID) {
-        AfOrder order = baseMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(),orderUUID);
+        AfOrder order = baseMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(), orderUUID);
         if (StringUtils.isNotEmpty(order.getManifestStatus())) {//已经发送过舱单
             return true;
         } else {//未发送过舱单
@@ -3170,7 +3255,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
     @Override
     public Boolean insertLogAfterSendShipper(LogBean logBean) {
-        try{
+        try {
             String uuid = logBean.getOrderUuid();
             AfOrder bean = this.baseMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(), uuid);
             logBean.setPageName("AE订单");
@@ -3181,9 +3266,9 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             logService.saveLog(logBean);
 
             //更新订单表/分单表 manifest_status
-            this.baseMapper.updateManifestStatus(logBean.getHasMwb(),uuid,logBean.getLetterIds(),"HAS_SEND");
+            this.baseMapper.updateManifestStatus(logBean.getHasMwb(), uuid, logBean.getLetterIds(), "HAS_SEND");
             return true;
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
@@ -3197,16 +3282,16 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 //    }
 
     @Override
-    public List<Map<String,Object>> getOpreationLookList(AfOrder bean) {
+    public List<Map<String, Object>> getOpreationLookList(AfOrder bean) {
         bean.setOrgId(SecurityUtils.getUser().getOrgId());
-        List<List<Map<String, Object>>> list = baseMapper.getOperationLookPageList(bean,null,null);
+        List<List<Map<String, Object>>> list = baseMapper.getOperationLookPageList(bean, null, null);
         return list.isEmpty() ? new ArrayList<>() : list.get(0);
     }
 
     @Override
     public HashMap<String, Object> getOperaLookListPage(Page page, AfOrder bean) {
         bean.setOrgId(SecurityUtils.getUser().getOrgId());
-        List<List<Map<String, Object>>> list  = baseMapper.getOperationLookPageList(bean, Long.valueOf(page.getCurrent()).intValue(), Long.valueOf(page.getSize()).intValue());
+        List<List<Map<String, Object>>> list = baseMapper.getOperationLookPageList(bean, Long.valueOf(page.getCurrent()).intValue(), Long.valueOf(page.getSize()).intValue());
 
         HashMap map = new HashMap();
         if (list != null && list.size() > 0 && list.get(0) != null && list.get(0).size() > 0) {
@@ -4097,8 +4182,8 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     public OrderDeliveryNotice getOrderDeliveryNotice(String orderUuid, String flag) {
         Assert.hasLength(orderUuid, "参数错误");
         Assert.hasLength(flag, "参数错误");
-        checkOrderDeliveryNotice(orderUuid,flag);
-        return this.baseMapper.getOrderDeliveryNotice(orderUuid,flag);
+        checkOrderDeliveryNotice(orderUuid, flag);
+        return this.baseMapper.getOrderDeliveryNotice(orderUuid, flag);
     }
 
     @Override
@@ -4140,6 +4225,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         bean.setOrgId(SecurityUtils.getUser().getOrgId());
         return baseMapper.getCoopList(page, bean);
     }
+
     @Override
     public IPage<VPrmCoop> getCoopListNew(Page page, VPrmCoop bean) {
         bean.setOrgId(SecurityUtils.getUser().getOrgId());
@@ -5066,7 +5152,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     }
 
     private ShippingBillData getShippingBill(Integer orgId, String orderUUID, String apiType) {
-        Assert.hasLength(orgId+"", "非法企业ID");
+        Assert.hasLength(orgId + "", "非法企业ID");
         Assert.hasLength(orderUUID, "非法订单号");
         Assert.hasLength(apiType, "非法配置类型");
 
@@ -5096,6 +5182,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         shippingBillData.setData(builder.toString());
         return shippingBillData;
     }
+
     public static String getShippingBillAccessToken(OrgInterfaceVo config) {
         String url = config.getUrlAuth(),
                 authToken = config.getAuthToken(),
@@ -5117,6 +5204,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         }
         return responseEntity.getBody();
     }
+
     private ShippingBillData getShippersData(String hasMwb, String orderUUID, String apiType, String letterIds) {
         EUserDetails user = SecurityUtils.getUser();
         Assert.hasLength(user.getOrgId() + "", "非法企业ID");
@@ -5131,10 +5219,10 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         String mawbXML = "";
         //获取分单数据xml
         String hawbXML = "";
-        if(!"hawb".equals(hasMwb)){
+        if (!"hawb".equals(hasMwb)) {
             mawbXML = this.baseMapper.getNewMAWBXML(orderUUID, user.getId(), apiType);
         }
-        if("all".equals(hasMwb) || StringUtils.isNotEmpty(letterIds)){
+        if ("all".equals(hasMwb) || StringUtils.isNotEmpty(letterIds)) {
             hawbXML = this.baseMapper.getNewHAWBXML(orderUUID, letterIds, user.getId(), apiType);
         }
 
@@ -5167,6 +5255,7 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         Assert.notNull(orgInterfaceVo, "未获取到舱单配置信息");
         return orgInterfaceVo;
     }
+
     private String buildOrderTrackShareEmailContent(OrderTrackShare orderTrackShare) {
         String content = orderTrackShare.getContent();
         StringBuilder builder = new StringBuilder();
@@ -5209,11 +5298,11 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     public OrderTrack getOrderTrack(OrderTrackQuery trackQuery) {
         trackQuery.validate();
 
-        String orderUUID  = findOrderId(trackQuery);
+        String orderUUID = findOrderId(trackQuery);
         OrderTrack orderTrack;
-        if(StringUtils.isNotBlank(orderUUID)){
+        if (StringUtils.isNotBlank(orderUUID)) {
             orderTrack = getOrderTrack(orderUUID);
-        }else{
+        } else {
             orderTrack = new OrderTrack();
             orderTrack.setAwbNumber(trackQuery.getAwbNumber());
             orderTrack.setHawbNumber(trackQuery.getHawbNumber());
@@ -5225,15 +5314,15 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         return orderTrack;
     }
 
-    private LinkedList<ManifestVO> buildManifestVO(String businessScope ,List<AfAwbRouteTrackManifest> manifestList) {
+    private LinkedList<ManifestVO> buildManifestVO(String businessScope, List<AfAwbRouteTrackManifest> manifestList) {
         LinkedList<ManifestVO> result = new LinkedList<>();
         LinkedHashMap<String, ManifestVO> linkedMap = new LinkedHashMap<>();
         String masterKey = "-1";
-        manifestList.stream().forEach((item)->{
+        manifestList.stream().forEach((item) -> {
             String hawbNumber = item.getHawbNumber();
             String key = StringUtils.isBlank(hawbNumber) ? masterKey : hawbNumber;
             ManifestVO manifest = linkedMap.get(key);
-            if(null == manifest){
+            if (null == manifest) {
                 manifest = new ManifestVO();
                 manifest.setMasterFlag(masterKey.equals(key));
                 manifest.setAwbNumber(item.getAwbNumber());
@@ -5242,13 +5331,13 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
                 linkedMap.put(key, manifest);
             }
             //填充时间
-            switch (businessScope){
+            switch (businessScope) {
                 case CommonConstants.BUSINESS_SCOPE.AI:
                     fillingAITime(item, manifest);
                     break;
                 case CommonConstants.BUSINESS_SCOPE.AE:
                     fillingAETime(item, manifest);
-                    if(StringUtils.isBlank(manifest.getDeclarationNumber())){
+                    if (StringUtils.isBlank(manifest.getDeclarationNumber())) {
                         manifest.setDeclarationNumber(parseDN(item.getRemark()));
                     }
                     break;
@@ -5259,10 +5348,10 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
             fillPieceWeight(manifest, item);
         });
 
-        linkedMap.values().stream().forEach((item)->{
-            if(item.isMasterFlag()){
+        linkedMap.values().stream().forEach((item) -> {
+            if (item.isMasterFlag()) {
                 result.addFirst(item);
-            }else{
+            } else {
                 result.add(item);
             }
         });
@@ -5271,10 +5360,10 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     }
 
     private void fillPieceWeight(ManifestVO manifest, AfAwbRouteTrackManifest item) {
-        if(StringUtils.isNotBlank(item.getQuantity())){
+        if (StringUtils.isNotBlank(item.getQuantity())) {
             manifest.setQuantity(item.getQuantity());
         }
-        if(StringUtils.isNotBlank(item.getGrossWeight())){
+        if (StringUtils.isNotBlank(item.getGrossWeight())) {
             manifest.setGrossWeight(item.getGrossWeight());
         }
     }
@@ -5282,12 +5371,12 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
     private void fillingAITime(AfAwbRouteTrackManifest item, ManifestVO manifest) {
         String remark = item.getRemark();
         LocalDateTime eventTime = item.getEventTime();
-        if(StringUtils.isBlank(remark) || remark.length() < 5 || null == eventTime){
+        if (StringUtils.isBlank(remark) || remark.length() < 5 || null == eventTime) {
             return;
         }
         String remarkCode = item.getRemark().substring(0, 5);
-        switch (remarkCode){
-            case "31301":
+        switch (remarkCode) {
+            case "50003":
                 //原始
                 manifest.setOriginalTime(getEventTime(eventTime, manifest.getOriginalTime()));
                 break;
@@ -5312,25 +5401,25 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         }
     }
 
-    private void fillingAETime(AfAwbRouteTrackManifest item, ManifestVO manifest){
+    private void fillingAETime(AfAwbRouteTrackManifest item, ManifestVO manifest) {
         String remark = item.getRemark();
         LocalDateTime eventTime = item.getEventTime();
-        if(StringUtils.isBlank(remark) || null == eventTime){
+        if (StringUtils.isBlank(remark) || null == eventTime) {
             return;
         }
-        if(remark.indexOf("预配成功") > -1){
+        if (remark.indexOf("预配成功") > -1) {
             manifest.setProvisionTime(getEventTime(eventTime, manifest.getProvisionTime()));
-        }else if(remark.indexOf("运抵成功") > -1 || remark.indexOf("运抵暂存") > -1){
+        } else if (remark.indexOf("运抵成功") > -1 || remark.indexOf("运抵暂存") > -1) {
             manifest.setArriveTime(getEventTime(eventTime, manifest.getArriveTime()));
-        }else if(remark.indexOf("海关放行") > -1){
+        } else if (remark.indexOf("海关放行") > -1) {
             manifest.setPassedTime(getEventTime(eventTime, manifest.getPassedTime()));
         }
 
     }
 
-    private String parseDN(String remark){
+    private String parseDN(String remark) {
         if (StringUtils.isBlank(remark)) {
-            return  null;
+            return null;
         }
         String pattern = "^报关单号：(\\d+)";
         Pattern r = Pattern.compile(pattern);
@@ -5338,8 +5427,8 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         return m.find() ? m.group(1) : null;
     }
 
-    private LocalDateTime getEventTime(LocalDateTime eventTime, LocalDateTime time){
-        if(null == time){
+    private LocalDateTime getEventTime(LocalDateTime eventTime, LocalDateTime time) {
+        if (null == time) {
             return eventTime;
         }
         return eventTime.compareTo(time) > 0 ? time : eventTime;
@@ -5351,11 +5440,11 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
         lambdaQueryWrapper.eq(AfOrder::getBusinessScope, query.getBusinessScope());
         lambdaQueryWrapper.eq(AfOrder::getOrgId, query.getOrgId());
 
-        if(CommonConstants.BUSINESS_SCOPE.AI.equals(query.getBusinessScope())){
-            if(StringUtils.isNotBlank(query.getHawbNumber())){
+        if (CommonConstants.BUSINESS_SCOPE.AI.equals(query.getBusinessScope())) {
+            if (StringUtils.isNotBlank(query.getHawbNumber())) {
                 lambdaQueryWrapper.eq(AfOrder::getHawbNumber, query.getHawbNumber());
-            }else{
-                lambdaQueryWrapper.and(true, (wrapper)->wrapper.eq(AfOrder::getHawbNumber, null).or().eq(AfOrder::getHawbNumber, ""));
+            } else {
+                lambdaQueryWrapper.and(true, (wrapper) -> wrapper.eq(AfOrder::getHawbNumber, null).or().eq(AfOrder::getHawbNumber, ""));
             }
         }
         List<AfOrder> orderList = this.baseMapper.selectList(lambdaQueryWrapper);
@@ -5372,18 +5461,19 @@ public class AfOrderServiceImpl extends ServiceImpl<AfOrderMapper, AfOrder> impl
 
     /**
      * 格式化单号
+     *
      * @param number
      * @return
      */
-    private String formatNumber(String number){
+    private String formatNumber(String number) {
         number = number.trim().replace("-", "");
         boolean result = number.matches("^[0-9]{11}");
-        if(!result){
+        if (!result) {
             throw new IllegalArgumentException("主单号格式不正确");
         }
         String secNumber = number.substring(3, 11);
         number = number.substring(0, 3) + "-" + secNumber;
-        if(Integer.valueOf(secNumber.substring(0, 7)) % 7 != Integer.valueOf(secNumber.substring(7)).intValue()){
+        if (Integer.valueOf(secNumber.substring(0, 7)) % 7 != Integer.valueOf(secNumber.substring(7)).intValue()) {
             throw new IllegalArgumentException("主单号格式不正确");
         }
         return number;

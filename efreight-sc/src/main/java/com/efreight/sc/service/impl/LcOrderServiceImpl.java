@@ -675,10 +675,10 @@ public class LcOrderServiceImpl extends ServiceImpl<LcOrderMapper, LcOrder> impl
         if (lcOrder.getCostRecorded() != null && !lcOrder.getCostRecorded()) {
             wrapper.and(i -> i.eq(LcOrder::getCostRecorded, lcOrder.getCostRecorded()).or(j -> j.isNull(LcOrder::getCostRecorded)));
         }
-        if (lcOrder.getOrderPermission() == 1) {
+        if (lcOrder.getOrderPermission() != null && lcOrder.getOrderPermission() == 1) {
             wrapper.and(i -> i.eq(LcOrder::getCreatorId, lcOrder.getCurrentUserId()).or(j -> j.eq(LcOrder::getSalesId, lcOrder.getCurrentUserId())).or(k -> k.eq(LcOrder::getServicerId, lcOrder.getCurrentUserId())));
         }
-        if (lcOrder.getOrderPermission() == 2) {
+        if (lcOrder.getOrderPermission() != null && lcOrder.getOrderPermission() == 2) {
             List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(lcOrder.getCurrentUserId());
             wrapper.and(i -> i.eq(LcOrder::getCreatorId, lcOrder.getCurrentUserId()).or(j -> j.eq(LcOrder::getSalesId, lcOrder.getCurrentUserId())).or(k -> k.eq(LcOrder::getServicerId, lcOrder.getCurrentUserId())).or(m -> m.in(LcOrder::getWorkgroupId, WorkgroupIds)));
         }

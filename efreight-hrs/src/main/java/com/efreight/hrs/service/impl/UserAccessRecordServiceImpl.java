@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.hrs.dao.UserAccessRecordMapper;
+import com.efreight.hrs.entity.Org;
 import com.efreight.hrs.entity.UserAccessRecord;
 import com.efreight.hrs.service.UserAccessRecordService;
 import org.springframework.stereotype.Service;
@@ -58,5 +59,11 @@ public class UserAccessRecordServiceImpl extends ServiceImpl<UserAccessRecordMap
             item.setAccessTime(Optional.ofNullable(item.getEditTime()).orElse(item.getCreateTime()).format(dateTimeFormatter))
         );
         return userAccessRecords;
+    }
+
+    @Override
+    public List<Org> topActiveIndex() {
+        List<Org>  activeIndexRecords = this.baseMapper.selectTopActiveIndex();
+        return activeIndexRecords;
     }
 }

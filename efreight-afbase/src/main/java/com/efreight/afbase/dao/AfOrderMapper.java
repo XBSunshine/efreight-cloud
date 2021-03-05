@@ -148,11 +148,13 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
             "a.plan_volume plan_volume ,",
             "a.plan_charge_weight plan_charge_weight ,",
             "a.plan_density plan_density ,",
+            "IFNULL(a.plan_dimensions,'-') plan_dimensions ,",
             "IFNULL(a.confirm_pieces,'-') confirm_pieces ,",
             "IFNULL(a.confirm_weight,'-') confirm_weight ,",
             "IFNULL(a.confirm_volume,'-') confirm_volume ,",
             "IFNULL(a.confirm_charge_weight,'-') confirm_charge_weight ,",
             "IFNULL(a.confirm_density,'-') confirm_density ,",
+            "IFNULL(a.confirm_dimensions,'-') confirm_dimensions ,",
             "a.expect_flight,a.expect_departure,a.departure_station,a.arrival_station,a.goods_source_code,",
             "b.coop_code as customerCode,",
             "b.coop_name,",
@@ -504,7 +506,7 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
     List<AIOrder> exportAiExcel(@Param("bean") AfOrder bean);
 
     @Select({"<script>",
-            "    SELECT a.order_id,a.org_id,a.order_uuid,a.order_code,a.order_status,a.income_status,a.cost_status,a.income_recorded,a.cost_recorded,a.awb_id,a.awb_uuid,a.awb_number,a.hawb_quantity,a.hawb_number,a.customer_number,a.coop_id,a.business_scope,a.business_product,a.expect_flight,a.expect_departure,a.expect_arrival,a.departure_station,a.arrival_station,a.departure_warehouse_id,a.departure_warehouse_name,a.departure_storehouse_id,a.departure_storehouse_name,a.goods_name_cn,a.goods_name_en,a.goods_type,a.goods_source_code,a.battery_type,a.package_type,a.order_remark,a.plan_pieces,a.plan_weight,a.plan_volume,a.plan_charge_weight,a.plan_dimensions,a.plan_density,a.confirm_pieces,a.confirm_weight,a.confirm_volume,a.confirm_charge_weight,a.confirm_density,a.servicer_id,a.servicer_name,a.sales_id,a.sales_name,a.switch_awb_service,a.warehouse_service,a.customs_clearance_service,a.delivery_service,a.creator_name,a.arrival_customs_clearance_service,a.pick_up_delivery_service,a.outfield_service,a.row_uuid,",
+            "    SELECT a.order_id,a.org_id,a.order_uuid,a.order_code,a.order_status,a.income_status,a.cost_status,a.income_recorded,a.cost_recorded,a.awb_id,a.awb_uuid,a.awb_number,a.hawb_quantity,a.hawb_number,a.customer_number,a.coop_id,a.business_scope,a.business_product,a.expect_flight,a.expect_departure,a.expect_arrival,a.departure_station,a.arrival_station,a.departure_warehouse_id,a.departure_warehouse_name,a.departure_storehouse_id,a.departure_storehouse_name,a.goods_name_cn,a.goods_name_en,a.goods_type,a.goods_source_code,a.battery_type,a.package_type,a.order_remark,a.plan_pieces,a.plan_weight,a.plan_volume,a.plan_charge_weight,a.plan_dimensions,a.plan_density,a.confirm_pieces,a.confirm_weight,a.confirm_volume,a.confirm_charge_weight,a.confirm_density,a.confirm_dimensions,a.servicer_id,a.servicer_name,a.sales_id,a.sales_name,a.switch_awb_service,a.warehouse_service,a.customs_clearance_service,a.delivery_service,a.creator_name,a.arrival_customs_clearance_service,a.pick_up_delivery_service,a.outfield_service,a.row_uuid,",
             "  (select routing_name from af_airport where ap_code = a.arrival_station) AS routing_name ",
             ",b.coop_name,b.coop_code customerCode,h.coop_code supplierCode",
             " ,c.warehouse_name_cn departureWarehouseName,d.warehouse_name_cn departureStorehouseName,e.contactName as contactName",
@@ -817,9 +819,9 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
     void updateAwbStatus(@Param("awb_id") Integer awb_id, @Param("awb_status") String awb_status, @Param("org_id") Integer org_id);
 
     @Update("update af_order set\n"
-            + " awb_number=NULL,awb_id=NULL,awb_uuid=NULL,order_status=#{order_status}\n"
+            + " awb_number=NULL,awb_id=NULL,awb_uuid=NULL,order_status=#{order_status},row_uuid=#{rowUuid}\n"
             + " where  order_uuid = #{order_uuid} AND org_id=#{org_id}\n")
-    void updateOrderNumber(@Param("order_uuid") String order_uuid, @Param("order_status") String order_status, @Param("org_id") Integer org_id);
+    void updateOrderNumber(@Param("order_uuid") String order_uuid, @Param("order_status") String order_status, @Param("org_id") Integer org_id, @Param("rowUuid") String rowUuid);
 
     @Update("update af_order set\n"
             + " income_recorded=1 "
@@ -1477,7 +1479,10 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
             " AND coop_type in ('外部客户','互为代理') AND business_scope_AE='AE'",
             "</when>",
             " <when test='bean.businessScope==\"TE\"'>",
-            " AND coop_type in ('外部客户','互为代理','海外代理') AND business_scope_TE='TE'",
+            " AND coop_type in ('外部客户','互为代理') AND business_scope_TE='TE'",
+            "</when>",
+            " <when test='bean.businessScope==\"TI\"'>",
+            " AND coop_type in ('外部客户','互为代理','海外代理') AND business_scope_TI='TI'",
             "</when>",
             " <when test='bean.businessScope==\"SE\"'>",
             " AND coop_type in ('外部客户','互为代理') AND business_scope_SE='SE'",
@@ -1502,34 +1507,38 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
             "</when>",
             "</script>"})
     IPage<VPrmCoop> getCoopList(Page page, @Param("bean") VPrmCoop bean);
+
     @Select({"<script>",
-        "SELECT * FROM af_V_prm_coop\n",
-        " where org_id=#{bean.orgId}",
-        " <when test='bean.businessScope==\"AE\"'>",
-        " AND  business_scope_AE='AE'",
-        "</when>",
-        " <when test='bean.businessScope==\"TE\"'>",
-        " AND  business_scope_TE='TE'",
-        "</when>",
-        " <when test='bean.businessScope==\"SE\"'>",
-        " AND  business_scope_SE='SE'",
-        "</when>",
-        " <when test='bean.businessScope==\"AI\"'>",
-        " AND  business_scope_AI='AI'",
-        "</when>",
-        " <when test='bean.businessScope==\"SI\"'>",
-        " AND  business_scope_SI='SI'",
-        "</when>",
-        " <when test='bean.businessScope==\"LC\"'>",
-        " AND  business_scope_LC='LC'",
-        "</when>",
-        " <when test='bean.businessScope==\"IO\"'>",
-        " AND business_scope_IO='IO'",
-        "</when>",
-        " <when test='bean.coopName!=null and bean.coopName!=\"\"'>",
-        " AND (coop_name like  \"%\"#{bean.coopName}\"%\" or coop_code like  \"%\"#{bean.coopName}\"%\")",
-        "</when>",
-        "</script>"})
+            "SELECT * FROM af_V_prm_coop\n",
+            " where org_id=#{bean.orgId}",
+            " <when test='bean.businessScope==\"AE\"'>",
+            " AND  business_scope_AE='AE'",
+            "</when>",
+            " <when test='bean.businessScope==\"TE\"'>",
+            " AND  business_scope_TE='TE'",
+            "</when>",
+            " <when test='bean.businessScope==\"TI\"'>",
+            " AND  business_scope_TI='TI'",
+            "</when>",
+            " <when test='bean.businessScope==\"SE\"'>",
+            " AND  business_scope_SE='SE'",
+            "</when>",
+            " <when test='bean.businessScope==\"AI\"'>",
+            " AND  business_scope_AI='AI'",
+            "</when>",
+            " <when test='bean.businessScope==\"SI\"'>",
+            " AND  business_scope_SI='SI'",
+            "</when>",
+            " <when test='bean.businessScope==\"LC\"'>",
+            " AND  business_scope_LC='LC'",
+            "</when>",
+            " <when test='bean.businessScope==\"IO\"'>",
+            " AND business_scope_IO='IO'",
+            "</when>",
+            " <when test='bean.coopName!=null and bean.coopName!=\"\"'>",
+            " AND (coop_name like  \"%\"#{bean.coopName}\"%\" or coop_code like  \"%\"#{bean.coopName}\"%\")",
+            "</when>",
+            "</script>"})
     IPage<VPrmCoop> getCoopListNew(Page page, @Param("bean") VPrmCoop bean);
 
     @Select("SELECT\n" +
@@ -1788,7 +1797,7 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
     void updateOrderStatusByTempTableL();
 
     @Select("CALL af_P_ai_make_shipperletter(#{orderId})")
-    Map<String, Object> selectByOrderId( @Param("orderId") Integer orderId);
+    Map<String, Object> selectByOrderId(@Param("orderId") Integer orderId);
 
     @Update("DROP TABLE\n" +
             "IF\n" +
@@ -1843,7 +1852,7 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
             "SELECT currency_rate FROM af_V_currency_rate",
             "where org_id=#{org_id} and currency_code=#{currency_code} ORDER BY currency_code asc",
             "</script>"})
-    BigDecimal getCurrencyRate(@Param("org_id") Integer org_id,@Param("currency_code") String currency_code);
+    BigDecimal getCurrencyRate(@Param("org_id") Integer org_id, @Param("currency_code") String currency_code);
 
     @Select({"<script>",
             "select * from af_rounting_sign\n",
@@ -1863,6 +1872,50 @@ public interface AfOrderMapper extends BaseMapper<AfOrder> {
                     "GROUP BY\n" +
                     "\torder_id",
             "</script>"})
-    BigDecimal getAostFunctionalAmount(@Param("org_id") Integer org_id,@Param("order_id") Integer order_id);
+    BigDecimal getAostFunctionalAmount(@Param("org_id") Integer org_id, @Param("order_id") Integer order_id);
 
+
+    @Select("SELECT CASE WHEN MIN(CASE WHEN IFNULL(cost_amount_payment,0)=cost_amount THEN 1 ELSE 0 END) = 1 AND MIN(IFNULL(invoice_status,0)) = 1 THEN '1' ELSE '0' END AS completeInvoice,CASE WHEN MAX(IFNULL(invoice_status,-2)) = -1 THEN '1' ELSE '0' END AS noInvoice,CASE WHEN MAX(IFNULL(invoice_status,-1)) > -1 THEN '1' ELSE '0' END AS InvoiceNoComplete " +
+            " FROM af_cost a Left JOIN (select b.cost_id,b.payment_id from css_payment_detail b where b.order_id=#{orderId} and b.org_id=#{orgId} and exists(select c.payment_id from css_payment c where (c.business_scope='AE' or c.business_scope='AI') and c.payment_id=b.payment_id)) d on a.cost_id=d.cost_id LEFT JOIN css_cost_invoice e ON d.payment_id = e.payment_id " +
+            " where a.order_id=#{orderId}" +
+            " GROUP BY a.order_id")
+    Map<String, String> getOrderCostStatusForAFAboutInvoiceStatus(@Param("orderId") Integer orderId, @Param("orgId") Integer orgId);
+
+    @Select("SELECT CASE WHEN MIN(CASE WHEN IFNULL(cost_amount_payment,0)=cost_amount THEN 1 ELSE 0 END) = 1 AND MIN(IFNULL(invoice_status,0)) = 1 THEN '1' ELSE '0' END AS completeInvoice,CASE WHEN MAX(IFNULL(invoice_status,-2)) = -1 THEN '1' ELSE '0' END AS noInvoice,CASE WHEN MAX(IFNULL(invoice_status,-1)) > -1 THEN '1' ELSE '0' END AS InvoiceNoComplete " +
+            " FROM lc_cost a Left JOIN (select b.cost_id,b.payment_id from css_payment_detail b where b.order_id=#{orderId} and b.org_id=#{orgId} and exists(select c.payment_id from css_payment c where c.business_scope='LC' and c.payment_id=b.payment_id)) d on a.cost_id=d.cost_id LEFT JOIN css_cost_invoice e ON d.payment_id = e.payment_id " +
+            " where a.order_id=#{orderId}" +
+            " GROUP BY a.order_id")
+    Map<String, String> getOrderCostStatusForLCAboutInvoiceStatus(@Param("orderId") Integer orderId, @Param("orgId") Integer orgId);
+
+    @Select("SELECT CASE WHEN MIN(CASE WHEN IFNULL(cost_amount_payment,0)=cost_amount THEN 1 ELSE 0 END) = 1 AND MIN(IFNULL(invoice_status,0)) = 1 THEN '1' ELSE '0' END AS completeInvoice,CASE WHEN MAX(IFNULL(invoice_status,-2)) = -1 THEN '1' ELSE '0' END AS noInvoice,CASE WHEN MAX(IFNULL(invoice_status,-1)) > -1 THEN '1' ELSE '0' END AS InvoiceNoComplete " +
+            " FROM io_cost a Left JOIN (select b.cost_id,b.payment_id from css_payment_detail b where b.order_id=#{orderId} and b.org_id=#{orgId} and exists(select c.payment_id from css_payment c where c.business_scope='IO' and c.payment_id=b.payment_id)) d on a.cost_id=d.cost_id LEFT JOIN css_cost_invoice e ON d.payment_id = e.payment_id " +
+            " where a.order_id=#{orderId}" +
+            " GROUP BY a.order_id")
+    Map<String, String> getOrderCostStatusForIOAboutInvoiceStatus(@Param("orderId") Integer orderId, @Param("orgId") Integer orgId);
+
+    @Select("SELECT CASE WHEN MIN(CASE WHEN IFNULL(cost_amount_payment,0)=cost_amount THEN 1 ELSE 0 END) = 1 AND MIN(IFNULL(invoice_status,0)) = 1 THEN '1' ELSE '0' END AS completeInvoice,CASE WHEN MAX(IFNULL(invoice_status,-2)) = -1 THEN '1' ELSE '0' END AS noInvoice,CASE WHEN MAX(IFNULL(invoice_status,-1)) > -1 THEN '1' ELSE '0' END AS InvoiceNoComplete " +
+            " FROM sc_cost a Left JOIN (select b.cost_id,b.payment_id from css_payment_detail b where b.order_id=#{orderId} and b.org_id=#{orgId} and exists(select c.payment_id from css_payment c where (c.business_scope='SE' or c.business_scope='SI') and c.payment_id=b.payment_id)) d on a.cost_id=d.cost_id LEFT JOIN css_cost_invoice e ON d.payment_id = e.payment_id " +
+            " where a.order_id=#{orderId}" +
+            " GROUP BY a.order_id")
+    Map<String, String> getOrderCostStatusForSCAboutInvoiceStatus(@Param("orderId") Integer orderId, @Param("orgId") Integer orgId);
+
+    @Select("SELECT CASE WHEN MIN(CASE WHEN IFNULL(cost_amount_payment,0)=cost_amount THEN 1 ELSE 0 END) = 1 AND MIN(IFNULL(invoice_status,0)) = 1 THEN '1' ELSE '0' END AS completeInvoice,CASE WHEN MAX(IFNULL(invoice_status,-2)) = -1 THEN '1' ELSE '0' END AS noInvoice,CASE WHEN MAX(IFNULL(invoice_status,-1)) > -1 THEN '1' ELSE '0' END AS InvoiceNoComplete " +
+            " FROM tc_cost a Left JOIN (select b.cost_id,b.payment_id from css_payment_detail b where b.order_id=#{orderId} and b.org_id=#{orgId} and exists(select c.payment_id from css_payment c where (c.business_scope='TE' or c.business_scope='TI') and c.payment_id=b.payment_id)) d on a.cost_id=d.cost_id LEFT JOIN css_cost_invoice e ON d.payment_id = e.payment_id " +
+            " where a.order_id=#{orderId}" +
+            " GROUP BY a.order_id")
+    Map<String, String> getOrderCostStatusForTCAboutInvoiceStatus(@Param("orderId") Integer orderId, @Param("orgId") Integer orgId);
+
+    @Insert("insert into af_order_extend \n"
+            + " ( org_id,order_id,pallet_material,special_package,celsius_require,thermometer,is_celsius_require) \n"
+            + "	 values (#{org_id},#{bean.orderId},#{bean.palletMaterial},#{bean.specialPackage},#{bean.celsiusRequire},#{bean.thermometer},#{bean.isCelsiusRequire})\n")
+    void insertOrderExtend(@Param("org_id") Integer org_id, @Param("bean") AfOrder bean);
+
+    @Select({"<script>",
+            "select * from af_order_extend\n",
+            "	where org_id = #{org_id} and order_id = #{order_id}",
+            "</script>"})
+    AfOrderExtend getOrderExtend(@Param("org_id") Integer org_id, @Param("order_id") Integer order_id);
+
+    @Delete("delete from af_order_extend where org_id=#{org_id} and order_id=#{order_id}")
+    void deleteOrderExtend(@Param("org_id") Integer org_id, @Param("order_id") Integer order_id);
 }

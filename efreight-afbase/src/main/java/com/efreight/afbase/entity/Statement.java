@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 
@@ -97,7 +98,9 @@ public class Statement implements Serializable {
      * 清单本币金额
      */
     private BigDecimal functionalAmount;
+    @TableField(strategy = FieldStrategy.IGNORED)
     private BigDecimal functionalAmountWriteoff;
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer writeoffComplete;
 
     /**
@@ -185,5 +188,36 @@ public class Statement implements Serializable {
     private transient List<Integer> salesIdList;//责任销售
     @TableField(exist = false)
     private String columnStrs;
+    @TableField(exist = false)
+    private Integer invoiceStatus;
+    @TableField(exist = false)
+    private String currencyStr;
+    @TableField(exist = false)
+    private String socialCreditCode;
+    /**
+     * 账单公司抬头ID
+     */
+    private Integer orgBankConfigId;
+    @TableField(exist = false)
+    private Integer invoiceQuery;
+    @TableField(exist = false)
+    private String coopAddress;
+    @TableField(exist = false)
+    private String phoneNumber;
+    @TableField(exist = false)
+    private String bankNumber;
+    @TableField(exist = false)
+    private String bankName;
 
+    @TableField(exist = false)
+    private String invoiceCreatorName;
+    @TableField(exist = false)
+    private LocalDateTime invoiceCreateTime;
+    @TableField(exist = false)
+    private String invoiceCreateTimeStart;
+    @TableField(exist = false)
+    private String invoiceCreateTimeEnd;
+    @TableField(exist = false)
+    private String applyRemark;
+    
 }

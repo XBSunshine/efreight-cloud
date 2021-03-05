@@ -396,5 +396,21 @@ public class AwbPrintController {
             return MessageInfo.failed(e.getMessage());
         }
     }
+
+    /**
+     * 主单导出
+     *
+     * @param afPAwbPrintProcedure
+     * @return
+     */
+    @PostMapping("/exportExcel")
+    public void exportExcel(@RequestBody AfPAwbPrintProcedure afPAwbPrintProcedure) {
+        try {
+            awbPrintService.exportExcel(afPAwbPrintProcedure);
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 }
 

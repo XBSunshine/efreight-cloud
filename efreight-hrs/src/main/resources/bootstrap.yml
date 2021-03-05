@@ -23,6 +23,7 @@ eureka:
   client:
     service-url:
       defaultZone:  http://127.0.0.1:9001/eureka/
+      #defaultZone: http://ef-eureka:9001/eureka/
 ---
 
 #---------------测试环境-------------
@@ -35,7 +36,7 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://10.66.178.186:9001/eureka/
+      defaultZone: http://101.200.170.232:9001/eureka/
 ---
 #---------------生产环境-------------
 spring:

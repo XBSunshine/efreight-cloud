@@ -11,7 +11,7 @@ public interface InboundService extends IService<Inbound> {
 
     IPage getPage(Page page, Inbound inbound);
 
-    void delete(String number, String flag);
+    void delete(String number, String flag, String pageName);
 
     List<Inbound> inboundView(String number, String flag);
 

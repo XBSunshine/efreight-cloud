@@ -3,6 +3,7 @@ package com.efreight.afbase.dao;
 import com.efreight.afbase.entity.view.VAfCategory;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -24,5 +25,11 @@ public interface VAfCategoryMapper extends BaseMapper<VAfCategory> {
 		"WHERE category_name =#{category_name}",
 	"</script>"})
 	List<VAfCategory> getscList(@Param("category_name") String category_name);
+	
+	@Select({"<script>",
+		"SELECT * FROM af_V_prm_category " ,
+		"WHERE category_type=28",
+	"</script>"})
+	List<Map> invoiceType();
 
 }

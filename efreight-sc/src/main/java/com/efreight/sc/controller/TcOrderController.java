@@ -78,7 +78,7 @@ public class TcOrderController {
         }
     }
 	  /**
-     * TE-订单新建
+     * TC-订单新建
      * @param order
      * @return
      */
@@ -115,7 +115,7 @@ public class TcOrderController {
      * @return
      */
     @PostMapping("/te/modify")
-    public MessageInfo updateSE(@RequestBody TcOrder order){
+    public MessageInfo updateTE(@RequestBody TcOrder order){
         try {
             tcOrderService.modifyTE(order);
             return MessageInfo.ok();
@@ -133,6 +133,71 @@ public class TcOrderController {
      */
     @PostMapping("/exportExcelListTe")
     public void exportExcelListTe(TcOrder order) {
+        try {
+            order.setCurrentUserId(SecurityUtils.getUser().getId());
+            tcOrderService.exportExcelListTe(order);
+        } catch (Exception e) {
+            log.info(e.getMessage());
+        }
+    }
+
+    /*******************************TI***********************************************/
+    /**
+     * TI-订单新建
+     * @param order
+     * @return
+     */
+    @PostMapping("/ti")
+    public MessageInfo saveTI(@RequestBody TcOrder order){
+        try {
+            tcOrderService.saveTE(order);
+            return MessageInfo.ok();
+        }catch (Exception e){
+            log.info(e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * TI-强制关闭
+     * @param orderId
+     * @return
+     */
+    @PutMapping("/ti/forceStop/{orderId}")
+    public MessageInfo forceStopTI(@PathVariable("orderId") Integer orderId, @RequestBody String reason){
+        try {
+            tcOrderService.forceStopTE(orderId, reason);
+            return MessageInfo.ok();
+        }catch (Exception e){
+            log.info(e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * TI-修改订单
+     * @param order
+     * @return
+     */
+    @PostMapping("/ti/modify")
+    public MessageInfo updateTI(@RequestBody TcOrder order){
+        try {
+            tcOrderService.modifyTE(order);
+            return MessageInfo.ok();
+        }catch (Exception e){
+            log.info(e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * 导出TI订单列表
+     *
+     * @param
+     * @return
+     */
+    @PostMapping("/exportExcelListTi")
+    public void exportExcelListTi(TcOrder order) {
         try {
             order.setCurrentUserId(SecurityUtils.getUser().getId());
             tcOrderService.exportExcelListTe(order);

@@ -124,6 +124,7 @@ public class TcCostServiceImpl extends ServiceImpl<TcCostMapper, TcCost> impleme
                 	cost.setOrderCode(StrUtil.isBlank(tcOrder.getRwbNumber()) ? tcOrder.getOrderCode() : tcOrder.getRwbNumber());
                 	cost.setFlightDate(tcOrder.getExpectDeparture());
                 }else {
+                    cost.setOrderCode(StrUtil.isBlank(tcOrder.getRwbNumber()) ? tcOrder.getOrderCode() : tcOrder.getRwbNumber());
                 	cost.setFlightDate(tcOrder.getExpectArrival());
                 }
                 //客户单号

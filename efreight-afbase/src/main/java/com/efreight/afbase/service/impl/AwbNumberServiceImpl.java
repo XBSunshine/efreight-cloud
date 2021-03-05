@@ -56,7 +56,7 @@ public class AwbNumberServiceImpl extends ServiceImpl<AwbNumberMapper, AwbNumber
         }
 
         queryWrapper.eq("org_id", SecurityUtils.getUser().getOrgId());
-        queryWrapper.orderByDesc("creat_time");
+        queryWrapper.orderByDesc("creat_time","awb_number");
         return baseMapper.selectPage(page, queryWrapper);
     }
 

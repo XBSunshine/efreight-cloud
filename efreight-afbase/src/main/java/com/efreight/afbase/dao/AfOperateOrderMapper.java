@@ -136,7 +136,7 @@ public interface AfOperateOrderMapper extends BaseMapper<AfOperateOrder> {
     List<AEOperateOrder> exportAeExcelSUM(@Param("bean") AfOperateOrder bean);
 
     @Select({"<script>",
-            "    SELECT a.awb_number,a.order_code,a.order_status,IF(a.income_recorded=1 or IFNULL(a.income_status,'未录收入')!='未录收入' ,'√','') AS income_recorded,IF(a.cost_recorded=1 or IFNULL(a.cost_status,'未录成本')!='未录成本','√','') AS cost_recorded,",
+            "    SELECT a.awb_number,a.order_code,a.order_status,",
 //    	"CONCAT(a.plan_pieces,'/',IFNULL(a.confirm_pieces,'-')) plan_pieces ,",
 //    	"CONCAT(FORMAT(a.plan_weight,1),'/',IFNULL(FORMAT(a.confirm_weight,1),'-')) plan_weight ," ,
 //    	"CONCAT(FORMAT(a.plan_volume,3),'/',IFNULL(FORMAT(a.confirm_volume,3),'-')) plan_volume ," ,
@@ -157,15 +157,15 @@ public interface AfOperateOrderMapper extends BaseMapper<AfOperateOrder> {
             "b.coop_name,",
             "h.coop_code as supplierCode,",
             "g.awb_from_name as awbFromName,",
-            "case when a.pick_up_delivery_service=1 then '是' else '否' end pick_up_delivery_service,",
-            "case when a.warehouse_service=1 then '是' else '否' end warehouse_service,",
-            "case when a.outfield_service=1 then '是' else '否' end outfield_service,",
-            "case when a.customs_clearance_service=1 then '是' else '否' end customs_clearance_service,",
-            "case when a.arrival_customs_clearance_service=1 then '是' else '否' end arrival_customs_clearance_service,",
-            "case when a.delivery_service=1 then '是' else '否' end delivery_service,",
-            "a.customer_number,",
+//            "case when a.pick_up_delivery_service=1 then '是' else '否' end pick_up_delivery_service,",
+//            "case when a.warehouse_service=1 then '是' else '否' end warehouse_service,",
+//            "case when a.outfield_service=1 then '是' else '否' end outfield_service,",
+//            "case when a.customs_clearance_service=1 then '是' else '否' end customs_clearance_service,",
+//            "case when a.arrival_customs_clearance_service=1 then '是' else '否' end arrival_customs_clearance_service,",
+//            "case when a.delivery_service=1 then '是' else '否' end delivery_service,",
+//            "a.customer_number,",
 //    	"CONCAT(a.business_product,'/',case when a.hawb_quantity=0 then '直单' else CONCAT('分单',a.hawb_quantity) end) business_product ,",
-            "a.business_product business_product ,",
+//            "a.business_product business_product ,",
 //            "case when a.hawb_quantity=0 then '直单' else CONCAT('分单',a.hawb_quantity) end hawb_quantity ,",
             "case when a.hawb_quantity=0 then '直单' else a.hawb_quantity end hawb_quantity ,",
             "a.cargo_flow_remark,",
@@ -823,7 +823,7 @@ public interface AfOperateOrderMapper extends BaseMapper<AfOperateOrder> {
     void doCostTC(@Param("order_uuid") String order_uuid, @Param("org_id") Integer org_id, @Param("row_uuid") String row_uuid);
 
     @Update("update af_order set\n"
-            + " order_status=#{order_status},row_uuid=#{row_uuid}\n"
+            + " order_status=#{order_status},income_recorded=1,cost_recorded=1,row_uuid=#{row_uuid}\n"
             + " where  order_uuid = #{order_uuid}\n")
     void updateOrder(@Param("order_uuid") String order_uuid, @Param("order_status") String order_status, @Param("row_uuid") String row_uuid);
 
@@ -1486,7 +1486,10 @@ public interface AfOperateOrderMapper extends BaseMapper<AfOperateOrder> {
             " AND coop_type in ('外部客户','互为代理') AND business_scope_AE='AE'",
             "</when>",
             " <when test='bean.businessScope==\"TE\"'>",
-            " AND coop_type in ('外部客户','互为代理','海外代理') AND business_scope_TE='TE'",
+            " AND coop_type in ('外部客户','互为代理') AND business_scope_TE='TE'",
+            "</when>",
+            " <when test='bean.businessScope==\"TI\"'>",
+            " AND coop_type in ('外部客户','互为代理','海外代理') AND business_scope_TI='TI'",
             "</when>",
             " <when test='bean.businessScope==\"SE\"'>",
             " AND coop_type in ('外部客户','互为代理') AND business_scope_SE='SE'",
@@ -1591,4 +1594,17 @@ public interface AfOperateOrderMapper extends BaseMapper<AfOperateOrder> {
 		"ORDER BY cargo_type DESC",
 	"</script>"})
     List<CargoGoodsnames> queryGoodsNamelist(@Param("order_id") Integer order_id);
+    
+    @Insert("insert into af_order_extend \n"
+            + " ( org_id,order_id,pallet_material,special_package,celsius_require,thermometer,is_celsius_require) \n"
+            + "	 values (#{org_id},#{bean.orderId},#{bean.palletMaterial},#{bean.specialPackage},#{bean.celsiusRequire},#{bean.thermometer},#{bean.isCelsiusRequire})\n")
+    void insertOrderExtend(@Param("org_id") Integer org_id, @Param("bean") AfOperateOrder bean);
+    @Delete("delete from af_order_extend where org_id=#{org_id} and order_id=#{order_id}")
+    void deleteOrderExtend(@Param("org_id") Integer org_id, @Param("order_id") Integer order_id);
+    
+    @Select({"<script>",
+        "select * from af_order_extend\n",
+        "	where org_id = #{org_id} and order_id = #{order_id}",
+        "</script>"})
+    AfOrderExtend getOrderExtend(@Param("org_id") Integer org_id, @Param("order_id") Integer order_id);
 }

@@ -129,5 +129,18 @@ public class WarehouseController {
             return MessageInfo.failed(e.getMessage());
         }
     }
+    /**
+     * @param businessScope
+     * @return
+     */
+    @GetMapping("/getWarehouseListByQuery/{businessScope}")
+    public MessageInfo getWarehouseListByQuery(@PathVariable("businessScope") String businessScope) {
+        try {
+            return MessageInfo.ok(service.getWarehouseListByQuery(businessScope));
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
 }
 

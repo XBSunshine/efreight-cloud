@@ -114,6 +114,7 @@ public class Org implements Serializable {
     private String orgAddressInfoCn;
     private String orgAddressInfoEn;
     private String financialVoucherOutType;
+    private String financialVoucherOutCurrency;
     
     private String chBillTemplateExcel;
     private String enBillTemplateExcel;
@@ -204,4 +205,9 @@ public class Org implements Serializable {
      */
     @TableField(exist = false)
     private List<OrgBankConfig> orgBankConfigList;
+
+    private Integer activeIndex;
+
+    @TableField(exist = false)
+    private Integer rankNumber;
 }

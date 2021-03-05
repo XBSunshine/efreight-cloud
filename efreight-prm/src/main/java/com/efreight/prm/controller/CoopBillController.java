@@ -22,7 +22,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -124,7 +126,7 @@ public class CoopBillController {
     }
 
     /**
-     * 生成账单
+     * 修复账单
      *
      * @return
      */
@@ -175,7 +177,7 @@ public class CoopBillController {
     }
 
     /**
-     * 账单确认
+     * 发送账单
      *
      * @param statementId
      * @return
@@ -186,6 +188,28 @@ public class CoopBillController {
         try {
             coopBillService.sendBill(statementId);
             return MessageInfo.ok();
+        } catch (Exception e) {
+            log.info(e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * 自动发送账单
+     *
+     * @param createTimeStart
+     * @return
+     */
+    @PutMapping("/autoSendBill/{createTimeStart}")
+    public MessageInfo autoSendBill(@PathVariable Date createTimeStart) {
+        try {
+            SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM");
+            if (createTimeStart != null) {
+                String billMonth = dateFormat1.format(createTimeStart);
+                coopBillService.autoSendBill(billMonth);
+                return MessageInfo.ok();
+            }
+            return MessageInfo.failed("账单月份不能为空");
         } catch (Exception e) {
             log.info(e.getMessage());
             return MessageInfo.failed(e.getMessage());
@@ -620,7 +644,7 @@ public class CoopBillController {
         List<CoopBillSettleExcel> list = coopBillService.queryListForExcel(bean);
         ExportExcel<CoopBillSettleExcel> ex = new ExportExcel<CoopBillSettleExcel>();
         String[] headers = {"序号", "期间", "客户名称", "分组名称", "一级科目", "二级科目", "口岸", "结算周期/计费模式", "数量", "单价", "金额"
-                , "业务区域", "账单状态", "销售负责人" , "账单责任人" , "协同销售人" , "客户确认时间" , "核销人" ,"核销日期" , "首次收费月份" , "生效日期" , "截止日期" , "IT编码"};
+                , "业务区域", "账单状态", "客户负责人" , "销售负责人" , "协同销售人" , "客户确认时间" , "核销人" ,"核销日期" ,  "首次收费月份" ,"新业务", "生效日期" , "截止日期" , "IT编码"};
         ex.exportExcel(response, "导出EXCEL", headers, list, "Export");
     }
 
@@ -731,7 +755,7 @@ public class CoopBillController {
     public void exportMadeBillExcel(HttpServletResponse response, @ModelAttribute("bean") CoopBillStatement bean) throws IOException {
         List<CoopBillMadeExcel> list = coopBillService.querymadeBillListForExcel(bean);
         ExportExcel<CoopBillMadeExcel> ex = new ExportExcel<CoopBillMadeExcel>();
-        String[] headers = {"账单名称", "状态", "账单月份", "账单金额", "业务区域","销售确认人", "客户确认时间", "开票客户名称", "发票类型", "发票号", "开票人", "开票日期", "核销人"
+        String[] headers = {"账单名称", "状态", "账单月份", "账单金额", "业务区域","账单确认人", "客户确认时间", "开票客户名称", "发票类型", "发票号", "开票人", "开票日期", "核销人"
                 , "核销日期", "快递号", "发送账单", "电子发票接收邮箱"};
         ex.exportExcel(response, "导出EXCEL", headers, list, "Export");
     }

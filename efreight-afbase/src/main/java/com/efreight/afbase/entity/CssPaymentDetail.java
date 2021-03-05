@@ -2,16 +2,15 @@ package com.efreight.afbase.entity;
 
 import java.math.BigDecimal;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import java.time.LocalDate;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * <p>
@@ -75,6 +74,7 @@ public class CssPaymentDetail implements Serializable {
     /**
      * 已核销金额
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private BigDecimal amountPaymentWriteoff;
 
     /**

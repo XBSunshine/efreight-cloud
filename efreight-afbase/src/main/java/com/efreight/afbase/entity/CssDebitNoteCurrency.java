@@ -88,4 +88,8 @@ public class CssDebitNoteCurrency implements Serializable {
     private transient String name1;
     private transient String name2;
     private transient String checkBox;
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private BigDecimal amountInvoice;
+    @TableField(exist = false)
+    private BigDecimal amountInvoiceNo;
 }

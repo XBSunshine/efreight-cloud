@@ -3,6 +3,7 @@ package com.efreight.hrs.controller;
 import com.efreight.common.security.service.EUserDetails;
 import com.efreight.common.security.util.MessageInfo;
 import com.efreight.common.security.util.SecurityUtils;
+import com.efreight.hrs.entity.Org;
 import com.efreight.hrs.entity.UserAccessRecord;
 import com.efreight.hrs.service.UserAccessRecordService;
 import lombok.AllArgsConstructor;
@@ -48,6 +49,17 @@ public class UserAccessRecordController {
         try{
             List<UserAccessRecord> accessRecords = userAccessRecordService.topAccess(SecurityUtils.getUser().getId(), number);
             return MessageInfo.ok(accessRecords);
+        }catch (Exception e){
+            log.error(e.getMessage(), e);
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    @GetMapping("topActiveIndex")
+    public MessageInfo topActiveIndex(){
+        try{
+            List<Org> activeIndexRecords = userAccessRecordService.topActiveIndex();
+            return MessageInfo.ok(activeIndexRecords);
         }catch (Exception e){
             log.error(e.getMessage(), e);
             return MessageInfo.failed(e.getMessage());

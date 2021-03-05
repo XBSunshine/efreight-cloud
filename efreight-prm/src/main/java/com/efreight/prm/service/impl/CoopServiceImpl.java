@@ -251,6 +251,9 @@ public class CoopServiceImpl implements CoopService {
 
         //默认插入 所有业务范畴
         List<String> list = coopDao.getBusinessScope();
+        if(1 == SecurityUtils.getUser().getOrgId() && !list.contains("EF")){
+            list.add("EF");
+        }
 
         if(list!=null && list.size()>0){
             for(int i=0;i<list.size();i++){

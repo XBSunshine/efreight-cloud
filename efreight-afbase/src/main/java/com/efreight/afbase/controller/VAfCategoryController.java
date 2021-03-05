@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -49,6 +50,16 @@ public class VAfCategoryController {
     public MessageInfo sclist(@PathVariable("categoryName") String categoryName){
     	try {
     		List<VAfCategory> list = vAfCategoryService.getscList(categoryName);
+    		return MessageInfo.ok(list);
+    	}catch (Exception e){
+    		log.info(e.getMessage());
+    		return MessageInfo.failed(e.getMessage());
+    	}
+    }
+    @GetMapping("/invoiceType")
+    public MessageInfo invoiceType(){
+    	try {
+    		List<Map> list = vAfCategoryService.invoiceType();
     		return MessageInfo.ok(list);
     	}catch (Exception e){
     		log.info(e.getMessage());

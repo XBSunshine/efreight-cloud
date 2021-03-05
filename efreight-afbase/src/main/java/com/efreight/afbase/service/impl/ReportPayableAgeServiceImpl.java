@@ -47,6 +47,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (StrUtil.isBlank(reportPayableAge.getBusinessScope())) {
             reportPayableAge.setBusinessScope(null);
         }
@@ -59,7 +60,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (StrUtil.isBlank(reportPayableAge.getCustomerType())) {
             reportPayableAge.setCustomerType(null);
         }
-        List<List<Map<String, String>>> resultSet = reportPayableAgeMapper.getPageForAF(reportPayableAge);
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        List<List<LinkedHashMap<String, String>>> resultSet = reportPayableAgeMapper.getPageForAF(reportPayableAge);
 
         HashMap<String, List> result = new HashMap<>();
         List<Map<String, String>> data = new ArrayList<>();
@@ -80,13 +84,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
             if (resultSet.get(0).size() != 0) {
                 Set<String> keySet = resultSet.get(0).get(0).keySet();
 
-                List<String> list = keySet.stream().sorted((e1, e2) -> {
-                    if (e1.contains("+")) {
-                        return 1;
-                    } else {
-                        return e1.compareTo(e2);
-                    }
-                }).collect(Collectors.toList());
+                List<String> list = keySet.stream().collect(Collectors.toList());
                 for (String key : list) {
                     if (key.contains("colName_")) {
                         column.add(key.replace("colName_", ""));
@@ -114,6 +112,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         return reportPayableAgeMapper.viewForAF(reportPayableAge);
     }
 
@@ -132,6 +131,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         List<ReportPayableAgeDetail> list = reportPayableAgeMapper.viewForAF(reportPayableAge);
         List<ReportPayableAgeDetailForExcel> listExcel = new ArrayList<>();
         if (list != null && list.size() > 0) {
@@ -167,6 +170,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (StrUtil.isBlank(reportPayableAge.getBusinessScope())) {
             reportPayableAge.setBusinessScope(null);
         }
@@ -179,19 +183,16 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (StrUtil.isBlank(reportPayableAge.getCustomerType())) {
             reportPayableAge.setCustomerType(null);
         }
-        List<List<Map<String, String>>> resultSet = reportPayableAgeMapper.getPageForAF(reportPayableAge);
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        List<List<LinkedHashMap<String, String>>> resultSet = reportPayableAgeMapper.getPageForAF(reportPayableAge);
         String[] headers = {"业务范畴", "供应商代码", "供应商", "供应商类型", "应付金额(本币)"};
         ArrayList<String> column = new ArrayList<>();
         List<ReportPayableAgeExcel> list = new ArrayList<ReportPayableAgeExcel>();
         if (resultSet != null && resultSet.size() > 0 && resultSet.get(0) != null && resultSet.get(0).size() > 0) {
             Set<String> keySet = resultSet.get(0).get(0).keySet();
-            List<String> listColName = keySet.stream().sorted((e1, e2) -> {
-                if (e1.contains("+")) {
-                    return 1;
-                } else {
-                    return e1.compareTo(e2);
-                }
-            }).collect(Collectors.toList());
+            List<String> listColName = keySet.stream().collect(Collectors.toList());
             for (String key : listColName) {
                 if (key.contains("colName_")) {
                     column.add(key.replace("colName_", ""));
@@ -204,10 +205,11 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
                 excel.setCoopName(o.get("coop_name") + "");
                 excel.setCoopType(o.get("coop_type") + "");
                 excel.setNoFunctionalAmountWriteoff(o.get("no_functional_amount_writeoff") + "");
+                String editionName = reportPayableAge.getOrgEditionName();
                 if (column != null && column.size() > 0) {
                     //后面需要 优化一下excel 导出
                     for (int i = 0; i < column.size(); i++) {
-                        if (reportPayableAge.getOrgEditionName().contains("专业版")) {
+                        if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                             if (i == 0) {
                                 excel.setColName_1(o.get("colName_" + column.get(i)).toString());
                             }
@@ -249,10 +251,11 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
             ReportPayableAgeExcel excel2 = new ReportPayableAgeExcel();
             excel2.setBusinessScope("合计");
             excel2.setNoFunctionalAmountWriteoff(resultSet.get(1).get(0).get("no_functional_amount_writeoff") + "");
+            String editionName = reportPayableAge.getOrgEditionName();
             if (column != null && column.size() > 0) {
                 for (int i = 0; i < column.size(); i++) {
                     headers = ArrayUtils.add(headers, column.get(i));
-                    if (reportPayableAge.getOrgEditionName().contains("专业版")) {
+                    if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                         if (i == 0) {
                             excel2.setColName_1(resultSet.get(1).get(0).get("colName_" + column.get(i)) + "");
                         }
@@ -317,6 +320,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (StrUtil.isBlank(reportPayableAge.getBusinessScope())) {
             reportPayableAge.setBusinessScope(null);
         }
@@ -329,7 +333,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (StrUtil.isBlank(reportPayableAge.getCustomerType())) {
             reportPayableAge.setCustomerType(null);
         }
-        List<List<Map<String, String>>> resultSet = reportPayableAgeMapper.getPageForSC(reportPayableAge);
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        List<List<LinkedHashMap<String, String>>> resultSet = reportPayableAgeMapper.getPageForSC(reportPayableAge);
 
         HashMap<String, List> result = new HashMap<>();
         List<Map<String, String>> data = new ArrayList<>();
@@ -343,13 +350,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
             if (resultSet.get(0).size() != 0) {
                 Set<String> keySet = resultSet.get(0).get(0).keySet();
 
-                List<String> list = keySet.stream().sorted((e1, e2) -> {
-                    if (e1.contains("+")) {
-                        return 1;
-                    } else {
-                        return e1.compareTo(e2);
-                    }
-                }).collect(Collectors.toList());
+                List<String> list = keySet.stream().collect(Collectors.toList());
                 for (String key : list) {
                     if (key.contains("colName_")) {
                         column.add(key.replace("colName_", ""));
@@ -377,6 +378,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         return reportPayableAgeMapper.viewForSC(reportPayableAge);
     }
 
@@ -395,6 +400,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         List<ReportPayableAgeDetail> list = reportPayableAgeMapper.viewForSC(reportPayableAge);
         List<ReportPayableAgeDetailForExcel> listExcel = new ArrayList<>();
         if (list != null && list.size() > 0) {
@@ -429,6 +438,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (StrUtil.isBlank(reportPayableAge.getBusinessScope())) {
             reportPayableAge.setBusinessScope(null);
         }
@@ -441,19 +451,16 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (StrUtil.isBlank(reportPayableAge.getCustomerType())) {
             reportPayableAge.setCustomerType(null);
         }
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
         String[] headers = {"业务范畴", "供应商代码", "供应商", "供应商类型", "应付金额(本币)"};
-        List<List<Map<String, String>>> resultSet = reportPayableAgeMapper.getPageForSC(reportPayableAge);
+        List<List<LinkedHashMap<String, String>>> resultSet = reportPayableAgeMapper.getPageForSC(reportPayableAge);
         List<ReportPayableAgeExcel> list = new ArrayList<ReportPayableAgeExcel>();
         if (resultSet != null && resultSet.size() > 0 && resultSet.get(0) != null && resultSet.get(0).size() > 0) {
             Set<String> keySet = resultSet.get(0).get(0).keySet();
             ArrayList<String> column = new ArrayList<>();
-            List<String> listColName = keySet.stream().sorted((e1, e2) -> {
-                if (e1.contains("+")) {
-                    return 1;
-                } else {
-                    return e1.compareTo(e2);
-                }
-            }).collect(Collectors.toList());
+            List<String> listColName = keySet.stream().collect(Collectors.toList());
             for (String key : listColName) {
                 if (key.contains("colName_")) {
                     column.add(key.replace("colName_", ""));
@@ -466,10 +473,11 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
                 excel.setCoopName(o.get("coop_name") + "");
                 excel.setCoopType(o.get("coop_type") + "");
                 excel.setNoFunctionalAmountWriteoff(o.get("no_functional_amount_writeoff") + "");
+                String editionName = reportPayableAge.getOrgEditionName();
                 if (column != null && column.size() > 0) {
                     //后面需要 优化一下excel 导出
                     for (int i = 0; i < column.size(); i++) {
-                        if (reportPayableAge.getOrgEditionName().contains("专业版")) {
+                        if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                             if (i == 0) {
                                 excel.setColName_1(o.get("colName_" + column.get(i)).toString());
                             }
@@ -505,11 +513,12 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
 
             ReportPayableAgeExcel excel2 = new ReportPayableAgeExcel();
             excel2.setBusinessScope("合计");
+            String editionName = reportPayableAge.getOrgEditionName();
             excel2.setNoFunctionalAmountWriteoff(resultSet.get(1).get(0).get("no_functional_amount_writeoff") + "");
             if (column != null && column.size() > 0) {
                 for (int i = 0; i < column.size(); i++) {
                     headers = ArrayUtils.add(headers, column.get(i));
-                    if (reportPayableAge.getOrgEditionName().contains("专业版")) {
+                    if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                         if (i == 0) {
                             excel2.setColName_1(resultSet.get(1).get(0).get("colName_" + column.get(i)) + "");
                         }
@@ -569,6 +578,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (StrUtil.isBlank(reportPayableAge.getBusinessScope())) {
             reportPayableAge.setBusinessScope(null);
         }
@@ -581,7 +591,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (StrUtil.isBlank(reportPayableAge.getCustomerType())) {
             reportPayableAge.setCustomerType(null);
         }
-        List<List<Map<String, String>>> resultSet = null;
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        List<List<LinkedHashMap<String, String>>> resultSet = null;
         if (reportPayableAge.getBusinessScope().startsWith("T")) {
             resultSet = reportPayableAgeMapper.getPageForTC(reportPayableAge);
         } else if (reportPayableAge.getBusinessScope().startsWith("L")) {
@@ -601,13 +614,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
             if (resultSet.get(0).size() != 0) {
                 Set<String> keySet = resultSet.get(0).get(0).keySet();
 
-                List<String> list = keySet.stream().sorted((e1, e2) -> {
-                    if (e1.contains("+")) {
-                        return 1;
-                    } else {
-                        return e1.compareTo(e2);
-                    }
-                }).collect(Collectors.toList());
+                List<String> list = keySet.stream().collect(Collectors.toList());
                 for (String key : list) {
                     if (key.contains("colName_")) {
                         column.add(key.replace("colName_", ""));
@@ -635,6 +642,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (reportPayableAge.getBusinessScope().startsWith("T")) {
             return reportPayableAgeMapper.viewForTC(reportPayableAge);
         } else if (reportPayableAge.getBusinessScope().startsWith("L")) {
@@ -673,8 +684,12 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (StrUtil.isBlank(reportPayableAge.getCustomerType())) {
             reportPayableAge.setCustomerType(null);
         }
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         String[] headers = {"业务范畴", "供应商代码", "供应商", "供应商类型", "应付金额(本币)"};
-        List<List<Map<String, String>>> resultSet = null;
+        List<List<LinkedHashMap<String, String>>> resultSet = null;
         if (reportPayableAge.getBusinessScope().startsWith("T")) {
             resultSet = reportPayableAgeMapper.getPageForTC(reportPayableAge);
         } else if (reportPayableAge.getBusinessScope().startsWith("L")) {
@@ -686,13 +701,7 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
         if (resultSet != null && resultSet.size() > 0 && resultSet.get(0) != null && resultSet.get(0).size() > 0) {
             Set<String> keySet = resultSet.get(0).get(0).keySet();
             ArrayList<String> column = new ArrayList<>();
-            List<String> listColName = keySet.stream().sorted((e1, e2) -> {
-                if (e1.contains("+")) {
-                    return 1;
-                } else {
-                    return e1.compareTo(e2);
-                }
-            }).collect(Collectors.toList());
+            List<String> listColName = keySet.stream().collect(Collectors.toList());
             for (String key : listColName) {
                 if (key.contains("colName_")) {
                     column.add(key.replace("colName_", ""));
@@ -705,10 +714,11 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
                 excel.setCoopName(o.get("coop_name") + "");
                 excel.setCoopType(o.get("coop_type") + "");
                 excel.setNoFunctionalAmountWriteoff(o.get("no_functional_amount_writeoff") + "");
+                String editionName = reportPayableAge.getOrgEditionName();
                 if (column != null && column.size() > 0) {
                     //后面需要 优化一下excel 导出
                     for (int i = 0; i < column.size(); i++) {
-                        if (reportPayableAge.getOrgEditionName().contains("专业版")) {
+                        if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                             if (i == 0) {
                                 excel.setColName_1(o.get("colName_" + column.get(i)).toString());
                             }
@@ -745,10 +755,11 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
             ReportPayableAgeExcel excel2 = new ReportPayableAgeExcel();
             excel2.setBusinessScope("合计");
             excel2.setNoFunctionalAmountWriteoff(resultSet.get(1).get(0).get("no_functional_amount_writeoff") + "");
+            String editionName = reportPayableAge.getOrgEditionName();
             if (column != null && column.size() > 0) {
                 for (int i = 0; i < column.size(); i++) {
                     headers = ArrayUtils.add(headers, column.get(i));
-                    if (reportPayableAge.getOrgEditionName().contains("专业版")) {
+                    if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                         if (i == 0) {
                             excel2.setColName_1(resultSet.get(1).get(0).get("colName_" + column.get(i)) + "");
                         }
@@ -808,6 +819,10 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
     	}else {
     		reportPayableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        if (StrUtil.isBlank(reportPayableAge.getSalesName())) {
+            reportPayableAge.setSalesName(null);
+        }
+        reportPayableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         List<ReportPayableAgeDetail> list = null;
         List<ReportPayableAgeDetailForExcel> listExcel = new ArrayList<>();
         String[] headers = {"业务范畴", "主单号", "订单", "发车日期", "订单客户代码", "订单客户", "付款客户代码", "付款客户", "责任客服", "责任销售", "币种", "付款金额(原币)", "付款金额(本币)", "未核销金额(原币)", "未核销金额(本币)"};
@@ -819,6 +834,9 @@ public class ReportPayableAgeServiceImpl implements ReportPayableAgeService {
                     BeanUtils.copyProperties(list.get(i), reportPayableAgeDetailForExcel);
                     listExcel.add(reportPayableAgeDetailForExcel);
                 }
+            }
+            if("TI".equals(reportPayableAge.getBusinessScope())){
+                headers = new String[]{"业务范畴", "主单号", "订单", "到达日期", "订单客户代码", "订单客户", "付款客户代码", "付款客户", "责任客服", "责任销售", "币种", "付款金额(原币)", "付款金额(本币)", "未核销金额(原币)", "未核销金额(本币)"};
             }
         } else if (reportPayableAge.getBusinessScope().startsWith("L")) {
             list = reportPayableAgeMapper.viewForLC(reportPayableAge);

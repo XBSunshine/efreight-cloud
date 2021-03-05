@@ -122,7 +122,7 @@ public interface UserMapper extends BaseMapper<User> {
     Integer countByPhoneNumber1(@Param("phoneNumber") String phoneNumber,@Param("userId") Integer userId);
 
     @Select({"<script>" +
-            "select a.user_id,b.order_finance_lock_view,b.org_code orgCode,b.org_name orgName,b.org_type orgType,b1.org_name orgVersion,a.login_name loginName,a.user_email userEmail,b.stop_date stopDate,a.order_permission orderPermission,b2.rounting_sign rountingSign,\n" +
+            "select a.user_id,b.order_finance_lock_view,b.org_uuid orgUuid,b.org_code orgCode,b.org_name orgName,b.org_type orgType,b1.org_name orgVersion,a.login_name loginName,a.user_email userEmail,b.stop_date stopDate,a.order_permission orderPermission,b2.rounting_sign rountingSign,\n" +
             "\tb2.rounting_sign_business_product rountingSignBusinessProduct " +
             " from hrs_user a " +
             " left join hrs_org b on a.org_id=b.org_id  " +
@@ -134,7 +134,7 @@ public interface UserMapper extends BaseMapper<User> {
     List<UserVo> searchLoginNameAndOrgCode(UserVo user);
 
     @Select({"<script>" +
-            "select a.user_id,b.order_finance_lock_view,b.org_code orgCode,b.org_name orgName,b.org_type orgType,b1.org_name orgVersion,a.user_email userEmail,case a.user_id when 1 then 'superAdmin' else 'admin' end as adminRole,b.stop_date stopDate,a.order_permission orderPermission,b2.rounting_sign rountingSign,\n" +
+            "select a.user_id,b.order_finance_lock_view,b.org_uuid orgUuid,b.org_code orgCode,b.org_name orgName,b.org_type orgType,b1.org_name orgVersion,a.user_email userEmail,case a.user_id when 1 then 'superAdmin' else 'admin' end as adminRole,b.stop_date stopDate,a.order_permission orderPermission,b2.rounting_sign rountingSign,\n" +
             "\tb2.rounting_sign_business_product rountingSignBusinessProduct " +
             " from hrs_user a " +
             " left join hrs_org b on a.org_id=b.org_id  " +
@@ -145,7 +145,7 @@ public interface UserMapper extends BaseMapper<User> {
             "</script>"})
     List<UserVo> searchLoginNameAndOrgCode1(UserVo user);
     @Select({"<script>" +
-            "select a.user_id,b.order_finance_lock_view,b.org_code orgCode,b.org_name orgName,b.org_type orgType,b1.org_name orgVersion,a.login_name loginName,a.user_email userEmail,b.stop_date stopDate,a.order_permission orderPermission,b2.rounting_sign rountingSign,\n" +
+            "select a.user_id,b.order_finance_lock_view,b.org_uuid orgUuid,b.org_code orgCode,b.org_name orgName,b.org_type orgType,b1.org_name orgVersion,a.login_name loginName,a.user_email userEmail,b.stop_date stopDate,a.order_permission orderPermission,b2.rounting_sign rountingSign,\n" +
             "\tb2.rounting_sign_business_product rountingSignBusinessProduct " +
             " from hrs_user a " +
             " left join hrs_org b on a.org_id=b.org_id  " +

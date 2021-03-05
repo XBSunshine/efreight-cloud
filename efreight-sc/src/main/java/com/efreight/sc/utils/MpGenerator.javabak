@@ -3,11 +3,16 @@ package com.efreight.sc.utils;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.generator.AutoGenerator;
 import com.baomidou.mybatisplus.generator.config.DataSourceConfig;
+import com.baomidou.mybatisplus.generator.config.FileOutConfig;
 import com.baomidou.mybatisplus.generator.config.GlobalConfig;
 import com.baomidou.mybatisplus.generator.config.PackageConfig;
 import com.baomidou.mybatisplus.generator.config.StrategyConfig;
+import com.baomidou.mybatisplus.generator.config.TemplateConfig;
 import com.baomidou.mybatisplus.generator.config.rules.NamingStrategy;
 import com.baomidou.mybatisplus.generator.engine.VelocityTemplateEngine;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MpGenerator {
     public static void main(String[] args) {
@@ -34,12 +39,12 @@ public class MpGenerator {
         mpg.setPackageInfo(pc);
 
         StrategyConfig strategy = new StrategyConfig();
-        strategy.setTablePrefix(new String[]{"af"});
+        strategy.setTablePrefix(new String[]{""});
         strategy.setNaming(NamingStrategy.underline_to_camel);
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
         strategy.setEntityLombokModel(true);
         strategy.setRestControllerStyle(true);
-        strategy.setInclude("af_V_io_category");
+        strategy.setInclude("io_category","io_cost","io_income","io_log","io_order_files","io_order","io_order_shipper_consignee");
         strategy.setSuperEntityColumns(new String[]{"id"});
         strategy.setControllerMappingHyphenStyle(true);
         mpg.setStrategy(strategy);

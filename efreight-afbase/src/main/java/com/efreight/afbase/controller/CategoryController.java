@@ -120,5 +120,16 @@ public class CategoryController {
             return MessageInfo.failed(e.getMessage());
         }
     }
+
+    @GetMapping("docBusinessScope")
+    public MessageInfo docBusinessScope(){
+        try{
+            List<AfVPrmCategory> categoryList =this.categoryService.findDocBusinessScope();
+            return MessageInfo.ok(categoryList);
+        }catch (Exception e){
+            log.error(e.getMessage(), e);
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
 }
 

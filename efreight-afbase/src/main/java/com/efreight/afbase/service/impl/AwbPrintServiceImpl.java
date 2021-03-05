@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.afbase.utils.PDFUtils;
 import com.efreight.afbase.utils.RemoteSendUtils;
 import com.efreight.common.core.feign.RemoteServiceToHRS;
+import com.efreight.common.core.utils.JxlsUtils;
 import com.efreight.common.security.service.EUserDetails;
 import com.efreight.common.security.util.MessageInfo;
 import com.efreight.common.security.util.SecurityUtils;
@@ -28,6 +29,7 @@ import com.itextpdf.text.pdf.*;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.StringUtils;
+import org.jxls.util.Util;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -793,16 +796,8 @@ public class AwbPrintServiceImpl extends ServiceImpl<AwbPrintMapper, AwbPrint> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String awbDownloadWithPDF(AfPAwbPrintProcedure afPAwbPrintProcedure) {
-        if (afPAwbPrintProcedure.getAwbPrint() != null) {
-            modify(afPAwbPrintProcedure.getAwbPrint());
-        }
-        if (SecurityUtils.getUser() == null) {
-            //兼容外部访问
-            AfOrder order = afOrderService.getOrderByUUID(afPAwbPrintProcedure.getOrderUuid());
-            afPAwbPrintProcedure.setOrgId(order.getOrgId());
-        } else {
-            afPAwbPrintProcedure.setOrgId(SecurityUtils.getUser().getOrgId());
-        }
+        EUserDetails user = SecurityUtils.getUser();
+        checkModify(afPAwbPrintProcedure, user);
         AfPAwbPrintForMawbPrintProcedure afPAwbPrintForMawbPrintProcedure = baseMapper.callAfPAwbPrintForMawbPrint(afPAwbPrintProcedure);
 
         //寻找模板，航司是否配置打印模板
@@ -845,31 +840,37 @@ public class AwbPrintServiceImpl extends ServiceImpl<AwbPrintMapper, AwbPrint> i
 
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public String hawbDownloadWithPDF(AfPAwbPrintProcedure afPAwbPrintProcedure) {
+    private void checkModify(AfPAwbPrintProcedure afPAwbPrintProcedure, EUserDetails user) {
         if (afPAwbPrintProcedure.getAwbPrint() != null) {
             modify(afPAwbPrintProcedure.getAwbPrint());
         }
-        if (SecurityUtils.getUser() == null) {
+        if (user == null) {
             //兼容外部访问
             AfOrder order = afOrderService.getOrderByUUID(afPAwbPrintProcedure.getOrderUuid());
             afPAwbPrintProcedure.setOrgId(order.getOrgId());
         } else {
-            afPAwbPrintProcedure.setOrgId(SecurityUtils.getUser().getOrgId());
+            afPAwbPrintProcedure.setOrgId(user.getOrgId());
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String hawbDownloadWithPDF(AfPAwbPrintProcedure afPAwbPrintProcedure) {
+        EUserDetails user = SecurityUtils.getUser();
+        checkModify(afPAwbPrintProcedure, user);
+
         AfPAwbPrintForMawbPrintProcedure afPAwbPrintForMawbPrintProcedure = baseMapper.callAfPAwbPrintForHawbPrint(afPAwbPrintProcedure);
-        LambdaQueryWrapper<AwbNumber> awbNumberWrapper = Wrappers.<AwbNumber>lambdaQuery();
-        awbNumberWrapper.eq(AwbNumber::getAwbUuid, afPAwbPrintProcedure.getAwbUuid());
-        AwbNumber awbNumber = awbNumberService.getOne(awbNumberWrapper);
+//        LambdaQueryWrapper<AwbNumber> awbNumberWrapper = Wrappers.<AwbNumber>lambdaQuery();
+//        awbNumberWrapper.eq(AwbNumber::getAwbUuid, afPAwbPrintProcedure.getAwbUuid());
+//        AwbNumber awbNumber = awbNumberService.getOne(awbNumberWrapper);
         //寻找模板，航司是否配置打印模板
         String templateFilePath = "";
         boolean flag = false;
-        if (awbNumber != null && StrUtil.isNotBlank(awbNumber.getAwbNumber())) {
-
+//        if (awbNumber != null && StrUtil.isNotBlank(awbNumber.getAwbNumber())) {
+        if(StrUtil.isNotBlank(afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix())){
             LambdaQueryWrapper<Carrier> carrierWrapper = Wrappers.<Carrier>lambdaQuery();
 
-            carrierWrapper.eq(Carrier::getCarrierPrefix, awbNumber.getAwbNumber().split("-")[0]);
+            carrierWrapper.eq(Carrier::getCarrierPrefix,afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix() );
             Carrier one = carrierService.getOne(carrierWrapper);
             if (one != null) {
                 if (afPAwbPrintProcedure.getPrintType() == 1) {
@@ -888,6 +889,7 @@ public class AwbPrintServiceImpl extends ServiceImpl<AwbPrintMapper, AwbPrint> i
                     }
                 }
             }
+//            }
 
         }
         if (!flag) {
@@ -1126,5 +1128,149 @@ public class AwbPrintServiceImpl extends ServiceImpl<AwbPrintMapper, AwbPrint> i
         copy.addPage(importPage);
         doc.close();
         return file;
+    }
+
+    @Override
+    public void exportExcel(AfPAwbPrintProcedure afPAwbPrintProcedure) {
+        EUserDetails user = SecurityUtils.getUser();
+        checkModify(afPAwbPrintProcedure, user);
+        AfPAwbPrintForMawbPrintProcedure afPAwbPrintForMawbPrintProcedure = null;
+
+        //寻找模板，航司是否配置打印模板
+        String templateFilePath = PDFUtils.filePath + "/PDFtemplate/MAWB-FORMAT.xlsx";
+        if (afPAwbPrintProcedure.getPrintType() == 1) {
+            templateFilePath = PDFUtils.filePath + "/PDFtemplate/MAWB.xlsx";
+        }
+
+        String type = afPAwbPrintProcedure.getAwbPrintType();
+        if("PRINT_MAWB".equals(type)){
+            afPAwbPrintForMawbPrintProcedure = baseMapper.callAfPAwbPrintForMawbPrint(afPAwbPrintProcedure);
+            templateFilePath = exportAwbExcel(afPAwbPrintProcedure, afPAwbPrintForMawbPrintProcedure, templateFilePath);
+        }else{
+            afPAwbPrintForMawbPrintProcedure = baseMapper.callAfPAwbPrintForHawbPrint(afPAwbPrintProcedure);
+            templateFilePath = exportExcelHawb(afPAwbPrintProcedure, afPAwbPrintForMawbPrintProcedure, templateFilePath);
+        }
+
+        Map<String, String> valueData = new HashMap<>();
+        if (afPAwbPrintForMawbPrintProcedure != null) {
+            valueData.put("txtAWBTop", afPAwbPrintForMawbPrintProcedure.getTxtAWBTop() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAWBTop());
+            valueData.put("txtAWBBottom", afPAwbPrintForMawbPrintProcedure.getTxtAWBBottom() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAWBBottom());
+            valueData.put("txtAWB_Prefix", afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix());//主单号前三位
+            valueData.put("txtOrigin_Code", afPAwbPrintForMawbPrintProcedure.getTxtOriginCode() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtOriginCode());//始发港
+            valueData.put("txtAWB_Suffix", afPAwbPrintForMawbPrintProcedure.getTxtAWBSuffix() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAWBSuffix());//主单号后八位
+            valueData.put("txtCarrier_Name", afPAwbPrintForMawbPrintProcedure.getTxtCarrierName() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtCarrierName());//航空公司
+            valueData.put("txtShipper_Name", afPAwbPrintForMawbPrintProcedure.getTxtShipperName() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtShipperName());//发货人
+            valueData.put("txtConsignee_Name", afPAwbPrintForMawbPrintProcedure.getTxtConsigneeName() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtConsigneeName());//收货人
+            valueData.put("txtAgent_Name", afPAwbPrintForMawbPrintProcedure.getTxtAgentName() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAgentName());//代理名称
+            valueData.put("txtAgent_Iata_Code", afPAwbPrintForMawbPrintProcedure.getTxtAgentIataCode() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAgentIataCode());//代理IATA代码
+            valueData.put("txtAgent_Account", afPAwbPrintForMawbPrintProcedure.getTxtAgentAccount() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAgentAccount());//代理Account代码
+            valueData.put("txtDeparture", afPAwbPrintForMawbPrintProcedure.getTxtDeparture() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtDeparture());//始发港英文全称
+            valueData.put("txtTo1", afPAwbPrintForMawbPrintProcedure.getTxtTo1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTo1());//
+            valueData.put("txtFlight1_Carr", afPAwbPrintForMawbPrintProcedure.getTxtFlight1Carr() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtFlight1Carr());//第一承运人
+            valueData.put("txtTo2", afPAwbPrintForMawbPrintProcedure.getTxtTo2() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTo2());//中转港1
+            valueData.put("txtBy2", afPAwbPrintForMawbPrintProcedure.getTxtBy2() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtBy2());//中转港1航班两字码
+            valueData.put("txtTo3", afPAwbPrintForMawbPrintProcedure.getTxtTo3() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTo3());//中转港2
+            valueData.put("txtBy3", afPAwbPrintForMawbPrintProcedure.getTxtBy3() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtBy3());//中转港2航班两字码
+            valueData.put("txtDestination", afPAwbPrintForMawbPrintProcedure.getTxtDestination() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtDestination());//目的港
+            valueData.put("txtAccountingInfo_Text", afPAwbPrintForMawbPrintProcedure.getTxtAccountingInfoText() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAccountingInfoText());//AccountingInfomation
+            valueData.put("txtFlight2_Carr", afPAwbPrintForMawbPrintProcedure.getTxtFlight2Carr() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtFlight2Carr());//航班号
+            valueData.put("txtFlight3_Carr", afPAwbPrintForMawbPrintProcedure.getTxtFlight3Carr() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtFlight3Carr());//航班日期
+            valueData.put("txtDefault_CurrCode", afPAwbPrintForMawbPrintProcedure.getTxtDefaultCurrCode() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtDefaultCurrCode());//币种
+            valueData.put("txtPC_WtgPP", afPAwbPrintForMawbPrintProcedure.getTxtPCWtgPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtPCWtgPP());//到付预付运费方式
+            valueData.put("txtPC_OthPP", afPAwbPrintForMawbPrintProcedure.getTxtPCOthPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtPCOthPP());//到付预付杂费方式
+            valueData.put("txtHandlingInfo_Text", afPAwbPrintForMawbPrintProcedure.getTxtHandlingInfoText() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtHandlingInfoText());//
+            valueData.put("txtGoods_Desc1", afPAwbPrintForMawbPrintProcedure.getTxtGoodsDesc1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtGoodsDesc1());//品名
+            valueData.put("txtGoods_Volume", afPAwbPrintForMawbPrintProcedure.getTxtGoodsVolume() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtGoodsVolume());//体积
+            valueData.put("txtRCP_Pcs1", afPAwbPrintForMawbPrintProcedure.getTxtRCPPcs1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtRCPPcs1());//件数
+            valueData.put("txtTotal_Rcp", afPAwbPrintForMawbPrintProcedure.getTxtTotalRcp() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotalRcp());//小件数
+            valueData.put("txtGross_Wtg1", afPAwbPrintForMawbPrintProcedure.getTxtGrossWtg1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtGrossWtg1());//毛重
+            valueData.put("txtDefault_WgtCode1", afPAwbPrintForMawbPrintProcedure.getTxtDefaultWgtCode1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtDefaultWgtCode1());//重量单位
+            valueData.put("txtChg_Wtg1", afPAwbPrintForMawbPrintProcedure.getTxtChgWtg1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgWtg1());//计重
+            valueData.put("txtRate_Class1", afPAwbPrintForMawbPrintProcedure.getTxtRateClass1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtRateClass1());//运价等级
+            valueData.put("txtRate_Chg_Dis1", afPAwbPrintForMawbPrintProcedure.getTxtRateChgDis1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtRateChgDis1());//费率
+            valueData.put("txtTotal_Chg1", afPAwbPrintForMawbPrintProcedure.getTxtTotalChg1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotalChg1());//运费合计
+
+            valueData.put("txtGoods_Size", afPAwbPrintForMawbPrintProcedure.getTxtGoodsSize() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtGoodsSize());//唛头
+            valueData.put("txtTotal_Wtg_Chg_PP", afPAwbPrintForMawbPrintProcedure.getTxtTotalWtgChgPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotalWtgChgPP());//预付-重量价值费
+            valueData.put("txtTotal_Wtg_Chg_CC", afPAwbPrintForMawbPrintProcedure.getTxtTotalWtgChgCC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotalWtgChgCC());//到付-重量价值费
+            valueData.put("txtChg_Due_Carr_PP", afPAwbPrintForMawbPrintProcedure.getTxtChgDueCarrPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgDueCarrPP());//预付杂费金额
+            valueData.put("txtChg_Due_Carr_CC", afPAwbPrintForMawbPrintProcedure.getTxtChgDueCarrCC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgDueCarrCC());//到付杂费金额
+            valueData.put("txtShipperRemark1", afPAwbPrintForMawbPrintProcedure.getTxtShipperRemark1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtShipperRemark1());//发货人或代理签字
+            valueData.put("txtShipperRemark2", afPAwbPrintForMawbPrintProcedure.getTxtShipperRemark2() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtShipperRemark2());//承运代理公司名称
+            valueData.put("txtTotalPP", afPAwbPrintForMawbPrintProcedure.getTxtTotalPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotalPP());//预付总金额
+            valueData.put("txtTotalCC", afPAwbPrintForMawbPrintProcedure.getTxtTotalCC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotalCC());//到付总金额
+            valueData.put("txtOtherCharges1", afPAwbPrintForMawbPrintProcedure.getTxtOtherCharges1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtOtherCharges1());//其他杂费
+
+            valueData.put("txtAWBBarCode", afPAwbPrintForMawbPrintProcedure.getTxtAWBBarCode() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtAWBBarCode());//条形码
+            valueData.put("txtChgsCode", afPAwbPrintForMawbPrintProcedure.getTxtChgsCode() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgsCode());//CHGS代码
+            valueData.put("txtCVD_Carriage", afPAwbPrintForMawbPrintProcedure.getTxtCVDCarriage() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtCVDCarriage());//声明价值
+            valueData.put("txtCVD_Custom", afPAwbPrintForMawbPrintProcedure.getTxtCVDCustom() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtCVDCustom());//海关声明价值
+            valueData.put("txtCVD_Insurance", afPAwbPrintForMawbPrintProcedure.getTxtCVDInsurance() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtCVDInsurance());//保险价值
+            valueData.put("txtItem_Num1", afPAwbPrintForMawbPrintProcedure.getTxtItemNum1() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtItemNum1());//商品名编号
+            valueData.put("txtVal_Chg_PP", afPAwbPrintForMawbPrintProcedure.getTxtValChgPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtValChgPP());//预付-声明价值费
+            valueData.put("txtVal_Chg_CC", afPAwbPrintForMawbPrintProcedure.getTxtValChgCC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtValChgCC());//到付-声明价值费
+            valueData.put("txtTax_Chg_PP", afPAwbPrintForMawbPrintProcedure.getTxtTaxChgPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTaxChgPP());//预付-税款
+            valueData.put("txtTax_Chg_CC", afPAwbPrintForMawbPrintProcedure.getTxtTaxChgCC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTaxChgCC());//到付-税款
+            valueData.put("txtChg_Due_Agt_PP", afPAwbPrintForMawbPrintProcedure.getTxtChgDueAgtPP() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgDueAgtPP());//预付-代理人的其它费用总额
+            valueData.put("txtChg_Due_Agt_CC", afPAwbPrintForMawbPrintProcedure.getTxtChgDueAgtCC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgDueAgtCC());//到付-代理人的其它费用总额
+            valueData.put("txtCCR", afPAwbPrintForMawbPrintProcedure.getTxtCCR() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtCCR());//汇率
+            valueData.put("txtCDC", afPAwbPrintForMawbPrintProcedure.getTxtCDC() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtCDC());//到付费用(目的国货币)
+            valueData.put("txtChg_Dest", afPAwbPrintForMawbPrintProcedure.getTxtChgDest() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtChgDest());//目的国收费
+            valueData.put("txtTot_Coll", afPAwbPrintForMawbPrintProcedure.getTxtTotColl() == null ? "" : afPAwbPrintForMawbPrintProcedure.getTxtTotColl());//到付费用总计
+        }
+        HashMap<String, Object> context = new HashMap<>();
+
+        context.put("data", valueData);
+        JxlsUtils.exportExcelWithLocalModel(templateFilePath, context);
+    }
+
+    private String exportExcelHawb(AfPAwbPrintProcedure afPAwbPrintProcedure, AfPAwbPrintForMawbPrintProcedure afPAwbPrintForMawbPrintProcedure, String templateFilePath) {
+            LambdaQueryWrapper<Carrier> carrierWrapper = Wrappers.<Carrier>lambdaQuery();
+            carrierWrapper.eq(Carrier::getCarrierPrefix, afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix());
+            Carrier one = carrierService.getOne(carrierWrapper);
+            if (one != null) {
+                if (afPAwbPrintProcedure.getPrintType() == 1) {
+                    if (StrUtil.isNotBlank(one.getCarrierHawbModOverExcel())) {
+                        String url = one.getCarrierHawbModOverExcel().split(",")[1];
+                        downloadFile(url, PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1]);
+                        templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1];
+                    }
+                } else if (afPAwbPrintProcedure.getPrintType() == 2) {
+                    if (StrUtil.isNotBlank(one.getCarrierHawbModFormatExcel())) {
+                        String url = one.getCarrierHawbModFormatExcel().split(",")[1];
+                        downloadFile(url, PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1]);
+                        templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1];
+                    }
+                }
+
+        }
+        return templateFilePath;
+
+    }
+
+    private String exportAwbExcel(AfPAwbPrintProcedure afPAwbPrintProcedure, AfPAwbPrintForMawbPrintProcedure afPAwbPrintForMawbPrintProcedure, String templateFilePath) {
+        if (StrUtil.isNotBlank(afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix())) {
+            LambdaQueryWrapper<Carrier> carrierWrapper = Wrappers.<Carrier>lambdaQuery();
+            carrierWrapper.eq(Carrier::getCarrierPrefix, afPAwbPrintForMawbPrintProcedure.getTxtAWBPrefix());
+            Carrier one = carrierService.getOne(carrierWrapper);
+            if (one != null) {
+                if (afPAwbPrintProcedure.getPrintType() == 1) {
+                    if (StrUtil.isNotBlank(one.getCarrierMawbModOverExcel())) {
+                        String url = one.getCarrierMawbModOverExcel().split(",")[1];
+                        downloadFile(url, PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1]);
+                        templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1];
+                    }
+                } else if (afPAwbPrintProcedure.getPrintType() == 2) {
+                    if (StrUtil.isNotBlank(one.getCarrierMawbModFormatExcel())) {
+                        String url = one.getCarrierMawbModFormatExcel().split(",")[1];
+                        downloadFile(url, PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1]);
+                        templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/" + url.split("/")[url.split("/").length - 1];
+                    }
+                }
+            }
+
+        }
+
+        return templateFilePath;
     }
 }

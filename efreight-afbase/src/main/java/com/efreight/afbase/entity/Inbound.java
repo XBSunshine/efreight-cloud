@@ -150,4 +150,5 @@ public class Inbound implements Serializable {
     @TableField(exist = false)
     private String rountingSignBusinessProduct;
 
+    private transient String pageName;
 }

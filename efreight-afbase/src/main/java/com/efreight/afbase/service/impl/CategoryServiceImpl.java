@@ -115,4 +115,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public List<AfVPrmCategory> queryCategoryByCategoryType(Integer categoryType) {
         return vCategoryMapper.queryCategoryByCategoryType(categoryType);
     }
+
+    @Override
+    public List<AfVPrmCategory> findDocBusinessScope() {
+        return this.vCategoryMapper.findDocBusinessScope();
+    }
 }

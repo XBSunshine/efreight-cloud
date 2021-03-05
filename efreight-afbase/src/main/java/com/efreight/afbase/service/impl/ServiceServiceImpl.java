@@ -194,13 +194,10 @@ public class ServiceServiceImpl extends ServiceImpl<ServiceMapper, Service> impl
     		if(map!=null&&map.containsKey("rounting_sign")) {
     			AfOrder order = afOrderMapper.selectById(orderId);
     			if("true".equals(map.get("rounting_sign").toString())) {
-    				flag = true;
+        			if(order!=null&&!StringUtils.isEmpty(order.getBusinessProduct())&&(map.get("rounting_sign_business_product").toString().contains(order.getBusinessProduct()))) {
+    				  flag = true;
+	    			}
     			}
-//    			if(flag&&order!=null&&!StringUtils.isEmpty(order.getBusinessProduct())&&(map.get("rounting_sign_business_product").toString().contains(order.getBusinessProduct()))) {
-//    				flag = true;
-//    			}else {
-//    				flag = false;
-//    			}
     		}
     		if(flag) {
     			for(Service o: list) {

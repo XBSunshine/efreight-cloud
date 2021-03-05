@@ -45,6 +45,7 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
     	}else {
     		reportReceivableAge.setOrgId(SecurityUtils.getUser().getOrgId());
     	}
+        reportReceivableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (reportReceivableAge.getDurationValid().equals("全部")) {
             reportReceivableAge.setDurationValid(null);
         }
@@ -60,7 +61,10 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
         if (StrUtil.isBlank(reportReceivableAge.getCustomerName())) {
             reportReceivableAge.setCustomerName(null);
         }
-        List<List<Map<String, String>>> resultSet = new ArrayList<List<Map<String, String>>>();
+        if (StrUtil.isBlank(reportReceivableAge.getSalesName())) {
+            reportReceivableAge.setSalesName(null);
+        }
+        List<List<LinkedHashMap<String, String>>> resultSet = new ArrayList<List<LinkedHashMap<String, String>>>();
         if ("AE".equals(reportReceivableAge.getBusinessScope()) || "AI".equals(reportReceivableAge.getBusinessScope())) {
             resultSet = reportReceivableAgeMapper.getPage(reportReceivableAge);
         } else if ("SE".equals(reportReceivableAge.getBusinessScope()) || "SI".equals(reportReceivableAge.getBusinessScope())) {
@@ -84,13 +88,7 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
             if (resultSet.get(0).size() != 0) {
                 Set<String> keySet = resultSet.get(0).get(0).keySet();
 
-                List<String> list = keySet.stream().sorted((e1, e2) -> {
-                    if (e1.contains("+")) {
-                        return 1;
-                    } else {
-                        return e1.compareTo(e2);
-                    }
-                }).collect(Collectors.toList());
+                List<String> list = keySet.stream().collect(Collectors.toList());
                 for (String key : list) {
                     if (key.contains("colName_")) {
                         column.add(key.replace("colName_", ""));
@@ -118,6 +116,10 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
     	}else {
      		reportReceivableAge.setOrgId(SecurityUtils.getUser().getOrgId());
      	}
+        if (StrUtil.isBlank(reportReceivableAge.getSalesName())) {
+            reportReceivableAge.setSalesName(null);
+        }
+        reportReceivableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if ("AE".equals(reportReceivableAge.getBusinessScope()) || "AI".equals(reportReceivableAge.getBusinessScope())) {
             return reportReceivableAgeMapper.view(reportReceivableAge);
         } else if ("SE".equals(reportReceivableAge.getBusinessScope()) || "SI".equals(reportReceivableAge.getBusinessScope())) {
@@ -147,13 +149,17 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
     	}else {
      		reportReceivableAge.setOrgId(SecurityUtils.getUser().getOrgId());
      	}
+        if (StrUtil.isBlank(reportReceivableAge.getSalesName())) {
+            reportReceivableAge.setSalesName(null);
+        }
+        reportReceivableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         List<ReportReceivableAgeDetail> list = new ArrayList<ReportReceivableAgeDetail>();
         String[] headers = null;
         if ("AE".equals(reportReceivableAge.getBusinessScope()) || "SE".equals(reportReceivableAge.getBusinessScope())) {
             headers = new String[]{"业务范畴", "主单号", "订单号", "订单客户代码", "订单客户", "收款客户代码", "收款客户", "责任客服", "责任销售", "开航日期", "应收金额(本币)", "已核销金额(本币)", "未核销金额(本币)"};
         } else if ("AI".equals(reportReceivableAge.getBusinessScope()) || "SI".equals(reportReceivableAge.getBusinessScope())) {
             headers = new String[]{"业务范畴", "主单号", "订单号", "订单客户代码", "订单客户", "收款客户代码", "收款客户", "责任客服", "责任销售", "到港日期", "应收金额(本币)", "已核销金额(本币)", "未核销金额(本币)"};
-        } else if ("TE".equals(reportReceivableAge.getBusinessScope())) {
+        } else if ("TE".equals(reportReceivableAge.getBusinessScope()) || "TI".equals(reportReceivableAge.getBusinessScope())) {
             headers = new String[]{"业务范畴", "提运单号", "订单号", "订单客户代码", "订单客户", "收款客户代码", "收款客户", "责任客服", "责任销售", "ETD", "应收金额(本币)", "已核销金额(本币)", "未核销金额(本币)"};
         } else if ("LC".equals(reportReceivableAge.getBusinessScope()) || "IO".equals(reportReceivableAge.getBusinessScope())) {
             headers = new String[]{"业务范畴", "客户单号", "订单号", "订单客户代码", "订单客户", "收款客户代码", "收款客户", "责任客服", "责任销售", "ETD", "应收金额(本币)", "已核销金额(本币)", "未核销金额(本币)"};
@@ -196,6 +202,7 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
     	}else {
      		reportReceivableAge.setOrgId(SecurityUtils.getUser().getOrgId());
      	}
+        reportReceivableAge.setCurrentUserId(SecurityUtils.getUser().getId());
         if (reportReceivableAge.getDurationValid() != null && reportReceivableAge.getDurationValid().equals("全部")) {
             reportReceivableAge.setDurationValid(null);
         }
@@ -211,7 +218,7 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
         if (StrUtil.isBlank(reportReceivableAge.getCustomerName())) {
             reportReceivableAge.setCustomerName(null);
         }
-        List<List<Map<String, String>>> resultSet = null;
+        List<List<LinkedHashMap<String, String>>> resultSet = null;
         if (reportReceivableAge.getBusinessScope().startsWith("A")) {
             resultSet = reportReceivableAgeMapper.getPage(reportReceivableAge);
         } else if (reportReceivableAge.getBusinessScope().startsWith("S")) {
@@ -229,13 +236,7 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
         if (resultSet != null && resultSet.size() > 0 && resultSet.get(0) != null && resultSet.get(0).size() > 0) {
             Set<String> keySet = resultSet.get(0).get(0).keySet();
 
-            List<String> listColname = keySet.stream().sorted((e1, e2) -> {
-                if (e1.contains("+")) {
-                    return 1;
-                } else {
-                    return e1.compareTo(e2);
-                }
-            }).collect(Collectors.toList());
+            List<String> listColname = keySet.stream().collect(Collectors.toList());
             for (String key : listColname) {
                 if (key.contains("colName_")) {
                     column.add(key.replace("colName_", ""));
@@ -257,10 +258,11 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
                 excel.setFunctionalAmount(o.get("functional_amount"));
                 excel.setNoFunctionalAmountWriteoffValid0(o.get("no_functional_amount_writeoff_valid_0").toString());
                 excel.setNoFunctionalAmountWriteoffValid1(o.get("no_functional_amount_writeoff_valid_1").toString());
+                String editionName = reportReceivableAge.getOrgEditionName();
                 if (column != null && column.size() > 0) {
                     //后面需要 优化一下excel 导出  swich 容易卡死
                     for (int i = 0; i < column.size(); i++) {
-                        if (reportReceivableAge.getOrgEditionName().contains("专业版")) {
+                        if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                             if (i == 0) {
                                 excel.setColName_1(o.get("colName_" + column.get(i)).toString());
                             }
@@ -299,10 +301,11 @@ public class ReportReceivableAgeServiceImpl implements ReportReceivableAgeServic
             excel2.setFunctionalAmount(resultSet.get(1).get(0).get("functional_amount") + "");
             excel2.setNoFunctionalAmountWriteoffValid0(resultSet.get(1).get(0).get("no_functional_amount_writeoff_valid_0") + "");
             excel2.setNoFunctionalAmountWriteoffValid1(resultSet.get(1).get(0).get("no_functional_amount_writeoff_valid_1") + "");
+            String editionName = reportReceivableAge.getOrgEditionName();
             if (column != null && column.size() > 0) {
                 for (int i = 0; i < column.size(); i++) {
                     headers = ArrayUtils.add(headers, column.get(i));
-                    if (reportReceivableAge.getOrgEditionName().contains("专业版")) {
+                    if (editionName.contains("专业版")||editionName.contains("标准版")||editionName.contains("旗舰版")) {
                         if (i == 0) {
                             excel2.setColName_1(resultSet.get(1).get(0).get("colName_" + column.get(i)) + "");
                         }

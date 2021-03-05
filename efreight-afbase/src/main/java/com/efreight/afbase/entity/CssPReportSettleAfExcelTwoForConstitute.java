@@ -53,6 +53,8 @@ public class CssPReportSettleAfExcelTwoForConstitute implements Serializable{
 	
 	private String servicerName;
 
+	private String workgroupName;
+
 	private String routingPersonName;
 	
 	private String goodsType;

@@ -1,20 +1,18 @@
 package com.efreight.afbase.service.impl;
 
 
+import com.efreight.afbase.entity.view.SendProductEmail;
+import com.efreight.afbase.service.AfProductService;
+import com.efreight.common.core.feign.RemoteServiceToHRS;
+import com.efreight.common.core.jms.MailSendService;
+import com.efreight.common.security.util.SecurityUtils;
+import com.efreight.common.security.vo.OrgVo;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.efreight.common.core.feign.RemoteServiceToHRS;
-import org.springframework.stereotype.Service;
-
-import com.efreight.afbase.entity.view.SendProductEmail;
-import com.efreight.afbase.service.AfProductService;
-import com.efreight.common.core.jms.MailSendService;
-import com.efreight.common.security.vo.OrgVo;
-import com.efreight.common.security.util.SecurityUtils;
-
-import lombok.AllArgsConstructor;
 
 @Service
 @AllArgsConstructor
@@ -37,9 +35,9 @@ public class AfProductServiceImpl implements AfProductService{
 	        ArrayList<Map<String, String>> fileList = new ArrayList<>();
 	        HashMap<String, String> fileMap = new HashMap<>();
 	        fileMap.put("name", sendProductEmail.getFileName().substring(sendProductEmail.getFileName().lastIndexOf("_")+1,sendProductEmail.getFileName().length()));
-	        fileMap.put("path", sendProductEmail.getFileName());
-	        fileMap.put("flag", "upload");
-	        fileList.add(fileMap);
+	        fileMap.put("path", sendProductEmail.getFilePath());
+			fileMap.put("flag", "local");
+			fileList.add(fileMap);
             mailSendService.sendAttachmentsMailNew(false, new String[] {org.getRcEmail()}, null, null, "产品发布申请-"+sendProductEmail.getProductName(), sb.toString(), fileList,null);
 		} catch (Exception e) {
 			e.printStackTrace();

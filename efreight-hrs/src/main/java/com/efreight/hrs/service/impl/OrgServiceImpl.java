@@ -667,9 +667,9 @@ public class OrgServiceImpl extends ServiceImpl<OrgMapper, Org> implements OrgSe
         org.setStopDate(LocalDateTime.parse("2099-12-31 23:59:59", df));//时效时间设置
         org.setOrgUserCount(1);
         LambdaQueryWrapper<Org> wrapperEditionId = Wrappers.<Org>lambdaQuery();
-        wrapperEditionId.eq(Org::getOrgType, 0).eq(Org::getOrgStatus, true).eq(Org::getOrgName, "创业版");
+        wrapperEditionId.eq(Org::getOrgType, 0).eq(Org::getOrgStatus, true).eq(Org::getOrgName, "体验版");
         Org orgEditionId = baseMapper.selectOne(wrapperEditionId);
-        org.setOrgEditionId(orgEditionId.getOrgId());//创业版 
+        org.setOrgEditionId(orgEditionId.getOrgId());//体验版
         org.setAdminEmail(email);
         org.setAdminTel(phone);
         org.setAdminName("@"+phoneArea+phone+"");

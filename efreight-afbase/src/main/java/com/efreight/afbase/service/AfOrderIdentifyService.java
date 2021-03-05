@@ -24,13 +24,13 @@ public interface AfOrderIdentifyService extends IService<AfOrderIdentify> {
 
     boolean saveAfOrderIdentify(AfOrderIdentify afOrderIdentify);
 
-    boolean deleteAfOrderIdentify(Integer orderIdentifyId)  throws Exception;
+    boolean deleteAfOrderIdentify(Integer orderIdentifyId,String pageName)  throws Exception;
 
     boolean declare(AfOrderIdentify afOrderIdentify) throws Exception;
 
     boolean declare(Integer orderIdentifyId) throws Exception;
 
-    boolean deleteDeclare(Integer orderIdentifyId) throws Exception;
+    boolean deleteDeclare(Integer orderIdentifyId,String pageName) throws Exception;
 
     boolean audit(Integer originalSyscode, String auditName) throws Exception;
 

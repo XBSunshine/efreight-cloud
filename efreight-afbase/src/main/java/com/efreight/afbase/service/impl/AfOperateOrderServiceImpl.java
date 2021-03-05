@@ -333,7 +333,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         } else if (codeList.size() < 9999) {
             bean.setOrderCode(code + String.format("%04d", codeList.size() + 1));
         } else {
-            throw new RuntimeException("每天最多可以创建9999个AE订单");
+            throw new RuntimeException("每天最多可以创建9999个操作订单");
         }
         //客户单号
         if (bean.getCustomerNumber() == null || "".equals(bean.getCustomerNumber().trim())) {
@@ -350,9 +350,10 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         bean.setCostStatus("未录成本");
         bean.setIncomeRecorded(false);
         bean.setCostRecorded(false);
-
         baseMapper.insert(bean);
 
+      //插入出口订单 附属表
+        baseMapper.insertOrderExtend(SecurityUtils.getUser().getOrgId(), bean);
         //联系人
         for (int i = 0; i < bean.getOrderContacts().size(); i++) {
             baseMapper.insertOrderContacts(SecurityUtils.getUser().getOrgId(), bean.getOrderId(), bean.getOrderContacts().get(i));
@@ -379,7 +380,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         //添加日志信息
 
         LogBean logBean = new LogBean();
-        logBean.setPageName("AE订单");
+        logBean.setPageName("操作订单");
         logBean.setPageFunction("订单创建");
         logBean.setBusinessScope("AE");
         logBean.setOrderNumber(bean.getOrderCode());
@@ -388,7 +389,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         logService.saveLog(logBean);
         if (isHaveAWB == 1) {
             LogBean logBean2 = new LogBean();
-            logBean2.setPageName("AE订单");
+            logBean2.setPageName("操作订单");
             logBean2.setPageFunction("舱位确认");
             logBean2.setLogRemark("主单：" + bean.getAwbNumber());
             logBean2.setBusinessScope("AE");
@@ -541,7 +542,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
             afOrderShareService.save(updateAos);
             //日志
             LogBean logBeanShare = new LogBean();
-            logBeanShare.setPageName("AE订单");
+            logBeanShare.setPageName("操作订单");
             logBeanShare.setPageFunction("订单协作");
             logBeanShare.setBusinessScope("AE");
             logBeanShare.setOrderNumber(bean.getOrderCode());
@@ -655,7 +656,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         }
         //添加日志信息
         LogBean logBean = new LogBean();
-        logBean.setPageName("AE订单");
+        logBean.setPageName("操作订单");
         logBean.setPageFunction("修改订单");
         logBean.setLogRemark(this.getLogRemark(order, bean));
         logBean.setBusinessScope("AE");
@@ -665,7 +666,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         logService.saveLog(logBean);
         if (isNew == 1 && isHave == 1) {
             LogBean logBean2 = new LogBean();
-            logBean2.setPageName("AE订单");
+            logBean2.setPageName("操作订单");
             logBean2.setPageFunction("舱位确认");
             logBean2.setLogRemark("主单：" + bean.getAwbNumber());
             logBean2.setBusinessScope("AE");
@@ -687,6 +688,9 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         for (int i = 0; i < bean.getOrderContacts().size(); i++) {
             baseMapper.insertOrderContacts(SecurityUtils.getUser().getOrgId(), bean.getOrderId(), bean.getOrderContacts().get(i));
         }
+      //附属表先删除在增加
+        baseMapper.deleteOrderExtend(SecurityUtils.getUser().getOrgId(), bean.getOrderId());
+        baseMapper.insertOrderExtend(SecurityUtils.getUser().getOrgId(), bean);
         //收发货人修改
         AfOrderShipperConsignee afOrderShipperConsignee = bean.getAfOrderShipperConsignee1();
         if (afOrderShipperConsignee != null) {
@@ -910,7 +914,16 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         //联系人
         bean.setCoopName(baseMapper.getCoopName(bean.getCoopId()));
         bean.setOrderContacts(baseMapper.getorderContacts(bean.getOrgId(), orderId));
-
+      //订单附属表
+        AfOrderExtend  extend = baseMapper.getOrderExtend(bean.getOrgId(), orderId);
+        if(extend != null){
+            bean.setPalletMaterial(extend.getPalletMaterial());
+            bean.setSpecialPackage(extend.getSpecialPackage());
+            bean.setCelsiusRequire(extend.getCelsiusRequire());
+            bean.setThermometer(extend.getThermometer());
+            bean.setIsCelsiusRequire(extend.getIsCelsiusRequire());
+        }
+        
         AfOrderShipperConsignee bean1 = baseMapper.getAfOrderShipperConsignee(bean.getOrgId(), orderId, 1);
         AfOrderShipperConsignee bean2 = baseMapper.getAfOrderShipperConsignee(bean.getOrgId(), orderId, 0);
         bean.setAfOrderShipperConsignee1(bean1 == null ? new AfOrderShipperConsignee() : bean1);
@@ -966,7 +979,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         bean.setBusinessScope("AE");
         List<Integer> list = this.getOrderStatus(bean);
         if (list.size() > 0) {
-            throw new RuntimeException("订单已经财务锁账,不能卸载主单");
+            throw new RuntimeException("订单已操作完成,不能卸载主单");
         }
         AfOperateOrder order = baseMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
         //校验是否可以卸载主单 确认收益过不可以
@@ -974,12 +987,12 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
 //        wrapper.eq(LogBean::getOrgId, SecurityUtils.getUser().getOrgId()).eq(LogBean::getOrderUuid, bean.getOrderUuid()).eq(LogBean::getNodeName, "财务锁账").eq(LogBean::getPageFunction, "新建");
 //        LogBean logBean = logMapper.selectOne(wrapper);
 //        if (logBean.getCreatTime() != null) {
-//            throw new RuntimeException("订单已经财务锁账,不能卸载主单");
+//            throw new RuntimeException("订单已操作完成,不能卸载主单");
 //        }
         baseMapper.updateAwbStatus(bean.getAwbId(), "未使用", SecurityUtils.getUser().getOrgId());
         //日志
         LogBean logBean = new LogBean();
-        logBean.setPageName("AE订单");
+        logBean.setPageName("操作订单");
         logBean.setPageFunction("卸载主单");
 
         logBean.setLogRemark("原主单号：" + order.getAwbNumber() + "， 状态为：未使用");
@@ -1033,7 +1046,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         //财务锁账已做的 ，不能重复做
         List<Integer> list = this.getOrderStatus(bean);
         if (list.size() > 0) {
-            throw new RuntimeException("已经做过财务锁账");
+            throw new RuntimeException("已操作完成");
         }
 
         //日志
@@ -1041,10 +1054,10 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
 //                SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail(), LocalDateTime.now());
         //
         LogBean logBean = new LogBean();
-        logBean.setPageName(bean.getBusinessScope() + "订单");
-        logBean.setPageFunction("财务锁账");
+        logBean.setPageName("操作订单");
+        logBean.setPageFunction("操作完成");
 
-        logBean.setLogRemark("财务日期：" + bean.getReceiptDate());
+//        logBean.setLogRemark("财务日期：" + bean.getReceiptDate());
         logBean.setBusinessScope(bean.getBusinessScope());
         logBean.setOrderNumber(bean.getOrderCode());
         logBean.setOrderId(bean.getOrderId());
@@ -1199,7 +1212,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         bean.setBusinessScope("AE");
 //        List<Integer> list = this.getOrderStatus(bean);
 //        if (list.size() > 0) {
-//            throw new RuntimeException("订单已经财务锁账,不能卸载主单");
+//            throw new RuntimeException("订单已操作完成,不能卸载主单");
 //        }
         AfOperateOrder order = baseMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
         //校验是否可以卸载主单 确认收益过不可以
@@ -1207,13 +1220,13 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
 //        wrapper.eq(LogBean::getOrgId, SecurityUtils.getUser().getOrgId()).eq(LogBean::getOrderUuid, bean.getOrderUuid()).eq(LogBean::getNodeName, "财务锁账").eq(LogBean::getPageFunction, "新建");
 //        LogBean logBean = logMapper.selectOne(wrapper);
 //        if (logBean.getCreatTime() != null) {
-//            throw new RuntimeException("订单已经财务锁账,不能卸载主单");
+//            throw new RuntimeException("订单已操作完成,不能卸载主单");
 //        }
 
         //baseMapper.updateAwbStatus(bean.getAwbId(), "已废单");//更改为物理删除
         //日志
         LogBean logBean = new LogBean();
-        logBean.setPageName("AE订单");
+        logBean.setPageName("操作订单");
         logBean.setPageFunction("卸载主单");
 
         logBean.setLogRemark("原主单号：" + order.getAwbNumber() + "， 状态为：删除");
@@ -1273,14 +1286,14 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
 //        LogWrapper.eq(LogBean::getOrgId, SecurityUtils.getUser().getOrgId()).eq(LogBean::getOrderUuid, orderUuid).eq(LogBean::getNodeName, "财务锁账").eq(LogBean::getPageFunction, "新建");
 //        LogBean log = logMapper.selectOne(LogWrapper);
 //        if (log.getCreatTime() != null) {
-//            throw new RuntimeException("订单已经财务锁账,不能强制关闭");
+//            throw new RuntimeException("订单已操作完成,不能强制关闭");
 //        }
             AfOperateOrder bean = new AfOperateOrder();
             bean.setOrderUuid(orderUuid);
             bean.setBusinessScope(businessScope);
             List<Integer> list = this.getOrderStatus(bean);
             if (list.size() > 0) {
-                throw new RuntimeException("订单已经财务锁账,不能强制关闭");
+                throw new RuntimeException("订单已操作完成,不能强制关闭");
             }
             LambdaQueryWrapper<AfOperateOrder> wrapper = Wrappers.<AfOperateOrder>lambdaQuery();
             wrapper.eq(AfOperateOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(AfOperateOrder::getOrderUuid, orderUuid);
@@ -1714,7 +1727,7 @@ public class AfOperateOrderServiceImpl extends ServiceImpl<AfOperateOrderMapper,
         try{
             String uuid = logBean.getOrderUuid();
             AfOperateOrder bean = this.baseMapper.getOrderByUUID(SecurityUtils.getUser().getOrgId(), uuid);
-            logBean.setPageName("AE订单");
+            logBean.setPageName("操作订单");
             logBean.setPageFunction("发送舱单");
             logBean.setBusinessScope("AE");
             logBean.setOrderNumber(bean.getOrderCode());

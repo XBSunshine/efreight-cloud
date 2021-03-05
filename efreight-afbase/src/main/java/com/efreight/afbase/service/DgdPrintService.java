@@ -29,4 +29,6 @@ public interface DgdPrintService extends IService<DgdPrint> {
     String printG(Integer dgdPrintId);
 
     String printT(Integer dgdPrintId);
+
+    void exportExcel(Integer dgdPrintId, String type);
 }

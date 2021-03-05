@@ -163,10 +163,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order.getCostRecorded() != null && !order.getCostRecorded()) {
             wrapper.and(i -> i.eq(Order::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(Order::getCostRecorded)));
         }
-        if (order.getOrderPermission() == 1) {
+        if (order.getOrderPermission() != null && order.getOrderPermission() == 1) {
             wrapper.and(i -> i.eq(Order::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(Order::getSalesId, order.getCurrentUserId())).or(k -> k.eq(Order::getServicerId, order.getCurrentUserId())));
         }
-        if (order.getOrderPermission() == 2) {
+        if (order.getOrderPermission() != null && order.getOrderPermission() == 2) {
             List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
             wrapper.and(i -> i.eq(Order::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(Order::getSalesId, order.getCurrentUserId())).or(k -> k.eq(Order::getServicerId, order.getCurrentUserId())).or(m -> m.in(Order::getWorkgroupId, WorkgroupIds)));
         }
@@ -618,10 +618,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         if (order.getCostRecorded() != null && !order.getCostRecorded()) {
             wrapper.and(i -> i.eq(Order::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(Order::getCostRecorded)));
         }
-        if (order.getOrderPermission() == 1) {
+        if (order.getOrderPermission() != null && order.getOrderPermission() == 1) {
             wrapper.and(i -> i.eq(Order::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(Order::getSalesId, order.getCurrentUserId())).or(k -> k.eq(Order::getServicerId, order.getCurrentUserId())));
         }
-        if (order.getOrderPermission() == 2) {
+        if (order.getOrderPermission() != null && order.getOrderPermission() == 2) {
             List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
             wrapper.and(i -> i.eq(Order::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(Order::getSalesId, order.getCurrentUserId())).or(k -> k.eq(Order::getServicerId, order.getCurrentUserId())).or(m -> m.in(Order::getWorkgroupId, WorkgroupIds)));
         }
@@ -2488,6 +2488,29 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         valueData.put("Input035", seHawMakeProcedure.getInput035());
         valueData.put("Input036", seHawMakeProcedure.getInput036());
         valueData.put("Input037", seHawMakeProcedure.getInput037());
+        valueData.put("Input038", seHawMakeProcedure.getInput038());
+        valueData.put("Input039", seHawMakeProcedure.getInput039());
+        valueData.put("Input040", seHawMakeProcedure.getInput040());
+        valueData.put("Input041", seHawMakeProcedure.getInput041());
+        valueData.put("Input042", seHawMakeProcedure.getInput042());
+        valueData.put("Input043", seHawMakeProcedure.getInput043());
+        valueData.put("Input044", seHawMakeProcedure.getInput044());
+        valueData.put("Input045", seHawMakeProcedure.getInput045());
+        valueData.put("Input046", seHawMakeProcedure.getInput046());
+        valueData.put("Input047", seHawMakeProcedure.getInput047());
+        valueData.put("Input048", seHawMakeProcedure.getInput048());
+        valueData.put("Input049", seHawMakeProcedure.getInput049());
+        valueData.put("Input050", seHawMakeProcedure.getInput050());
+        valueData.put("Input051", seHawMakeProcedure.getInput051());
+        valueData.put("Input052", seHawMakeProcedure.getInput052());
+        valueData.put("Input053", seHawMakeProcedure.getInput053());
+        valueData.put("Input054", seHawMakeProcedure.getInput054());
+        valueData.put("Input055", seHawMakeProcedure.getInput055());
+        valueData.put("Input056", seHawMakeProcedure.getInput056());
+        valueData.put("Input057", seHawMakeProcedure.getInput057());
+        valueData.put("Input058", seHawMakeProcedure.getInput058());
+        valueData.put("Input059", seHawMakeProcedure.getInput059());
+        valueData.put("Input060", seHawMakeProcedure.getInput060());
 
         //填充每个PDF
         PDFUtils.loadPDF2(templatePath, newPDFPath, valueData, true, false);

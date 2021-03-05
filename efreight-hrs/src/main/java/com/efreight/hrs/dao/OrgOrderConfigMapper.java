@@ -29,8 +29,11 @@ public interface OrgOrderConfigMapper extends BaseMapper<OrgOrderConfig> {
             "iata_code = #{param.iataCode}, " +
             "rounting_sign = #{param.rountingSign}, " +
             "rounting_sign_business_product = #{param.rountingSignBusinessProduct}, " +
-            "cata_certified_sales_agents = #{param.cataCertifiedSalesAgents} " +
+            "cata_certified_sales_agents = #{param.cataCertifiedSalesAgents}, " +
+            "mft2201_save = #{param.mft2201Save} " +
             "where org_id = #{param.orgId} and business_scope= #{param.businessScope}"
     )
     int updateWithOrgIdAndBusinessScope(@Param("param") OrgOrderConfig orgOrderConfig);
+
+
 }

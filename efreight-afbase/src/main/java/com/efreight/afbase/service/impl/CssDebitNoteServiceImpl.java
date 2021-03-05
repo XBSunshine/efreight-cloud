@@ -40,6 +40,7 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
     private final LcLogService lcLogService;
     private final IoLogService ioLogService;
     private final StatementMapper statementMapper;
+    private final CssIncomeInvoiceDetailMapper detailMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -111,6 +112,10 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
             orderBean = afOrderMapper.getSEOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
         } else if (bean.getBusinessScope().startsWith("T")) {
             orderBean = afOrderMapper.getTCOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+        }else if(bean.getBusinessScope().startsWith("LC")){
+        	orderBean = afOrderMapper.getLCOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
+        }else if(bean.getBusinessScope().startsWith("IO")) {
+        	orderBean = afOrderMapper.getIOOrderByUUID(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid());
         }
         LogBean logBean = new LogBean();
         logBean.setPageName("费用录入");
@@ -135,7 +140,7 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
                 }
             }
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatus3(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatus3(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
 
             //日志
             logService.saveLog(logBean);
@@ -151,7 +156,7 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
                 }
             }
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatusSE3(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatusSE3(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
             //日志
             ScLog logBean2 = new ScLog();
             BeanUtils.copyProperties(logBean, logBean2);
@@ -167,7 +172,7 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
                 }
             }
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatusTC3(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatusTC3(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
             //日志
             TcLog logBean2 = new TcLog();
             BeanUtils.copyProperties(logBean, logBean2);
@@ -187,7 +192,7 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
                 }
             }
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatusLC(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatusLC(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
             //日志
             LcLog logBean2 = new LcLog();
             BeanUtils.copyProperties(logBean, logBean2);
@@ -207,7 +212,7 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
                 }
             }
             //修改订单费用状态
-            afOrderMapper.updateOrderIncomeStatusIO(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
+//            afOrderMapper.updateOrderIncomeStatusIO(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已制账单", UUID.randomUUID().toString());
             //日志
             IoLog logBean2 = new IoLog();
             BeanUtils.copyProperties(logBean, logBean2);
@@ -243,6 +248,16 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
 //        logMapper.updateLog(SecurityUtils.getUser().getOrgId(),bean.getOrderUuid(),"财务锁账",SecurityUtils.getUser().getId(),
 //        		SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail(),LocalDateTime.now());
 //		baseMapper.updateOder(SecurityUtils.getUser().getOrgId(),bean.getOrderId());
+        
+      //更新订单应收状态：（order. income_status）
+		List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), orderBean.getOrderId().toString(),businessScope);
+		if(listMap!=null&&listMap.size()>0) {
+			for(Map map:listMap) {
+				detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),businessScope);
+			}
+		}
+        
+        
         return true;
     }
 
@@ -397,6 +412,13 @@ public class CssDebitNoteServiceImpl extends ServiceImpl<CssDebitNoteMapper, Css
 //		logMapper.updateLog(SecurityUtils.getUser().getOrgId(),bean.getOrderUuid(),"财务锁账",SecurityUtils.getUser().getId(),
 //				SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail(),LocalDateTime.now());
 //		baseMapper.updateOder(SecurityUtils.getUser().getOrgId(),bean.getOrderId());
+        //更新订单应收状态：（order. income_status）
+		List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), orderBean.getOrderId().toString(),businessScope);
+		if(listMap!=null&&listMap.size()>0) {
+			for(Map map:listMap) {
+				detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),businessScope);
+			}
+		}
         return true;
     }
 

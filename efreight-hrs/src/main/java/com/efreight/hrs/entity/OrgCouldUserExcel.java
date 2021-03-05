@@ -27,6 +27,7 @@ public class OrgCouldUserExcel implements Serializable{
 	private String orderTime;
 	private Integer subscriptionNum;
 	private String subscriptionTime;
+	private String orgFromRemark;
 	private String adminName;
 	private String adminEmail;
 	private String adminTel;

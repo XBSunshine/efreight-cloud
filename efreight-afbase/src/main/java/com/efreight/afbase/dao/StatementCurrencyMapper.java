@@ -36,4 +36,10 @@ public interface StatementCurrencyMapper extends BaseMapper<StatementCurrency> {
 		"where org_id=#{org_id} AND currency_code=#{currency_code}",
 		"</script>"})
 	BigDecimal getCurrencyRate(@Param("org_id") Integer org_id,@Param("currency_code") String currency_code);
+	@Select({"<script>",
+		"SELECT * FROM css_statement_currency",
+		"where org_id=#{org_id} and statement_id = ${statement_id} and currency=#{currency}",
+	"</script>"})
+	StatementCurrency queryStatementCurrencyCurrency(@Param("org_id") Integer org_id,@Param("statement_id") Integer statement_id,@Param("currency") String currency);
+	
 }

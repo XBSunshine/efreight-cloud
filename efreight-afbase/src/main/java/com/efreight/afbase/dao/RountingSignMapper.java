@@ -42,6 +42,11 @@ public interface RountingSignMapper extends BaseMapper<RountingSign> {
         "</script>"})
 	List<AfCost> getCostByWhere2(@Param("orgId") Integer orgId,@Param("orderId") Integer orderId);
 	@Select({"<script>",
+        "select * from af_cost where",
+        " org_id = #{orgId} and order_id =#{orderId} AND service_name!='干线 - 空运费'",
+        "</script>"})
+	List<AfCost> getCostByWhere3(@Param("orgId") Integer orgId,@Param("orderId") Integer orderId);
+	@Select({"<script>",
         "select * from af_service where",
         " org_id = #{orgId} and service_type ='干线' AND service_name_cn='空运费'",
         "</script>"})

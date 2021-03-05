@@ -24,4 +24,6 @@ public interface IoCostService extends IService<IoCost> {
     void delete(Integer costId);
 
     IoCost view(Integer costId);
+
+    String getOrderCostStatusForIO(Integer orderId);
 }

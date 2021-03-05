@@ -85,39 +85,94 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
     private final SettleStatementMapper settleStatementMapper;
     private final RemoteServiceToHRS remoteServiceToHRS;
     private final AfOrderMapper afOrderMapper;
+    private final CssIncomeInvoiceDetailWriteoffService cssIncomeInvoiceDetailWriteoffService;
+    private final CssIncomeInvoiceDetailService cssIncomeInvoiceDetailService;
+    private final CssIncomeInvoiceMapper cssIncomeInvoiceMapper;
+    private final CssIncomeInvoiceDetailMapper detailMapper;
 
     @Override
     public IPage getPage2(Page page, Statement statement) {
         statement.setOrgId(SecurityUtils.getUser().getOrgId());
+        if(!statement.getInvoiceDateStart().isEmpty()||!statement.getInvoiceDateEnd().isEmpty()
+        		||!statement.getInvoiceNum().isEmpty()||!statement.getInvoiceTitle().isEmpty()) {
+        	statement.setInvoiceQuery(1);
+        }
         IPage<Statement> iPage = baseMapper.getPage(page, statement);
         iPage.getRecords().stream().forEach(record -> {
-            if (record.getWriteoffComplete() == null) {
-                record.setStatementStatus("已制清单");
-            } else if (record.getWriteoffComplete() == 1) {
-                record.setStatementStatus("核销完毕");
-            } else {
-                record.setStatementStatus("部分核销");
-            }
+        	if(record.getWriteoffComplete()!=null&&record.getWriteoffComplete() == 1) {
+        		record.setStatementStatus("核销完毕");
+        	}else if(record.getWriteoffComplete()!=null&&record.getWriteoffComplete() == 0) {
+        		record.setStatementStatus("部分核销");
+        	}else {
+				if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==1) {
+					record.setStatementStatus("开票完毕");
+				}else if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==0) {
+					record.setStatementStatus("部分开票");
+				}else if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==-1) {
+					record.setStatementStatus("待开票");
+				}else {
+					record.setStatementStatus("已制清单");
+				}
+          }
             //
-            LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
-            cssIncomeWriteoffLambdaQueryWrapper.eq(CssIncomeWriteoff::getStatementId, record.getStatementId()).eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
-            List<CssIncomeWriteoff> cssIncomeWriteoffList = cssIncomeWriteoffService.list(cssIncomeWriteoffLambdaQueryWrapper);
+//            LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
+//            cssIncomeWriteoffLambdaQueryWrapper.eq(CssIncomeWriteoff::getStatementId, record.getStatementId()).eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+//            List<CssIncomeWriteoff> cssIncomeWriteoffList = cssIncomeWriteoffService.list(cssIncomeWriteoffLambdaQueryWrapper);
+//            StringBuffer writeoffNumbuffer = new StringBuffer("");
+//            for (int i = 0; i < cssIncomeWriteoffList.size(); i++) {
+//                CssIncomeWriteoff cssIncomeWriteoff = cssIncomeWriteoffList.get(i);
+//                writeoffNumbuffer.append(cssIncomeWriteoff.getIncomeWriteoffId());
+//                writeoffNumbuffer.append(" ");
+//                writeoffNumbuffer.append(cssIncomeWriteoff.getWriteoffNum());
+//                writeoffNumbuffer.append("  ");
+//            }
+//            record.setWriteoffNum(writeoffNumbuffer.toString());
+        	//账单核销号
+        	LambdaQueryWrapper<CssIncomeInvoiceDetailWriteoff> cssIncomeInvoiceDetailWriteoffWrapper = Wrappers.<CssIncomeInvoiceDetailWriteoff>lambdaQuery();
+        	cssIncomeInvoiceDetailWriteoffWrapper.eq(CssIncomeInvoiceDetailWriteoff::getStatementId, record.getStatementId()).eq(CssIncomeInvoiceDetailWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+            List<CssIncomeInvoiceDetailWriteoff> listCssIncomeInvoiceDetailWriteoff = cssIncomeInvoiceDetailWriteoffService.list(cssIncomeInvoiceDetailWriteoffWrapper);
             StringBuffer writeoffNumbuffer = new StringBuffer("");
-            for (int i = 0; i < cssIncomeWriteoffList.size(); i++) {
-                CssIncomeWriteoff cssIncomeWriteoff = cssIncomeWriteoffList.get(i);
-                writeoffNumbuffer.append(cssIncomeWriteoff.getIncomeWriteoffId());
-                writeoffNumbuffer.append(" ");
-                writeoffNumbuffer.append(cssIncomeWriteoff.getWriteoffNum());
-                writeoffNumbuffer.append("  ");
+            if(listCssIncomeInvoiceDetailWriteoff!=null&&listCssIncomeInvoiceDetailWriteoff.size()>0) {
+            	for (int i = 0; i < listCssIncomeInvoiceDetailWriteoff.size(); i++) {
+            		CssIncomeInvoiceDetailWriteoff p = listCssIncomeInvoiceDetailWriteoff.get(i);
+            		writeoffNumbuffer.append(p.getInvoiceDetailWriteoffId());
+            		writeoffNumbuffer.append(" ");
+            		writeoffNumbuffer.append(p.getWriteoffNum());
+            		writeoffNumbuffer.append("  ");
+            	}
             }
             record.setWriteoffNum(writeoffNumbuffer.toString());
+            
+            //发票号
+            LambdaQueryWrapper<CssIncomeInvoiceDetail> cssIncomeInvoiceDetailWrapper = Wrappers.<CssIncomeInvoiceDetail>lambdaQuery();
+            cssIncomeInvoiceDetailWrapper.eq(CssIncomeInvoiceDetail::getStatementId, record.getStatementId()).eq(CssIncomeInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId());
+            List<CssIncomeInvoiceDetail> listCssIncomeInvoiceDetail = cssIncomeInvoiceDetailService.list(cssIncomeInvoiceDetailWrapper);
+            StringBuffer invoiceNumbuffer = new StringBuffer("");
+            if(listCssIncomeInvoiceDetail!=null&&listCssIncomeInvoiceDetail.size()>0) {
+            	for (int i = 0; i < listCssIncomeInvoiceDetail.size(); i++) {
+            		CssIncomeInvoiceDetail k = listCssIncomeInvoiceDetail.get(i);
+            		invoiceNumbuffer.append(k.getInvoiceDetailId());
+            		invoiceNumbuffer.append(" ");
+            		invoiceNumbuffer.append(k.getInvoiceNum());
+            		invoiceNumbuffer.append("  ");
+            	}
+            }
+            record.setInvoiceNum(invoiceNumbuffer.toString());
             //账单金额实现多币种显示
             LambdaQueryWrapper<StatementCurrency> statementCurrencyWrapper = Wrappers.<StatementCurrency>lambdaQuery();
             statementCurrencyWrapper.eq(StatementCurrency::getStatementId, record.getStatementId()).eq(StatementCurrency::getOrgId, SecurityUtils.getUser().getOrgId());
             List<StatementCurrency> currencyList = statementCurrencyService.list(statementCurrencyWrapper);
+            StringBuffer buffer3 = new StringBuffer("");
             StringBuffer buffer = new StringBuffer();
             StringBuffer buffer2 = new StringBuffer();
             currencyList.stream().forEach(currency -> {
+            	if(buffer3.toString().isEmpty()) {
+            		buffer3.append(currency.getCurrency());
+            	}else {
+            		if(!buffer3.toString().contains(currency.getCurrency())) {
+            			buffer3.append(",").append(currency.getCurrency());
+            		}
+            	}
                 buffer.append(new DecimalFormat("###,##0.00").format(currency.getAmount().setScale(2, BigDecimal.ROUND_HALF_UP))).append(" (").append(currency.getCurrency()).append(")  ");
                 if (currency.getAmountWriteoff() != null) {
                     buffer2.append(new DecimalFormat("###,##0.00").format(currency.getAmountWriteoff().setScale(2, BigDecimal.ROUND_HALF_UP))).append(" (").append(currency.getCurrency()).append(")  ");
@@ -126,6 +181,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
 
             record.setCurrencyAmount(buffer.toString());
             record.setCurrencyAmount2(buffer2.toString());
+            record.setCurrencyStr(buffer3.toString());
 
             //根据清单id:statement_id查询订单的责任客服
             List<Integer> servicerIdList = new ArrayList<>();
@@ -163,6 +219,10 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
 
     public List<Statement> getTatol(Statement statement) {
         statement.setOrgId(SecurityUtils.getUser().getOrgId());
+        if(!statement.getInvoiceDateStart().isEmpty()||!statement.getInvoiceDateEnd().isEmpty()
+        		||!statement.getInvoiceNum().isEmpty()||!statement.getInvoiceTitle().isEmpty()) {
+        	statement.setInvoiceQuery(1);
+        }
         List<Statement> list = baseMapper.getPageList(statement);
         List<Statement> listTotal = new ArrayList<Statement>();
         Statement ment = new Statement();
@@ -369,7 +429,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
         baseMapper.insert(bean);
 
         bean.setDebitNoteIds("'" + bean.getDebitNoteIds().replaceAll(",", "','") + "'");
-        baseMapper.updateDebitNote(SecurityUtils.getUser().getOrgId(), bean.getDebitNoteIds(), bean.getStatementId(), UUID.randomUUID().toString());
+        baseMapper.updateDebitNote(SecurityUtils.getUser().getOrgId(), bean.getDebitNoteIds(), bean.getStatementId(),bean.getOrgBankConfigId(), UUID.randomUUID().toString());
 
         //
         for (int i = 0; i < bean.getCurrencyList().size(); i++) {
@@ -397,37 +457,51 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             CssDebitNote note = list.get(i);
             baseMapper.updateIncome4(SecurityUtils.getUser().getOrgId(), note.getDebitNoteId(), note.getFunctionalAmount());
         }
+        Set orderIds = new HashSet();
         //修改订单费用状态
         for (int i = 0; i < bean.getBillList().size(); i++) {
             CssDebitNote bill = bean.getBillList().get(i);
-            if ("AE".equals(bean.getBusinessScope()) || "AI".equals(bean.getBusinessScope())) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableA(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableA();
-
-            } else if ("SE".equals(bean.getBusinessScope()) || "SI".equals(bean.getBusinessScope())) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableS(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableS();
-            } else if (bean.getBusinessScope().startsWith("T")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableT(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableT();
-            } else if (bean.getBusinessScope().startsWith("L")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableL(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableL();
-            } else if (bean.getBusinessScope().equals("IO")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableIO(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableIO();
-            }
+            orderIds.add(bill.getOrderId());
+//            if ("AE".equals(bean.getBusinessScope()) || "AI".equals(bean.getBusinessScope())) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableA(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableA();
+//
+//            } else if ("SE".equals(bean.getBusinessScope()) || "SI".equals(bean.getBusinessScope())) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableS(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableS();
+//            } else if (bean.getBusinessScope().startsWith("T")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableT(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableT();
+//            } else if (bean.getBusinessScope().startsWith("L")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableL(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableL();
+//            } else if (bean.getBusinessScope().equals("IO")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableIO(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableIO();
+//            }
         }
+        
+        Iterator it = orderIds.iterator();
+		while (it.hasNext()) {
+			//更新订单应收状态：（order. income_status）
+    		List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), it.next().toString(),bean.getBusinessScope());
+    		if(listMap!=null&&listMap.size()>0) {
+    			for(Map map:listMap) {
+    				detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),bean.getBusinessScope());
+    			}
+    		}
+		}
+        
         return true;
     }
 
@@ -440,6 +514,12 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
         }
         if (!bean.getRowUuid().equals(statement.getRowUuid())) {
             throw new RuntimeException("清单不是最新数据，请刷新页面再操作");
+        }
+        LambdaQueryWrapper<CssIncomeInvoice> cssIncomeInvoiceWrapper = Wrappers.<CssIncomeInvoice>lambdaQuery();
+        cssIncomeInvoiceWrapper.eq(CssIncomeInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssIncomeInvoice::getStatementId, bean.getStatementId()).last("limit 1");
+        CssIncomeInvoice incomeInvoice = cssIncomeInvoiceMapper.selectOne(cssIncomeInvoiceWrapper);
+        if (incomeInvoice != null) {
+            throw new RuntimeException(statement.getStatementNum()+"清单 已申请开票 或 已开票 ，不能修改。");
         }
         bean.setRowUuid(UUID.randomUUID().toString());
         bean.setEditTime(LocalDateTime.now());
@@ -461,7 +541,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
         baseMapper.delete2(SecurityUtils.getUser().getOrgId(), bean.getStatementId());
 
         bean.setDebitNoteIds("'" + bean.getDebitNoteIds().replaceAll(",", "','") + "'");
-        baseMapper.updateDebitNote(SecurityUtils.getUser().getOrgId(), bean.getDebitNoteIds(), bean.getStatementId(), UUID.randomUUID().toString());
+        baseMapper.updateDebitNote(SecurityUtils.getUser().getOrgId(), bean.getDebitNoteIds(), bean.getStatementId(),bean.getOrgBankConfigId(), UUID.randomUUID().toString());
 
         //
         for (int i = 0; i < bean.getCurrencyList().size(); i++) {
@@ -489,37 +569,49 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             CssDebitNote note = list.get(i);
             baseMapper.updateIncome4(SecurityUtils.getUser().getOrgId(), note.getDebitNoteId(), note.getFunctionalAmount());
         }
+        Set orderIds = new HashSet();
         //修改订单费用状态
         for (int i = 0; i < debitNotes.size(); i++) {
             DebitNote bill = debitNotes.get(i);
-            if ("AE".equals(bean.getBusinessScope()) || "AI".equals(bean.getBusinessScope())) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableA(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableA();
-
-            } else if ("SE".equals(bean.getBusinessScope()) || "SI".equals(bean.getBusinessScope())) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableS(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableS();
-            } else if (bean.getBusinessScope().startsWith("T")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableT(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableT();
-            } else if (bean.getBusinessScope().startsWith("L")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableL(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableL();
-            } else if (bean.getBusinessScope().equals("IO")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableIO(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableIO();
-            }
+            orderIds.add(bill.getOrderId());
+//            if ("AE".equals(bean.getBusinessScope()) || "AI".equals(bean.getBusinessScope())) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableA(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableA();
+//
+//            } else if ("SE".equals(bean.getBusinessScope()) || "SI".equals(bean.getBusinessScope())) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableS(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableS();
+//            } else if (bean.getBusinessScope().startsWith("T")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableT(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableT();
+//            } else if (bean.getBusinessScope().startsWith("L")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableL(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableL();
+//            } else if (bean.getBusinessScope().equals("IO")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableIO(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableIO();
+//            }
         }
+        Iterator it = orderIds.iterator();
+		while (it.hasNext()) {
+			//更新订单应收状态：（order. income_status）
+    		List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), it.next().toString(),bean.getBusinessScope());
+    		if(listMap!=null&&listMap.size()>0) {
+    			for(Map map:listMap) {
+    				detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),bean.getBusinessScope());
+    			}
+    		}
+		}
         return true;
     }
 
@@ -780,6 +872,17 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
                 } else {
                     JxlsUtils.downloadFile(orgTemplateConfig.getStatementTemplateTeExcelCn(), templatePath);
                 }
+            }else if ("TI".equals(businessScope)) {
+                if (orgTemplateConfig == null || StrUtil.isBlank(orgTemplateConfig.getStatementTemplateTiExcelCn())) {
+                    OrgTemplateConfig superTemplateConfig = remoteServiceToHRS.getOrgTemlateByOrgId(1).getData();
+                    if (superTemplateConfig == null || StrUtil.isBlank(superTemplateConfig.getStatementTemplateTiExcelCn())) {
+                        templatePath = PDFUtils.filePath + "/PDFtemplate/EF_STATEMENT.xlsx";
+                    } else {
+                        JxlsUtils.downloadFile(superTemplateConfig.getStatementTemplateTiExcelCn(), templatePath);
+                    }
+                } else {
+                    JxlsUtils.downloadFile(orgTemplateConfig.getStatementTemplateTiExcelCn(), templatePath);
+                }
             } else if ("LC".equals(businessScope)) {
                 if (orgTemplateConfig == null || StrUtil.isBlank(orgTemplateConfig.getStatementTemplateLcExcelCn())) {
                     OrgTemplateConfig superTemplateConfig = remoteServiceToHRS.getOrgTemlateByOrgId(1).getData();
@@ -858,6 +961,17 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
                     }
                 } else {
                     JxlsUtils.downloadFile(orgTemplateConfig.getStatementTemplateTeExcelEn(), templatePath);
+                }
+            }else if ("TI".equals(businessScope)) {
+                if (orgTemplateConfig == null || StrUtil.isBlank(orgTemplateConfig.getStatementTemplateTiExcelEn())) {
+                    OrgTemplateConfig superTemplateConfig = remoteServiceToHRS.getOrgTemlateByOrgId(1).getData();
+                    if (superTemplateConfig == null || StrUtil.isBlank(superTemplateConfig.getStatementTemplateTiExcelEn())) {
+                        templatePath = PDFUtils.filePath + "/PDFtemplate/EF_STATEMENT_EN.xlsx";
+                    } else {
+                        JxlsUtils.downloadFile(superTemplateConfig.getStatementTemplateTiExcelEn(), templatePath);
+                    }
+                } else {
+                    JxlsUtils.downloadFile(orgTemplateConfig.getStatementTemplateTiExcelEn(), templatePath);
                 }
             } else if ("LC".equals(businessScope)) {
                 if (orgTemplateConfig == null || StrUtil.isBlank(orgTemplateConfig.getStatementTemplateLcExcelEn())) {
@@ -2141,14 +2255,22 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             } else {
                 if ("C".equals(lang)) {
                     tableDetail.addCell(new Phrase("序号", contentFontDetail));
-                    tableDetail.addCell(new Phrase("主单号", contentFontDetail));
+                    if("TI".equals(businessScope)) {
+                    	tableDetail.addCell(new Phrase("运单号", contentFontDetail));
+                    }else {
+                    	tableDetail.addCell(new Phrase("主单号", contentFontDetail));
+                    }
                     tableDetail.addCell(new Phrase("客户单号", contentFontDetail));
                     tableDetail.addCell(new Phrase("账单号", contentFontDetail));
                     tableDetail.addCell(new Phrase("到港日期", contentFontDetail));
                     tableDetail.addCell(new Phrase("金额", contentFontDetail));
                 } else if ("E".equals(lang)) {
                     tableDetail.addCell(new Phrase("No", contentFontDetail));
-                    tableDetail.addCell(new Phrase("Mawb No", contentFontDetail));
+                    if("TI".equals(businessScope)) {
+                    	tableDetail.addCell(new Phrase("RWB No", contentFontDetail));
+                    }else {
+                    	tableDetail.addCell(new Phrase("Mawb No", contentFontDetail));
+                    }
                     tableDetail.addCell(new Phrase("Customer No", contentFontDetail));
                     tableDetail.addCell(new Phrase("Debit note", contentFontDetail));
                     tableDetail.addCell(new Phrase("Arrival date", contentFontDetail));
@@ -2182,14 +2304,14 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
     public void delete(Integer statementId, String businessScope, String statementNum) {
         //条件判断
         Statement statement = getById(statementId);
-        if (statement.getInvoiceId() != null) {
-            throw new RuntimeException("清单已开具发票，无法删除");
+        if (statement== null) {
+            throw new RuntimeException("清单不是最新数据，请刷新页面再操作");
         }
-        LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
-        cssIncomeWriteoffLambdaQueryWrapper.eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssIncomeWriteoff::getStatementId, statementId).last("limit 1");
-        CssIncomeWriteoff writeoff = cssIncomeWriteoffService.getOne(cssIncomeWriteoffLambdaQueryWrapper);
-        if (writeoff != null) {
-            throw new RuntimeException("清单已核销，无法删除");
+        LambdaQueryWrapper<CssIncomeInvoice> cssIncomeInvoiceWrapper = Wrappers.<CssIncomeInvoice>lambdaQuery();
+        cssIncomeInvoiceWrapper.eq(CssIncomeInvoice::getOrgId, SecurityUtils.getUser().getOrgId()).eq(CssIncomeInvoice::getStatementId, statementId).last("limit 1");
+        CssIncomeInvoice incomeInvoice = cssIncomeInvoiceMapper.selectOne(cssIncomeInvoiceWrapper);
+        if (incomeInvoice != null) {
+            throw new RuntimeException(statement.getStatementNum()+"清单 已申请开票 或 已开票 ，不能删除。");
         }
         //删除清单
         this.removeById(statementId);
@@ -2263,37 +2385,50 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             }
         });
         debitNoteService.updateBatchById(debitNotes);
+        Set orderIds = new HashSet();
         //修改订单费用状态
         for (int i = 0; i < debitNotes.size(); i++) {
             DebitNote bill = debitNotes.get(i);
-            if ("AE".equals(businessScope) || "AI".equals(businessScope)) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableA(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableA();
-
-            } else if ("SE".equals(businessScope) || "SI".equals(businessScope)) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableS(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableS();
-            } else if (businessScope.startsWith("T")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableT(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableT();
-            } else if (businessScope.startsWith("L")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableL(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableL();
-            } else if (businessScope.equals("IO")) {
-                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
-                afOrderMapper.generateTempTableIO(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
-                //根据临时表更新订单状态
-                afOrderMapper.updateOrderStatusByTempTableIO();
-            }
+            orderIds.add(bill.getOrderId());
+//            if ("AE".equals(businessScope) || "AI".equals(businessScope)) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableA(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableA();
+//
+//            } else if ("SE".equals(businessScope) || "SI".equals(businessScope)) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableS(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableS();
+//            } else if (businessScope.startsWith("T")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableT(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableT();
+//            } else if (businessScope.startsWith("L")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableL(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableL();
+//            } else if (businessScope.equals("IO")) {
+//                //生成一张临时表，存放订单的当前状态和核销后的状态，如果两者相同则不存入临时表
+//                afOrderMapper.generateTempTableIO(SecurityUtils.getUser().getOrgId(), bill.getOrderUuid());
+//                //根据临时表更新订单状态
+//                afOrderMapper.updateOrderStatusByTempTableIO();
+//            }
         }
+        
+        Iterator it = orderIds.iterator();
+		while (it.hasNext()) {
+			//更新订单应收状态：（order. income_status）
+    		List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), it.next().toString(),businessScope);
+    		if(listMap!=null&&listMap.size()>0) {
+    			for(Map map:listMap) {
+    				detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()),Integer.valueOf(map.get("order_id").toString()),map.get("income_status").toString(),UUID.randomUUID().toString(),businessScope);
+    			}
+    		}
+		}
         //添加日志
         for (int i = 0; i < orderList.size(); i++) {
             LogBean logBean = new LogBean();
@@ -2346,6 +2481,15 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
         LambdaQueryWrapper<Statement> StatementWrapper = Wrappers.<Statement>lambdaQuery();
         StatementWrapper.eq(Statement::getStatementId, statementId);
         Statement statement = baseMapper.selectOne(StatementWrapper);
+        if(statement!=null) {
+        	//查询invoiceId
+        	LambdaQueryWrapper<CssIncomeInvoice> cssIncomeInvoiceWrapper = Wrappers.<CssIncomeInvoice>lambdaQuery();
+        	cssIncomeInvoiceWrapper.eq(CssIncomeInvoice::getStatementId, statementId);
+        	CssIncomeInvoice  c = cssIncomeInvoiceMapper.selectOne(cssIncomeInvoiceWrapper);
+        	if(c!=null) {
+        		statement.setInvoiceId(c.getInvoiceId());
+        	}
+        }
         return statement;
     }
 
@@ -2375,11 +2519,11 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
         } else {
             //默认数据
             headers = new String[]{"清单号", "清单状态", "清单日期", "收款客户", "清单金额（原币）", "已核销金额（原币）", "清单金额（本币）",
-                    "已核销金额（本币）", "未核销金额（本币）", "核销单号", "清单备注", "发票日期", "发票号码", "发票抬头", "发票备注", "制单人",
+                    "已核销金额（本币）", "未核销金额（本币）", "核销单号", "清单备注","发票号码","开票申请备注", "开票申请人","开票申请时间","制单人",
                     "清单制作时间"};
             colunmStrs = new String[]{"statementNum", "statementStatus", "statementDate", "customerName",
                     "currencyAmount", "currencyAmount2", "functionalAmount", "functionalAmountWriteoff", "functionalAmountNoWriteoff",
-                    "writeoffNum", "statementRemark", "invoiceDate", "invoiceNum", "invoiceTitle", "invoiceRemark", "creatorName",
+                    "writeoffNum", "statementRemark","invoiceNum","applyRemark", "invoiceCreatorName","invoiceCreateTime","creatorName",
                     "createTime"};
         }
         //查询
@@ -2456,6 +2600,34 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
                             mapTwo.put("writeoffNum", "");
                         }
 
+                    }else if("invoiceNum".equals(colunmStrs[j])) {
+                    	StringBuffer sb = new StringBuffer();
+                        if (excel2.getInvoiceNum() != null && !"".equals(excel2.getInvoiceNum())) {
+                            if (excel2.getInvoiceNum().contains("  ")) {
+                                String[] array = excel2.getInvoiceNum().split("  ");
+                                for (int k = 0; k < array.length; k++) {
+                                    sb.append(array[k].split(" ")[1]).append(" ");
+                                }
+                                mapTwo.put("invoiceNum", sb.toString());
+                            } else {
+                                mapTwo.put("invoiceNum", excel2.getInvoiceNum().split(" ")[1]);
+                            }
+                        } else {
+                            mapTwo.put("invoiceNum", "");
+                        }
+                    }else if ("invoiceCreateTime".equals(colunmStrs[j])) {
+                        if (excel2.getInvoiceCreateTime() != null) {
+                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                            mapTwo.put("invoiceCreateTime", formatter.format(excel2.getInvoiceCreateTime()));
+                        } else {
+                            mapTwo.put("invoiceCreateTime", "");
+                        }
+                    }else if ("invoiceCreatorName".equals(colunmStrs[j])) {
+                        if (excel2.getInvoiceCreatorName() != null) {
+                            mapTwo.put("invoiceCreatorName", excel2.getInvoiceCreatorName().split(" ")[0]);
+                        } else {
+                            mapTwo.put("invoiceCreatorName", "");
+                        }
                     } else {
                         mapTwo.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j], excel2));
                     }

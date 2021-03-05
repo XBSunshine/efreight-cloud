@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.efreight.afbase.entity.*;
 import com.efreight.afbase.dao.AfOrderMapper;
+import com.efreight.afbase.dao.CssIncomeInvoiceDetailMapper;
 import com.efreight.afbase.dao.DebitNoteMapper;
 import com.efreight.afbase.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -68,7 +69,8 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
     private final ScLogService scLogService;
     private final AfOrderMapper afOrderMapper;
     private final AfOrderService afOrderService;
-
+    private final CssIncomeInvoiceDetailWriteoffService cssIncomeInvoiceDetailWriteoffService;
+    private final CssIncomeInvoiceDetailService cssIncomeInvoiceDetailService;
     private final RemoteServiceToHRS remoteServiceToHRS;
 
     private final RemoteServiceToSC remoteServiceToSC;
@@ -90,12 +92,12 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
 
     private final TcLogService tcLogService;
 
-    private final CssIncomeWriteoffStatementDetailService cssIncomeWriteoffStatementDetailService;
 
     private final TcOrderFilesService tcOrderFilesService;
 
     private final LcLogService lcLogService;
     private final IoLogService ioLogService;
+    private final CssIncomeInvoiceDetailMapper detailMapper;
 
 
     @Override
@@ -117,11 +119,23 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             if ("部分核销".equals(billStatus[i])) {
                 debitNote.setBillStatus4("部分核销");
             }
+            if ("开票完毕".equals(billStatus[i])) {
+                debitNote.setBillStatus5("开票完毕");
+            }
+            if ("部分开票".equals(billStatus[i])) {
+                debitNote.setBillStatus6("部分开票");
+            }
+            if ("待开票".equals(billStatus[i])) {
+                debitNote.setBillStatus7("待开票");
+            }
         }
         if (!StringUtils.isEmpty(debitNote.getServiceIdStr())) {
             debitNote.setServiceIdStr("'" + debitNote.getServiceIdStr().replaceAll(",", "','") + "'");
         }
-
+        if (!debitNote.getInvoiceDateStart().isEmpty() || !debitNote.getInvoiceDateEnd().isEmpty()
+                || !debitNote.getInvoiceNum().isEmpty() || !debitNote.getInvoiceTitle().isEmpty()) {
+            debitNote.setInvoiceQuery(1);
+        }
         IPage<DebitNote> iPage = baseMapper.getPage(page, debitNote);
         HashMap<String, List<DebitNote>> map = new HashMap<>();
         HashMap<String, BigDecimal> mapAmount = new HashMap<>();
@@ -131,44 +145,109 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
         iPage.getRecords().stream().forEach(one -> {
             //是否核销
             //根据清单号查询核销单号
-            List<CssIncomeWriteoff> cssIncomeWriteoffList = new ArrayList<>();
-            if (one.getStatementId() != null) {
-                LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper1 = Wrappers.<CssIncomeWriteoff>lambdaQuery();
-                cssIncomeWriteoffLambdaQueryWrapper1.eq(CssIncomeWriteoff::getStatementId, one.getStatementId()).eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
-                List<CssIncomeWriteoff> cssIncomeWriteoffList1 = cssIncomeWriteoffService.list(cssIncomeWriteoffLambdaQueryWrapper1);
-                if (!cssIncomeWriteoffList1.isEmpty()) {
-                    one.setIfWriteoff(true);
-                } else {
-                    one.setIfWriteoff(false);
-                }
-                LambdaQueryWrapper<CssIncomeWriteoffStatementDetail> cssIncomeWriteoffStatementDetailWrapper = Wrappers.<CssIncomeWriteoffStatementDetail>lambdaQuery();
-                cssIncomeWriteoffStatementDetailWrapper.eq(CssIncomeWriteoffStatementDetail::getDebitNoteId, one.getDebitNoteId());
-                List<Integer> incomeWriteoffIds = cssIncomeWriteoffStatementDetailService.list(cssIncomeWriteoffStatementDetailWrapper).stream().map(CssIncomeWriteoffStatementDetail::getIncomeWriteoffId).collect(Collectors.toList());
-                if (!incomeWriteoffIds.isEmpty()) {
-                    LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
-                    cssIncomeWriteoffWrapper.eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId()).in(CssIncomeWriteoff::getIncomeWriteoffId, incomeWriteoffIds);
-                    cssIncomeWriteoffList = cssIncomeWriteoffService.list(cssIncomeWriteoffWrapper);
-                }
+//            List<CssIncomeWriteoff> cssIncomeWriteoffList = new ArrayList<>();
+//            if (one.getStatementId() != null) {
+//                LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper1 = Wrappers.<CssIncomeWriteoff>lambdaQuery();
+//                cssIncomeWriteoffLambdaQueryWrapper1.eq(CssIncomeWriteoff::getStatementId, one.getStatementId()).eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+//                List<CssIncomeWriteoff> cssIncomeWriteoffList1 = cssIncomeWriteoffService.list(cssIncomeWriteoffLambdaQueryWrapper1);
+//                if (!cssIncomeWriteoffList1.isEmpty()) {
+//                    one.setIfWriteoff(true);
+//                } else {
+//                    one.setIfWriteoff(false);
+//                }
+//                LambdaQueryWrapper<CssIncomeWriteoffStatementDetail> cssIncomeWriteoffStatementDetailWrapper = Wrappers.<CssIncomeWriteoffStatementDetail>lambdaQuery();
+//                cssIncomeWriteoffStatementDetailWrapper.eq(CssIncomeWriteoffStatementDetail::getDebitNoteId, one.getDebitNoteId());
+//                List<Integer> incomeWriteoffIds = cssIncomeWriteoffStatementDetailService.list(cssIncomeWriteoffStatementDetailWrapper).stream().map(CssIncomeWriteoffStatementDetail::getIncomeWriteoffId).collect(Collectors.toList());
+//                if (!incomeWriteoffIds.isEmpty()) {
+//                    LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
+//                    cssIncomeWriteoffWrapper.eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId()).in(CssIncomeWriteoff::getIncomeWriteoffId, incomeWriteoffIds);
+//                    cssIncomeWriteoffList = cssIncomeWriteoffService.list(cssIncomeWriteoffWrapper);
+//                }
+//
+//            } else {
+//                LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
+//                cssIncomeWriteoffLambdaQueryWrapper.eq(CssIncomeWriteoff::getDebitNoteId, one.getDebitNoteId()).eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+//                cssIncomeWriteoffList = cssIncomeWriteoffService.list(cssIncomeWriteoffLambdaQueryWrapper);
+//                if (cssIncomeWriteoffList.size() > 0) {
+//                    one.setIfWriteoff(true);
+//                } else {
+//                    one.setIfWriteoff(false);
+//                }
+//            }
 
+
+            //发票需求变更  
+            if (one.getInvoiceStatus() != null && (one.getInvoiceStatus() == 1 || one.getInvoiceStatus() == 0)) {
+                one.setIfWriteoff(true);
             } else {
-                LambdaQueryWrapper<CssIncomeWriteoff> cssIncomeWriteoffLambdaQueryWrapper = Wrappers.<CssIncomeWriteoff>lambdaQuery();
-                cssIncomeWriteoffLambdaQueryWrapper.eq(CssIncomeWriteoff::getDebitNoteId, one.getDebitNoteId()).eq(CssIncomeWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
-                cssIncomeWriteoffList = cssIncomeWriteoffService.list(cssIncomeWriteoffLambdaQueryWrapper);
-                if (cssIncomeWriteoffList.size() > 0) {
-                    one.setIfWriteoff(true);
-                } else {
-                    one.setIfWriteoff(false);
-                }
+                one.setIfWriteoff(false);
             }
+            if (one.getStatementInvoiceStatus() != null && (one.getStatementInvoiceStatus() == 1 || one.getStatementInvoiceStatus() == 0)) {
+                one.setIfWriteoff(true);
+            } else {
+                one.setIfWriteoff(false);
+            }
+
             StringBuffer writeoffNumbuffer = new StringBuffer("");
-            for (int i = 0; i < cssIncomeWriteoffList.size(); i++) {
-                CssIncomeWriteoff cssIncomeWriteoff = cssIncomeWriteoffList.get(i);
-                writeoffNumbuffer.append(cssIncomeWriteoff.getIncomeWriteoffId());
-                writeoffNumbuffer.append(" ");
-                writeoffNumbuffer.append(cssIncomeWriteoff.getWriteoffNum());
-                writeoffNumbuffer.append("  ");
+            StringBuffer invoiceNumbuffer = new StringBuffer("");
+            if (one.getStatementId() != null) {
+                //清单核销号
+                LambdaQueryWrapper<CssIncomeInvoiceDetailWriteoff> cssIncomeInvoiceDetailWriteoffWrapper = Wrappers.<CssIncomeInvoiceDetailWriteoff>lambdaQuery();
+                cssIncomeInvoiceDetailWriteoffWrapper.eq(CssIncomeInvoiceDetailWriteoff::getStatementId, one.getStatementId()).eq(CssIncomeInvoiceDetailWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+                List<CssIncomeInvoiceDetailWriteoff> listCssIncomeInvoiceDetailWriteoff = cssIncomeInvoiceDetailWriteoffService.list(cssIncomeInvoiceDetailWriteoffWrapper);
+                if (listCssIncomeInvoiceDetailWriteoff != null && listCssIncomeInvoiceDetailWriteoff.size() > 0) {
+                    for (int i = 0; i < listCssIncomeInvoiceDetailWriteoff.size(); i++) {
+                        CssIncomeInvoiceDetailWriteoff p = listCssIncomeInvoiceDetailWriteoff.get(i);
+                        writeoffNumbuffer.append(p.getInvoiceDetailWriteoffId());
+                        writeoffNumbuffer.append(" ");
+                        writeoffNumbuffer.append(p.getWriteoffNum());
+                        writeoffNumbuffer.append("  ");
+                    }
+                }
+                //清单发票号
+                LambdaQueryWrapper<CssIncomeInvoiceDetail> cssIncomeInvoiceDetailWrapper = Wrappers.<CssIncomeInvoiceDetail>lambdaQuery();
+                cssIncomeInvoiceDetailWrapper.eq(CssIncomeInvoiceDetail::getStatementId, one.getStatementId()).eq(CssIncomeInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId());
+                List<CssIncomeInvoiceDetail> listCssIncomeInvoiceDetail = cssIncomeInvoiceDetailService.list(cssIncomeInvoiceDetailWrapper);
+                if (listCssIncomeInvoiceDetail != null && listCssIncomeInvoiceDetail.size() > 0) {
+                    for (int i = 0; i < listCssIncomeInvoiceDetail.size(); i++) {
+                        CssIncomeInvoiceDetail k = listCssIncomeInvoiceDetail.get(i);
+                        invoiceNumbuffer.append(k.getInvoiceDetailId());
+                        invoiceNumbuffer.append(" ");
+                        invoiceNumbuffer.append(k.getInvoiceNum());
+                        invoiceNumbuffer.append("  ");
+                    }
+                }
+            } else {
+                //账单核销号
+                LambdaQueryWrapper<CssIncomeInvoiceDetailWriteoff> cssIncomeInvoiceDetailWriteoffWrapper = Wrappers.<CssIncomeInvoiceDetailWriteoff>lambdaQuery();
+                cssIncomeInvoiceDetailWriteoffWrapper.eq(CssIncomeInvoiceDetailWriteoff::getDebitNoteId, one.getDebitNoteId()).eq(CssIncomeInvoiceDetailWriteoff::getOrgId, SecurityUtils.getUser().getOrgId());
+                List<CssIncomeInvoiceDetailWriteoff> listCssIncomeInvoiceDetailWriteoff = cssIncomeInvoiceDetailWriteoffService.list(cssIncomeInvoiceDetailWriteoffWrapper);
+                if (listCssIncomeInvoiceDetailWriteoff != null && listCssIncomeInvoiceDetailWriteoff.size() > 0) {
+                    for (int i = 0; i < listCssIncomeInvoiceDetailWriteoff.size(); i++) {
+                        CssIncomeInvoiceDetailWriteoff p = listCssIncomeInvoiceDetailWriteoff.get(i);
+                        writeoffNumbuffer.append(p.getInvoiceDetailWriteoffId());
+                        writeoffNumbuffer.append(" ");
+                        writeoffNumbuffer.append(p.getWriteoffNum());
+                        writeoffNumbuffer.append("  ");
+                    }
+                }
+                //账单发票号
+                LambdaQueryWrapper<CssIncomeInvoiceDetail> cssIncomeInvoiceDetailWrapper = Wrappers.<CssIncomeInvoiceDetail>lambdaQuery();
+                cssIncomeInvoiceDetailWrapper.eq(CssIncomeInvoiceDetail::getDebitNoteId, one.getDebitNoteId()).eq(CssIncomeInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId());
+                List<CssIncomeInvoiceDetail> listCssIncomeInvoiceDetail = cssIncomeInvoiceDetailService.list(cssIncomeInvoiceDetailWrapper);
+                if (listCssIncomeInvoiceDetail != null && listCssIncomeInvoiceDetail.size() > 0) {
+                    for (int i = 0; i < listCssIncomeInvoiceDetail.size(); i++) {
+                        CssIncomeInvoiceDetail k = listCssIncomeInvoiceDetail.get(i);
+                        invoiceNumbuffer.append(k.getInvoiceDetailId());
+                        invoiceNumbuffer.append(" ");
+                        invoiceNumbuffer.append(k.getInvoiceNum());
+                        invoiceNumbuffer.append("  ");
+                    }
+                }
             }
             one.setWriteoffNum(writeoffNumbuffer.toString());
+            one.setInvoiceNum(invoiceNumbuffer.toString());
+
             //操作信息
             if (StrUtil.isBlank(one.getEditorName())) {
                 one.setEditorName(one.getCreatorName());
@@ -178,19 +257,36 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             }
 
             //状态
-            one.setDebitNoteStatus("已制账单");
-            if (one.getStatementId() != null && one.getWriteoffComplete() == null) {
-                one.setDebitNoteStatus("已制清单");
-            } else if (one.getWriteoffComplete() != null && one.getWriteoffComplete() == 1) {
+            if (one.getWriteoffComplete() != null && one.getWriteoffComplete() == 1) {
                 one.setDebitNoteStatus("核销完毕");
             } else if (one.getWriteoffComplete() != null && one.getWriteoffComplete() == 0) {
                 one.setDebitNoteStatus("部分核销");
+            } else {
+                if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 1) {
+                    one.setDebitNoteStatus("开票完毕");
+                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 0) {
+                    one.setDebitNoteStatus("部分开票");
+                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == -1) {
+                    one.setDebitNoteStatus("待开票");
+                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 1) {
+                    one.setDebitNoteStatus("开票完毕");
+                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 0) {
+                    one.setDebitNoteStatus("部分开票");
+                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == -1) {
+                    one.setDebitNoteStatus("待开票");
+                } else {
+                    if (one.getStatementId() != null) {
+                        one.setDebitNoteStatus("已制清单");
+                    } else {
+                        one.setDebitNoteStatus("已制账单");
+                    }
+                }
             }
-
             //账单金额实现多币种显示
             LambdaQueryWrapper<CssDebitNoteCurrency> cssDebitCurrencyWrapper = Wrappers.<CssDebitNoteCurrency>lambdaQuery();
             cssDebitCurrencyWrapper.eq(CssDebitNoteCurrency::getDebitNoteId, one.getDebitNoteId()).eq(CssDebitNoteCurrency::getOrgId, SecurityUtils.getUser().getOrgId());
             List<CssDebitNoteCurrency> currencyList = cssDebitNoteCurrencyService.list(cssDebitCurrencyWrapper);
+            StringBuffer buffer3 = new StringBuffer("");
             StringBuffer buffer = new StringBuffer();
             StringBuffer buffer2 = new StringBuffer("");
             HashMap<String, BigDecimal> currencyAmount = new HashMap<>();//账单金额（原币）
@@ -199,6 +295,13 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                 if (currencyAmount.containsKey(currency.getCurrency())) {
                     currencyAmount.put(currency.getCurrency(), currencyAmount.get(currency.getCurrency()).add(currency.getAmount()));
                 } else {
+                    if (buffer3.toString().isEmpty()) {
+                        buffer3.append(currency.getCurrency());
+                    } else {
+                        if (!buffer3.toString().contains(currency.getCurrency())) {
+                            buffer3.append(",").append(currency.getCurrency());
+                        }
+                    }
                     currencyAmount.put(currency.getCurrency(), currency.getAmount());
                 }
                 String amount = new DecimalFormat("###,###.00").format(currency.getAmount().setScale(2, BigDecimal.ROUND_HALF_UP));
@@ -222,8 +325,10 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
 
             });
 
+            one.setMapAmountOne(JSONObject.toJSONString(currencyAmount));
             one.setCurrencyAmount(buffer.toString());
             one.setCurrencyAmount2(buffer2.toString());
+            one.setCurrencyStr(buffer3.toString());
 
             //封装树结构
             String currency = "";
@@ -265,6 +370,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                 if (currencyAmount != null && !currencyAmount.isEmpty()) {
                     for (Map.Entry<String, BigDecimal> entry : currencyAmount.entrySet()) {
                         if (mapBuffer.get(key).containsKey(entry.getKey())) {
+
                             mapBuffer.get(key).put(entry.getKey(), mapBuffer.get(key).get(entry.getKey()).add(entry.getValue()));
                         } else {
                             mapBuffer.get(key).put(entry.getKey(), entry.getValue());
@@ -1134,7 +1240,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                     fileList.add(orderFileMap);
                 });
             } else if (debitNoteSendEntity.getBusinessScope().equals("LC")) {
-                if(StrUtil.isNotBlank(debitNoteSendEntity.getOrderFileIds())){
+                if (StrUtil.isNotBlank(debitNoteSendEntity.getOrderFileIds())) {
                     remoteServiceToSC.listLcOrderFilesByOrderFileIds(debitNoteSendEntity.getOrderFileIds()).getData().stream().forEach(orderFiles -> {
                         HashMap<String, String> orderFileMap = new HashMap<>();
                         String expand = orderFiles.getFileUrl().substring(orderFiles.getFileUrl().lastIndexOf("."));
@@ -1145,7 +1251,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                     });
                 }
             } else if (debitNoteSendEntity.getBusinessScope().equals("IO")) {
-                if(StrUtil.isNotBlank(debitNoteSendEntity.getOrderFileIds())){
+                if (StrUtil.isNotBlank(debitNoteSendEntity.getOrderFileIds())) {
                     remoteServiceToSC.listIoOrderFilesByOrderFileIds(debitNoteSendEntity.getOrderFileIds()).getData().stream().forEach(orderFiles -> {
                         HashMap<String, String> orderFileMap = new HashMap<>();
                         String expand = orderFiles.getFileUrl().substring(orderFiles.getFileUrl().lastIndexOf("."));
@@ -1192,20 +1298,37 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
     @Transactional(rollbackFor = Exception.class)
     public Boolean doDelete(DebitNote bean) {
         String businessScope = bean.getBusinessScope();
-
-        String debitNoteIds = ("'" + bean.getDebitNoteIds().replaceAll(",", "','") + "'");
-        List<DebitNote> list = baseMapper.queryWriteoffDebit(SecurityUtils.getUser().getOrgId(), debitNoteIds);
-        String debitNoteNum = "";
-        if (list.size() > 0) {
-
-            for (int i = 0; i < list.size(); i++) {
-                if (debitNoteNum.indexOf(list.get(i).getDebitNoteNum()) < 0) {
-                    debitNoteNum = debitNoteNum + list.get(i).getDebitNoteNum() + ",";
+        List<DebitNote> list = baseMapper.queryDebitForWhere(SecurityUtils.getUser().getOrgId(), bean.getDebitNoteIds());
+        String debitNoteIds = null;
+        StringBuffer sb = new StringBuffer();
+        StringBuffer sbOne = new StringBuffer();//是否审核
+        StringBuffer sbTwo = new StringBuffer();//是否生成清单
+        StringBuffer sbThree = new StringBuffer();//是否开票申请
+        if (list != null && list.size() > 0) {
+            for (DebitNote dn : list) {
+                if (dn.getWriteoffComplete() != null) {
+                    sbOne.append(dn.getDebitNoteNum()).append(",");
+                } else if (dn.getWriteoffComplete() == null && dn.getStatementId() != null) {
+                    sbTwo.append(dn.getDebitNoteNum()).append(",");
+                } else if (dn.getWriteoffComplete() == null && dn.getInvoiceDebitNoteId() != null) {
+                    sbThree.append(dn.getDebitNoteNum()).append(",");
+                } else {
+                    sb.append(dn.getDebitNoteId()).append(",");//需要更新的
                 }
             }
-            throw new RuntimeException(debitNoteNum + "有核销记录的账单,不能删除账单");
+        } else {
+            throw new RuntimeException("账单信息异常");
         }
-
+        if (sbOne != null && !sbOne.toString().isEmpty()) {
+            throw new RuntimeException(sbOne.substring(0, sbOne.length() - 1) + "有核销记录的账单,不能删除账单");
+        }
+        if (sbTwo != null && !sbTwo.toString().isEmpty()) {
+            throw new RuntimeException("账单号:【" + sbTwo.substring(0, sbTwo.length() - 1) + "】已做清单 ，不允许删除账单！");
+        }
+        if (sbThree != null && !sbThree.toString().isEmpty()) {
+            throw new RuntimeException("账单号:【" + sbThree.substring(0, sbThree.length() - 1) + "】已做发票申请 或 已开票 ，不允许删除账单！");
+        }
+        debitNoteIds = sb.substring(0, sb.length() - 1).toString();
         //日志
         LogBean logBean = new LogBean();
         logBean.setPageName("费用录入");
@@ -1240,9 +1363,9 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             //日志
             logService.saveLog(logBean);
             //修改订单费用状态
-            if (incodmeStatusList.size() == 0) {
-                afOrderMapper.updateOrderIncomeStatus2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
-            }
+//            if (incodmeStatusList.size() == 0) {
+//                afOrderMapper.updateOrderIncomeStatus2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
+//            }
         } else if ("SE".equals(businessScope) || "SI".equals(businessScope)) {
             baseMapper.doUpdateIncomeSE(SecurityUtils.getUser().getOrgId(), debitNoteIds, UUID.randomUUID().toString());
             //日志
@@ -1250,9 +1373,9 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             BeanUtils.copyProperties(logBean, logBean2);
             scLogService.saveLog(logBean2);
             //修改订单费用状态
-            if (incodmeStatusList.size() == 0) {
-                afOrderMapper.updateOrderIncomeStatusSE2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
-            }
+//            if (incodmeStatusList.size() == 0) {
+//                afOrderMapper.updateOrderIncomeStatusSE2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
+//            }
         } else if (businessScope.startsWith("T")) {
             baseMapper.doUpdateIncomeTC(SecurityUtils.getUser().getOrgId(), debitNoteIds, UUID.randomUUID().toString());
             TcLog logBean2 = new TcLog();
@@ -1262,9 +1385,9 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             logBean2.setCreatTime(LocalDateTime.now());
             logBean2.setOrgId(SecurityUtils.getUser().getOrgId());
             tcLogService.save(logBean2);
-            if (incodmeStatusList.size() == 0) {
-                afOrderMapper.updateOrderIncomeStatusTC2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
-            }
+//            if (incodmeStatusList.size() == 0) {
+//                afOrderMapper.updateOrderIncomeStatusTC2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
+//            }
         } else if ("LC".equals(businessScope)) {
             baseMapper.doUpdateIncomeLC(SecurityUtils.getUser().getOrgId(), debitNoteIds, UUID.randomUUID().toString());
             LcLog logBean2 = new LcLog();
@@ -1274,9 +1397,9 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             logBean2.setCreatTime(LocalDateTime.now());
             logBean2.setOrgId(SecurityUtils.getUser().getOrgId());
             lcLogService.save(logBean2);
-            if (incodmeStatusList.size() == 0) {
-                afOrderMapper.updateOrderIncomeStatusLC2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
-            }
+//            if (incodmeStatusList.size() == 0) {
+//                afOrderMapper.updateOrderIncomeStatusLC2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
+//            }
         } else if ("IO".equals(businessScope)) {
             baseMapper.doUpdateIncomeIO(SecurityUtils.getUser().getOrgId(), debitNoteIds, UUID.randomUUID().toString());
             IoLog logBean2 = new IoLog();
@@ -1286,10 +1409,18 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             logBean2.setCreatTime(LocalDateTime.now());
             logBean2.setOrgId(SecurityUtils.getUser().getOrgId());
             ioLogService.save(logBean2);
-            if (incodmeStatusList.size() == 0) {
-                afOrderMapper.updateOrderIncomeStatusIO2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
+//            if (incodmeStatusList.size() == 0) {
+//                afOrderMapper.updateOrderIncomeStatusIO2(SecurityUtils.getUser().getOrgId(), bean.getOrderUuid(), "已录收入", UUID.randomUUID().toString());
+//            }
+        }
+        //更新订单应收状态：（order. income_status）
+        List<Map> listMap = detailMapper.getOrderIncomeStatus(SecurityUtils.getUser().getOrgId(), orderBean.getOrderId().toString(), businessScope);
+        if (listMap != null && listMap.size() > 0) {
+            for (Map map : listMap) {
+                detailMapper.updateOrderIncomeStatus(Integer.valueOf(map.get("org_id").toString()), Integer.valueOf(map.get("order_id").toString()), map.get("income_status").toString(), UUID.randomUUID().toString(), businessScope);
             }
         }
+
         return true;
     }
 
@@ -1316,7 +1447,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
     }
 
     @Override
-    public boolean updateDebitNote(Integer debitNoteId,Integer statementId) {
+    public boolean updateDebitNote(Integer debitNoteId, Integer statementId) {
         boolean flag = true;
         baseMapper.updateDebitNote(SecurityUtils.getUser().getOrgId(), debitNoteId, statementId);
         return flag;
@@ -1327,7 +1458,6 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
      */
     @Override
     public String printManyNew(String modelType, String debitNoteIds, String businessScope) {
-
         String templateFilePath = "";
         String templateFilePathP = "http://doc.yctop.com/";
         if ("C".equals(modelType)) {
@@ -1340,12 +1470,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             modelType = "EN";
         }
         List<List<Map<String, String>>> list = new ArrayList<List<Map<String, String>>>();
-        String[] strArr = null;
-        if (debitNoteIds.contains(",")) {
-            strArr = debitNoteIds.split(",");
-        } else {
-            strArr = new String[]{debitNoteIds};
-        }
+        String[] strArr = debitNoteIds.split(",");
         if (strArr != null) {
             for (int i = 0; i < strArr.length; i++) {
                 List<List<Map<String, String>>> listResult = baseMapper.printManyNew(SecurityUtils.getUser().getOrgId(), businessScope, strArr[i], modelType, SecurityUtils.getUser().getId(), templateFilePathP);
@@ -1359,36 +1484,23 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                 }
             }
         }
+        //账单信息
         List<Map<String, String>> listDebit = new ArrayList<Map<String, String>>();
+        //费用明细
         List<Map<String, String>> listIncome = new ArrayList<Map<String, String>>();
-        if (list != null && list.size() > 0 && list.get(0) != null && list.get(0).size() > 0) {
-        } else {
+        if (list == null || list.size() == 0 || list.get(0) == null && list.get(0).size() == 0) {
             return "无账单数据";
         }
 
-        DecimalFormat decimalFormat = new DecimalFormat("##########.##########");
+//        DecimalFormat decimalFormat = new DecimalFormat("##########.##########");
         DecimalFormat decimalFormat2 = new DecimalFormat("#,###,###,###.##########");
         Map<String, List<Map<String, String>>> mapIncome = new HashMap<String, List<Map<String, String>>>();
-        if (list != null && list.size() > 1 && list.get(0) != null && list.get(0).size() > 0) {
+        if (list.size() > 1) {
             listDebit = list.get(0);
-            /*if (StrUtil.isNotBlank(listDebit.get(0).get("Input11"))) {
-                String[] arrStr = listDebit.get(0).get("Input11").split(" ");
-                String input11 = decimalFormat.format(Double.valueOf(arrStr[0]));
-                listDebit.get(0).put("Input11", input11 + "  " + arrStr[1]);
-            }
-            if (StrUtil.isNotBlank(listDebit.get(0).get("Input12"))) {
-                String[] arrStr = listDebit.get(0).get("Input12").split(" ");
-                String input12 = decimalFormat.format(Double.valueOf(arrStr[0]));
-                listDebit.get(0).put("Input12", input12 + "  " + arrStr[1]);
-            }*/
-
             if (StrUtil.isNotBlank(listDebit.get(0).get("templateFilePath")) && !templateFilePathP.equals(listDebit.get(0).get("templateFilePath"))) {
                 templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/debitNote/" + listDebit.get(0).get("templateFilePath").split("/")[listDebit.get(0).get("templateFilePath").split("/").length - 1];
                 downloadFile(listDebit.get(0).get("templateFilePath"), templateFilePath);
             }
-        }
-        //分组清洗数据
-        if (list != null && list.size() > 1 && list.get(1) != null && list.get(1).size() > 0) {
             listIncome = list.get(1);
             mapIncome = listIncome.stream()
                     .collect(Collectors.groupingBy(item -> item.get("debit_note_id").toString()));
@@ -1398,7 +1510,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
 //	        listDebit.stream().forEach(item->{
         for (int j = 0; j < listDebit.size(); j++) {
             Map<String, String> item = listDebit.get(j);
-            String saveFilename = PDFUtils.makeFileName(item.get("Input02") + ".pdf");
+            String saveFilename = PDFUtils.makeFileName(item.get("Input02") + ".pdf");//账单号
             //得到文件的保存目录
             String newPDFPath = PDFUtils.makePath(saveFilename, PDFUtils.filePath + "/PDFtemplate/temp/debitNote") + "/" + saveFilename;
             if (mapIncome.get(item.get("debit_note_id").toString()) != null && mapIncome.get(item.get("debit_note_id").toString()).size() > 0) {
@@ -1448,10 +1560,8 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             }
             //pdf填充数据以及下载
             loadPDF(templateFilePath, newPDFPath, item, true, true);
-//                PDFUtils.loadPDF2(templateFilePath, newPDFPath, item, false, false);
             newFilePaths.add(newPDFPath.replace("", ""));
         }
-//	        });
         String lastFilePath = PDFUtils.filePath + "/PDFtemplate/temp/debitNote/" + listDebit.get(0).get("Input04") + "_" + new Date().getTime() + ".pdf";
         if (newFilePaths.size() == 1) {
             lastFilePath = PDFUtils.filePath + "/PDFtemplate/temp/debitNote/" + listDebit.get(0).get("Input04") + "_" + listDebit.get(0).get("Input02") + "_" + new Date().getTime() + ".pdf";
@@ -1610,7 +1720,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             templateFilePath = PDFUtils.filePath + "/PDFtemplate/DN_En.xlsx";
             modelType = "EN";
         }
-        List<List<Map<String, String>>> list = new ArrayList<List<Map<String, String>>>();
+        List<List<Map<String, Object>>> list = new ArrayList<List<Map<String, Object>>>();
         String[] strArr = null;
         if (debitNoteIds.contains(",")) {
             strArr = debitNoteIds.split(",");
@@ -1619,7 +1729,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
         }
         if (strArr != null) {
             for (int i = 0; i < strArr.length; i++) {
-                List<List<Map<String, String>>> listResult = baseMapper.printManyNew(SecurityUtils.getUser().getOrgId(), businessScope, strArr[i], modelType, SecurityUtils.getUser().getId(), null);
+                List<List<Map<String, Object>>> listResult = baseMapper.printManyDebitNoteNew(SecurityUtils.getUser().getOrgId(), businessScope, strArr[i], modelType, SecurityUtils.getUser().getId(), null);
                 if (listResult != null && listResult.get(0) != null && listResult.get(0).size() > 0) {
                     if (list.size() > 0) {
                         list.get(0).addAll(listResult.get(0));
@@ -1630,8 +1740,8 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                 }
             }
         }
-        List<Map<String, String>> listDebit = new ArrayList<Map<String, String>>();
-        List<Map<String, String>> listIncome = new ArrayList<Map<String, String>>();
+        List<Map<String, Object>> listDebit = new ArrayList<Map<String, Object>>();
+        List<Map<String, Object>> listIncome = new ArrayList<Map<String, Object>>();
         if (list != null && list.size() > 0 && list.get(0) != null && list.get(0).size() > 0) {
         } else {
             throw new RuntimeException("账单无数据");
@@ -1639,7 +1749,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
 
         DecimalFormat decimalFormat = new DecimalFormat("##########.##########");
         DecimalFormat decimalFormat2 = new DecimalFormat("#,###,###,###.##########");
-        Map<String, List<Map<String, String>>> mapIncome = new HashMap<String, List<Map<String, String>>>();
+        Map<String, List<Map<String, Object>>> mapIncome = new HashMap<String, List<Map<String, Object>>>();
         if (list != null && list.size() > 1 && list.get(0) != null && list.get(0).size() > 0) {
             listDebit = list.get(0);
             /*if (StrUtil.isNotBlank(listDebit.get(0).get("Input11"))) {
@@ -1652,9 +1762,9 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                 String input12 = decimalFormat.format(Double.valueOf(arrStr[0]));
                 listDebit.get(0).put("Input12", input12 + "  " + arrStr[1]);
             }*/
-            if (StrUtil.isNotBlank(listDebit.get(0).get("templateFilePathExcel"))) {
-                templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/debitNote/" + SecurityUtils.getUser().getOrgId() + "/" + listDebit.get(0).get("templateFilePathExcel").substring(listDebit.get(0).get("templateFilePathExcel").lastIndexOf("/") + 1, listDebit.get(0).get("templateFilePathExcel").length());
-                downloadFile(listDebit.get(0).get("templateFilePathExcel"), templateFilePath);
+            if (listDebit.get(0).get("templateFilePathExcel") != null && StrUtil.isNotBlank(listDebit.get(0).get("templateFilePathExcel").toString())) {
+                templateFilePath = PDFUtils.filePath + "/PDFtemplate/temp/debitNote/" + SecurityUtils.getUser().getOrgId() + "/" + listDebit.get(0).get("templateFilePathExcel").toString().substring(listDebit.get(0).get("templateFilePathExcel").toString().lastIndexOf("/") + 1, listDebit.get(0).get("templateFilePathExcel").toString().length());
+                downloadFile(listDebit.get(0).get("templateFilePathExcel").toString(), templateFilePath);
             }
         }
         //分组清洗数据
@@ -1663,15 +1773,15 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             mapIncome = listIncome.stream()
                     .collect(Collectors.groupingBy(item -> item.get("debit_note_id").toString()));
         }
-        ArrayList<Map<String, String>> itemList = new ArrayList<>();
+        ArrayList<Map<String, Object>> itemList = new ArrayList<>();
         HashMap<String, Object> context = new HashMap<>();
         //封装数据
         for (int j = 0; j < listDebit.size(); j++) {
-            Map<String, String> item = listDebit.get(j);
+            Map<String, Object> item = listDebit.get(j);
             if (mapIncome.get(item.get("debit_note_id").toString()) != null && mapIncome.get(item.get("debit_note_id").toString()).size() > 0) {
                 int index = 1;
                 for (int i = 0; i < mapIncome.get(item.get("debit_note_id").toString()).size(); i++) {
-                    Map<String, String> itemIn = mapIncome.get(item.get("debit_note_id").toString()).get(i);
+                    Map<String, Object> itemIn = mapIncome.get(item.get("debit_note_id").toString()).get(i);
                     int indexM = 1;
                     if (index <= 9) {
                         indexM = 1;
@@ -1683,8 +1793,8 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                         indexM = 4;
                     }
                     String input1_3 = "";
-                    if (StrUtil.isNotBlank(itemIn.get("Input1_3"))) {
-                        input1_3 = decimalFormat2.format(Double.valueOf(itemIn.get("Input1_3")));
+                    if (itemIn.get("Input1_3") != null && StrUtil.isNotBlank(itemIn.get("Input1_3").toString())) {
+                        input1_3 = decimalFormat2.format(Double.valueOf(itemIn.get("Input1_3").toString()));
                     }
                     if (index >= 10) {
                         String indexStr = String.valueOf(index).substring(String.valueOf(index).length() - 1, String.valueOf(index).length());
@@ -1711,30 +1821,50 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                     index++;
                 }
             }
-            if (context.get("Input26") == null) {
-                if (item.get("Input26") != null && StrUtil.isNotBlank(item.get("Input26").toString())) {
-                    String imagePath = PDFUtils.filePath + "/PDFtemplate/temp/debitnote/" + UUID.randomUUID().toString() + "/" + item.get("Input26").toString().substring(item.get("Input26").toString().lastIndexOf("/") + 1, item.get("Input26").toString().length());
-                    downloadFile(item.get("Input26").toString(), imagePath);
-                    try {
-                        byte[] imageBytes = Util.toByteArray(new FileInputStream(imagePath));
-                        context.put("Input26", imageBytes);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            if (item.get("Input26") == null || StrUtil.isBlank(item.get("Input26").toString())) {
+                item.put("Input26", null);
+            } else {
+                String imagePath = PDFUtils.filePath + "/PDFtemplate/temp/debitnote/" + UUID.randomUUID().toString() + "/" + item.get("Input26").toString().substring(item.get("Input26").toString().lastIndexOf("/") + 1, item.get("Input26").toString().length());
+                downloadFile(item.get("Input26").toString(), imagePath);
+                try {
+                    byte[] imageBytes = Util.toByteArray(new FileInputStream(imagePath));
+                    item.put("Input26", imageBytes);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
-            if (context.get("Input27") == null) {
-                if (item.get("Input27") != null && StrUtil.isNotBlank(item.get("Input27").toString())) {
-                    String imagePath = PDFUtils.filePath + "/PDFtemplate/temp/debitnote/" + UUID.randomUUID().toString() + "/" + item.get("Input27").toString().substring(item.get("Input27").toString().lastIndexOf("/") + 1, item.get("Input27").toString().length());
-                    downloadFile(item.get("Input27").toString(), imagePath);
-                    try {
-                        byte[] imageBytes = Util.toByteArray(new FileInputStream(imagePath));
-                        context.put("Input27", imageBytes);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+//            if (item.get("Input26") != null && StrUtil.isNotBlank(item.get("Input26").toString())) {
+//                String imagePath = PDFUtils.filePath + "/PDFtemplate/temp/debitnote/" + UUID.randomUUID().toString() + "/" + item.get("Input26").toString().substring(item.get("Input26").toString().lastIndexOf("/") + 1, item.get("Input26").toString().length());
+//                downloadFile(item.get("Input26").toString(), imagePath);
+//                try {
+//                    byte[] imageBytes = Util.toByteArray(new FileInputStream(imagePath));
+//                    item.put("Input26", imageBytes);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+            if (item.get("Input27") == null || StrUtil.isBlank(item.get("Input27").toString())) {
+                item.put("Input27", null);
+            } else {
+                String imagePath = PDFUtils.filePath + "/PDFtemplate/temp/debitnote/" + UUID.randomUUID().toString() + "/" + item.get("Input27").toString().substring(item.get("Input27").toString().lastIndexOf("/") + 1, item.get("Input27").toString().length());
+                downloadFile(item.get("Input27").toString(), imagePath);
+                try {
+                    byte[] imageBytes = Util.toByteArray(new FileInputStream(imagePath));
+                    item.put("Input27", imageBytes);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
+//            if (item.get("Input27") != null && StrUtil.isNotBlank(item.get("Input27").toString())) {
+//                String imagePath = PDFUtils.filePath + "/PDFtemplate/temp/debitnote/" + UUID.randomUUID().toString() + "/" + item.get("Input27").toString().substring(item.get("Input27").toString().lastIndexOf("/") + 1, item.get("Input27").toString().length());
+//                downloadFile(item.get("Input27").toString(), imagePath);
+//                try {
+//                    byte[] imageBytes = Util.toByteArray(new FileInputStream(imagePath));
+//                    item.put("Input27", imageBytes);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
             itemList.add(item);
         }
 
@@ -1873,11 +2003,11 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                             excel2.setCurrencyAmount2(excel2.getCurrencyAmount2().replaceAll("  ", String.valueOf((char) 10) + ""));
                         }
                         //设置发票信息，如果存在statementId，则取清单的发票信息
-                        if(excel2 != null && excel2.getStatementId() != null){
-                            excel2.setInvoiceDate(excel2.getInvoiceDate2());
-                            excel2.setInvoiceNum(excel2.getInvoiceNum2());
-                            excel2.setInvoiceTitle(excel2.getInvoiceTitle2()); 
-                        }
+//                        if(excel2 != null && excel2.getStatementId() != null){
+//                            excel2.setInvoiceDate(excel2.getInvoiceDate2());
+//                            excel2.setInvoiceNum(excel2.getInvoiceNum2());
+//                            excel2.setInvoiceTitle(excel2.getInvoiceTitle2()); 
+//                        }
                         LinkedHashMap mapTwo = new LinkedHashMap();
                         for (int j = 0; j < colunmStrs.length; j++) {
                             if (j == 0) {
@@ -1932,6 +2062,35 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                                         mapTwo.put("writeoffNum", "");
                                     }
 
+                                } else if ("invoiceNum".equals(colunmStrs[j])) {
+                                    StringBuffer sb = new StringBuffer();
+                                    if (excel2.getInvoiceNum() != null && !"".equals(excel2.getInvoiceNum())) {
+                                        if (excel2.getInvoiceNum().contains("  ")) {
+                                            String[] array = excel2.getInvoiceNum().split("  ");
+                                            for (int k = 0; k < array.length; k++) {
+                                                sb.append(array[k].split(" ")[1]).append(" ");
+                                            }
+                                            mapTwo.put("invoiceNum", sb.toString());
+                                        } else {
+                                            mapTwo.put("invoiceNum", excel2.getInvoiceNum().split(" ")[1]);
+                                        }
+                                    } else {
+                                        mapTwo.put("invoiceNum", "");
+                                    }
+
+                                } else if ("invoiceCreateTime".equals(colunmStrs[j])) {
+                                    if (excel2.getInvoiceCreateTime() != null) {
+                                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                                        mapTwo.put("invoiceCreateTime", formatter.format(excel2.getInvoiceCreateTime()));
+                                    } else {
+                                        mapTwo.put("invoiceCreateTime", "");
+                                    }
+                                } else if ("invoiceCreatorName".equals(colunmStrs[j])) {
+                                    if (excel2.getInvoiceCreatorName() != null) {
+                                        mapTwo.put("invoiceCreatorName", excel2.getInvoiceCreatorName().split(" ")[0]);
+                                    } else {
+                                        mapTwo.put("invoiceCreatorName", "");
+                                    }
                                 } else {
                                     mapTwo.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j], excel2));
                                 }

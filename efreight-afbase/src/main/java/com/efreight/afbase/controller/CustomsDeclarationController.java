@@ -69,18 +69,12 @@ public class CustomsDeclarationController {
      */
     @PostMapping
     public Integer save(@RequestBody CustomsDeclaration customsDeclaration) {
-        return customsDeclarationService.insert(customsDeclaration);
-    }
-
-    /**
-     * 编辑
-     *
-     * @param customsDeclaration
-     * @return
-     */
-    @PutMapping
-    public void modify(@RequestBody CustomsDeclaration customsDeclaration) {
-        customsDeclarationService.modify(customsDeclaration);
+        if(customsDeclaration.getCustomsDeclarationId() == null){
+            customsDeclarationService.insert(customsDeclaration);
+        }else{
+            customsDeclarationService.modify(customsDeclaration);
+        }
+        return customsDeclaration.getCustomsDeclarationId();
     }
 
     /**

@@ -94,6 +94,7 @@ public class CssPayment implements Serializable {
     /**
      * 已核销金额（原币）
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private BigDecimal amountPaymentWriteoff;
 
     @TableField(exist = false)
@@ -102,6 +103,7 @@ public class CssPayment implements Serializable {
     /**
      * 已核销金额（本币）
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private BigDecimal functionalAmountPaymentWriteoff;
 
     /**
@@ -135,11 +137,38 @@ public class CssPayment implements Serializable {
     private String invoiceRemark;
     private String invoiceNum;
     private String invoiceTitle;
+
     private LocalDate invoiceDate;
+
+    /**
+     * 发票申请日期
+     */
+    @TableField(exist = false)
+    private LocalDateTime invoiceTime;
+
+    /**
+     * 发票申请创建人
+     */
+    @TableField(exist = false)
+    private String invoiceCreatorName;
+
+    /**
+     * 发票申请日期开始
+     */
     @TableField(exist = false)
     private String invoiceDateStart;
+
+    /**
+     * 发票申请日期结束
+     */
     @TableField(exist = false)
     private String invoiceDateEnd;
+
+    /**
+     * 发票申请备注
+     */
+    @TableField(exist = false)
+    private String invoiceInqurityRemark;
 
     private Integer creatorId;
 
@@ -185,4 +214,6 @@ public class CssPayment implements Serializable {
     private String writeoffNum;
     @TableField(exist = false)
     private String columnStrs;
+
+    private BigDecimal amountPaymentInvoice;
 }

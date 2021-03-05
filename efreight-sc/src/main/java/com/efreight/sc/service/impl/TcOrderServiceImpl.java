@@ -84,11 +84,11 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
 
     @Override
     public synchronized void saveTE(TcOrder order) {
-        order.setOrderCode(this.createOrderCode("TE"));
+        String bs = order.getBusinessScope();
+        order.setOrderCode(this.createOrderCode(bs));
         if (StrUtil.isBlank(order.getBookingNumber())) {
             order.setBookingNumber(order.getOrderCode());
         }
-        order.setBusinessScope("TE");
         order.setOrderUuid(this.createUuid());
         if (order.getDeliverySignDate() != null) {
             order.setOrderStatus("目的港签收");
@@ -169,9 +169,9 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
         }
 
         TcLog logBean = new TcLog();
-        logBean.setPageName("TE订单");
+        logBean.setPageName(bs+"订单");
         logBean.setPageFunction("订单创建");
-        logBean.setBusinessScope("TE");
+        logBean.setBusinessScope(bs);
         logBean.setOrderNumber(order.getOrderCode());
         logBean.setOrderId(order.getOrderId());
         logBean.setOrderUuid(order.getOrderUuid());
@@ -209,98 +209,119 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
     @Override
     public IPage getTEPage(Page page, TcOrder order) {
         LambdaQueryWrapper<TcOrder> wrapper = Wrappers.<TcOrder>lambdaQuery();
-        if (StrUtil.isNotBlank(order.getCoopName())) {
-            List<Integer> coopIds = remoteCoopService.listByCoopName(order.getCoopName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
-            if (coopIds.size() == 0) {
-                page.setRecords(new ArrayList());
-                page.setTotal(0);
-                return page;
-            }
-            wrapper.in(TcOrder::getCoopId, coopIds);
+//        String bs = order.getBusinessScope();
+//        if (StrUtil.isNotBlank(order.getCoopName())) {
+//            List<Integer> coopIds = remoteCoopService.listByCoopName(order.getCoopName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
+//            if (coopIds.size() == 0) {
+//                page.setRecords(new ArrayList());
+//                page.setTotal(0);
+//                return page;
+//            }
+//            wrapper.in(TcOrder::getCoopId, coopIds);
+//        }
+//        if (StrUtil.isNotBlank(order.getCustomerNumber())) {
+//            wrapper.like(TcOrder::getCustomerNumber, order.getCustomerNumber());
+//        }
+//        if (StrUtil.isNotBlank(order.getContainerMethod())) {
+//            wrapper.eq(TcOrder::getContainerMethod, order.getContainerMethod());
+//        }
+//        if (order.getExpectDepartureStart() != null) {
+//            if("TE".equals(bs)){
+//                wrapper.ge(TcOrder::getExpectDeparture, order.getExpectDepartureStart());
+//            }else{
+//                wrapper.ge(TcOrder::getExpectArrival, order.getExpectDepartureStart());
+//            }
+//
+//        }
+//        if (order.getExpectDepartureEnd() != null) {
+//            if("TE".equals(bs)){
+//                wrapper.le(TcOrder::getExpectDeparture, order.getExpectDepartureEnd());
+//            }else{
+//                wrapper.le(TcOrder::getExpectArrival, order.getExpectDepartureEnd());
+//            }
+//
+//        }
+//        if (order.getCreatTimeStart() != null) {
+//            wrapper.ge(TcOrder::getCreateTime, order.getCreatTimeStart());
+//        }
+//        if (order.getCreatTimeEnd() != null) {
+//            wrapper.le(TcOrder::getCreateTime, LocalDateTime.of(order.getCreatTimeEnd(), LocalTime.parse("23:59:59")));
+//        }
+//        wrapper.ne(TcOrder::getOrderStatus, "强制关闭");
+//        if ("未锁账".equals(order.getOrderStatus())) {
+//            wrapper.ne(TcOrder::getOrderStatus, "财务锁账");
+//        }
+//        if ("已锁账".equals(order.getOrderStatus())) {
+//            wrapper.eq(TcOrder::getOrderStatus, "财务锁账");
+//        }
+//        if (StrUtil.isNotBlank(order.getRwbNumber())) {
+//            wrapper.like(TcOrder::getRwbNumber, order.getRwbNumber());
+//        }
+//        if (StrUtil.isNotBlank(order.getOrderCode())) {
+//            wrapper.like(TcOrder::getOrderCode, order.getOrderCode());
+//        }
+//        if (StrUtil.isNotBlank(order.getDepartureStation())) {
+//            wrapper.like(TcOrder::getDepartureStation, order.getDepartureStation());
+//        }
+//        if (StrUtil.isNotBlank(order.getArrivalStation())) {
+//            wrapper.like(TcOrder::getArrivalStation, order.getArrivalStation());
+//        }
+//        if (StrUtil.isNotBlank(order.getProductType())) {
+//            wrapper.eq(TcOrder::getProductType, order.getProductType());
+//        }
+//        if (order.getServicerId() != null) {
+//            wrapper.eq(TcOrder::getServicerId, order.getServicerId());
+//        }
+//        if (order.getSalesId() != null) {
+//            wrapper.eq(TcOrder::getSalesId, order.getSalesId());
+//        }
+//        if (order.getCreatorId() != null) {
+//            wrapper.eq(TcOrder::getCreatorId, order.getCreatorId());
+//        }
+//        if (StrUtil.isNotBlank(order.getBookingAgentName())) {
+//            LambdaQueryWrapper<AfVPrmCoop> afVPrmCoopWrapper = Wrappers.<AfVPrmCoop>lambdaQuery();
+//            if("TE".equals(bs)){
+//                afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTE, "TE").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
+//            }else{
+//                afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTI, "TI").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
+//            }
+//             List<Integer> bookAgentIds = afVPrmCoopService.list(afVPrmCoopWrapper).stream().map(AfVPrmCoop::getCoopId).collect(Collectors.toList());
+////            if (bookAgentIds.size() == 0) {
+////                page.setRecords(new ArrayList());
+////                page.setTotal(0);
+////                return page;
+////            }
+//            wrapper.in(TcOrder::getBookingAgentId, bookAgentIds);
+//        }
+//        if (order.getIncomeRecorded() != null && order.getIncomeRecorded()) {
+//            wrapper.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded());
+//        }
+//        if (order.getIncomeRecorded() != null && !order.getIncomeRecorded()) {
+//            wrapper.and(i -> i.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded()).or(j -> j.isNull(TcOrder::getIncomeRecorded)));
+//        }
+//        if (order.getCostRecorded() != null && order.getCostRecorded()) {
+//            wrapper.eq(TcOrder::getCostRecorded, order.getCostRecorded());
+//        }
+//        if (order.getCostRecorded() != null && !order.getCostRecorded()) {
+//            wrapper.and(i -> i.eq(TcOrder::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(TcOrder::getCostRecorded)));
+//        }
+//        if (order.getOrderPermission() == 1) {
+//            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())));
+//        }
+//        if (order.getOrderPermission() == 2) {
+//            List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
+//            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())).or(m -> m.in(TcOrder::getWorkgroupId, WorkgroupIds)));
+//        }
+//        if (StrUtil.isNotBlank(order.getBookingNumber())) {
+//            wrapper.like(TcOrder::getBookingNumber, order.getBookingNumber());
+//        }
+//        wrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcOrder::getBusinessScope, bs).orderByDesc(TcOrder::getOrderId);
+
+        if (getWrapper(order, wrapper)) {
+            page.setRecords(new ArrayList());
+            page.setTotal(0);
+            return page;
         }
-        if (StrUtil.isNotBlank(order.getCustomerNumber())) {
-            wrapper.like(TcOrder::getCustomerNumber, order.getCustomerNumber());
-        }
-        if (StrUtil.isNotBlank(order.getContainerMethod())) {
-            wrapper.eq(TcOrder::getContainerMethod, order.getContainerMethod());
-        }
-        if (order.getExpectDepartureStart() != null) {
-            wrapper.ge(TcOrder::getExpectDeparture, order.getExpectDepartureStart());
-        }
-        if (order.getExpectDepartureEnd() != null) {
-            wrapper.le(TcOrder::getExpectDeparture, order.getExpectDepartureEnd());
-        }
-        if (order.getCreatTimeStart() != null) {
-            wrapper.ge(TcOrder::getCreateTime, order.getCreatTimeStart());
-        }
-        if (order.getCreatTimeEnd() != null) {
-            wrapper.le(TcOrder::getCreateTime, LocalDateTime.of(order.getCreatTimeEnd(), LocalTime.parse("23:59:59")));
-        }
-        wrapper.ne(TcOrder::getOrderStatus, "强制关闭");
-        if ("未锁账".equals(order.getOrderStatus())) {
-            wrapper.ne(TcOrder::getOrderStatus, "财务锁账");
-        }
-        if ("已锁账".equals(order.getOrderStatus())) {
-            wrapper.eq(TcOrder::getOrderStatus, "财务锁账");
-        }
-        if (StrUtil.isNotBlank(order.getRwbNumber())) {
-            wrapper.like(TcOrder::getRwbNumber, order.getRwbNumber());
-        }
-        if (StrUtil.isNotBlank(order.getOrderCode())) {
-            wrapper.like(TcOrder::getOrderCode, order.getOrderCode());
-        }
-        if (StrUtil.isNotBlank(order.getDepartureStation())) {
-            wrapper.like(TcOrder::getDepartureStation, order.getDepartureStation());
-        }
-        if (StrUtil.isNotBlank(order.getArrivalStation())) {
-            wrapper.like(TcOrder::getArrivalStation, order.getArrivalStation());
-        }
-        if (StrUtil.isNotBlank(order.getProductType())) {
-            wrapper.eq(TcOrder::getProductType, order.getProductType());
-        }
-        if (order.getServicerId() != null) {
-            wrapper.eq(TcOrder::getServicerId, order.getServicerId());
-        }
-        if (order.getSalesId() != null) {
-            wrapper.eq(TcOrder::getSalesId, order.getSalesId());
-        }
-        if (order.getCreatorId() != null) {
-            wrapper.eq(TcOrder::getCreatorId, order.getCreatorId());
-        }
-        if (StrUtil.isNotBlank(order.getBookingAgentName())) {
-            LambdaQueryWrapper<AfVPrmCoop> afVPrmCoopWrapper = Wrappers.<AfVPrmCoop>lambdaQuery();
-            afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTE, "TE").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
-            List<Integer> bookAgentIds = afVPrmCoopService.list(afVPrmCoopWrapper).stream().map(AfVPrmCoop::getCoopId).collect(Collectors.toList());
-            if (bookAgentIds.size() == 0) {
-                page.setRecords(new ArrayList());
-                page.setTotal(0);
-                return page;
-            }
-            wrapper.in(TcOrder::getBookingAgentId, bookAgentIds);
-        }
-        if (order.getIncomeRecorded() != null && order.getIncomeRecorded()) {
-            wrapper.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded());
-        }
-        if (order.getIncomeRecorded() != null && !order.getIncomeRecorded()) {
-            wrapper.and(i -> i.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded()).or(j -> j.isNull(TcOrder::getIncomeRecorded)));
-        }
-        if (order.getCostRecorded() != null && order.getCostRecorded()) {
-            wrapper.eq(TcOrder::getCostRecorded, order.getCostRecorded());
-        }
-        if (order.getCostRecorded() != null && !order.getCostRecorded()) {
-            wrapper.and(i -> i.eq(TcOrder::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(TcOrder::getCostRecorded)));
-        }
-        if (order.getOrderPermission() == 1) {
-            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())));
-        }
-        if (order.getOrderPermission() == 2) {
-            List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
-            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())).or(m -> m.in(TcOrder::getWorkgroupId, WorkgroupIds)));
-        }
-        if (StrUtil.isNotBlank(order.getBookingNumber())) {
-            wrapper.like(TcOrder::getBookingNumber, order.getBookingNumber());
-        }
-        wrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcOrder::getBusinessScope, "TE").orderByDesc(TcOrder::getOrderId);
         IPage<TcOrder> iPage = baseMapper.selectPage(page, wrapper);
         if (iPage != null && iPage.getRecords() != null && iPage.getRecords().size() > 0) {
             iPage.getRecords().stream().forEach(tcOrder -> {
@@ -370,91 +391,7 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
 
     public TcOrder getTETotal(TcOrder order) {
         LambdaQueryWrapper<TcOrder> wrapper = Wrappers.<TcOrder>lambdaQuery();
-        if (StrUtil.isNotBlank(order.getCoopName())) {
-            List<Integer> coopIds = remoteCoopService.listByCoopName(order.getCoopName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
-            if (coopIds.size() == 0) {
-                return null;
-            }
-            wrapper.in(TcOrder::getCoopId, coopIds);
-        }
-        if (StrUtil.isNotBlank(order.getCustomerNumber())) {
-            wrapper.like(TcOrder::getCustomerNumber, order.getCustomerNumber());
-        }
-        if (StrUtil.isNotBlank(order.getContainerMethod())) {
-            wrapper.eq(TcOrder::getContainerMethod, order.getContainerMethod());
-        }
-        if (order.getExpectDepartureStart() != null) {
-            wrapper.ge(TcOrder::getExpectDeparture, order.getExpectDepartureStart());
-        }
-        if (order.getExpectDepartureEnd() != null) {
-            wrapper.le(TcOrder::getExpectDeparture, order.getExpectDepartureEnd());
-        }
-        if (order.getCreatTimeStart() != null) {
-            wrapper.ge(TcOrder::getCreateTime, order.getCreatTimeStart());
-        }
-        if (order.getCreatTimeEnd() != null) {
-            wrapper.le(TcOrder::getCreateTime, LocalDateTime.of(order.getCreatTimeEnd(), LocalTime.parse("23:59:59")));
-        }
-        wrapper.ne(TcOrder::getOrderStatus, "强制关闭");
-        if ("未锁账".equals(order.getOrderStatus())) {
-            wrapper.ne(TcOrder::getOrderStatus, "财务锁账");
-        }
-        if ("已锁账".equals(order.getOrderStatus())) {
-            wrapper.eq(TcOrder::getOrderStatus, "财务锁账");
-        }
-        if (StrUtil.isNotBlank(order.getRwbNumber())) {
-            wrapper.like(TcOrder::getRwbNumber, order.getRwbNumber());
-        }
-        if (StrUtil.isNotBlank(order.getOrderCode())) {
-            wrapper.like(TcOrder::getOrderCode, order.getOrderCode());
-        }
-        if (StrUtil.isNotBlank(order.getDepartureStation())) {
-            wrapper.like(TcOrder::getDepartureStation, order.getDepartureStation());
-        }
-        if (StrUtil.isNotBlank(order.getArrivalStation())) {
-            wrapper.like(TcOrder::getArrivalStation, order.getArrivalStation());
-        }
-        if (StrUtil.isNotBlank(order.getProductType())) {
-            wrapper.eq(TcOrder::getProductType, order.getProductType());
-        }
-        if (order.getServicerId() != null) {
-            wrapper.eq(TcOrder::getServicerId, order.getServicerId());
-        }
-        if (order.getSalesId() != null) {
-            wrapper.eq(TcOrder::getSalesId, order.getSalesId());
-        }
-        if (order.getCreatorId() != null) {
-            wrapper.eq(TcOrder::getCreatorId, order.getCreatorId());
-        }
-        if (StrUtil.isNotBlank(order.getBookingAgentName())) {
-            LambdaQueryWrapper<AfVPrmCoop> afVPrmCoopWrapper = Wrappers.<AfVPrmCoop>lambdaQuery();
-            afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTE, "TE").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
-            List<Integer> bookAgentIds = afVPrmCoopService.list(afVPrmCoopWrapper).stream().map(AfVPrmCoop::getCoopId).collect(Collectors.toList());
-            if (bookAgentIds.size() == 0) {
-                return null;
-            }
-            wrapper.in(TcOrder::getBookingAgentId, bookAgentIds);
-        }
-        if (order.getIncomeRecorded() != null && order.getIncomeRecorded()) {
-            wrapper.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded());
-        }
-        if (order.getIncomeRecorded() != null && !order.getIncomeRecorded()) {
-            wrapper.and(i -> i.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded()).or(j -> j.isNull(TcOrder::getIncomeRecorded)));
-        }
-        if (order.getCostRecorded() != null && order.getCostRecorded()) {
-            wrapper.eq(TcOrder::getCostRecorded, order.getCostRecorded());
-        }
-        if (order.getCostRecorded() != null && !order.getCostRecorded()) {
-            wrapper.and(i -> i.eq(TcOrder::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(TcOrder::getCostRecorded)));
-        }
-        if (order.getOrderPermission() == 1) {
-            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())));
-        }
-        if (order.getOrderPermission() == 2) {
-            List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
-            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())).or(m -> m.in(TcOrder::getWorkgroupId, WorkgroupIds)));
-        }
-        wrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcOrder::getBusinessScope, "TE").orderByDesc(TcOrder::getOrderId);
+        if (getWrapper(order, wrapper)) return null;
         List<TcOrder> list = baseMapper.selectList(wrapper);
         TcOrder total = new TcOrder();
         if (list != null && list.size() > 0) {
@@ -499,6 +436,108 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
             total.setPlanVolumeStr(FormatUtils.formatWithQWF(total.getPlanVolume(), 3));
         }
         return total;
+    }
+
+    private boolean getWrapper(TcOrder order, LambdaQueryWrapper<TcOrder> wrapper) {
+        String bs = order.getBusinessScope();
+        if (StrUtil.isNotBlank(order.getCoopName())) {
+            List<Integer> coopIds = remoteCoopService.listByCoopName(order.getCoopName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
+            if (coopIds.size() == 0) {
+                return true;
+            }
+            wrapper.in(TcOrder::getCoopId, coopIds);
+        }
+        if (StrUtil.isNotBlank(order.getCustomerNumber())) {
+            wrapper.like(TcOrder::getCustomerNumber, order.getCustomerNumber());
+        }
+        if (StrUtil.isNotBlank(order.getContainerMethod())) {
+            wrapper.eq(TcOrder::getContainerMethod, order.getContainerMethod());
+        }
+        if (order.getExpectDepartureStart() != null) {
+            if("TE".equals(bs)){
+                wrapper.ge(TcOrder::getExpectDeparture, order.getExpectDepartureStart());
+            }else{
+                wrapper.ge(TcOrder::getExpectArrival, order.getExpectDepartureStart());
+            }
+        }
+        if (order.getExpectDepartureEnd() != null) {
+            if("TE".equals(bs)){
+                wrapper.le(TcOrder::getExpectDeparture, order.getExpectDepartureEnd());
+            }else{
+                wrapper.le(TcOrder::getExpectArrival, order.getExpectDepartureEnd());
+            }
+        }
+        if (order.getCreatTimeStart() != null) {
+            wrapper.ge(TcOrder::getCreateTime, order.getCreatTimeStart());
+        }
+        if (order.getCreatTimeEnd() != null) {
+            wrapper.le(TcOrder::getCreateTime, LocalDateTime.of(order.getCreatTimeEnd(), LocalTime.parse("23:59:59")));
+        }
+        wrapper.ne(TcOrder::getOrderStatus, "强制关闭");
+        if ("未锁账".equals(order.getOrderStatus())) {
+            wrapper.ne(TcOrder::getOrderStatus, "财务锁账");
+        }
+        if ("已锁账".equals(order.getOrderStatus())) {
+            wrapper.eq(TcOrder::getOrderStatus, "财务锁账");
+        }
+        if (StrUtil.isNotBlank(order.getRwbNumber())) {
+            wrapper.like(TcOrder::getRwbNumber, order.getRwbNumber());
+        }
+        if (StrUtil.isNotBlank(order.getOrderCode())) {
+            wrapper.like(TcOrder::getOrderCode, order.getOrderCode());
+        }
+        if (StrUtil.isNotBlank(order.getDepartureStation())) {
+            wrapper.like(TcOrder::getDepartureStation, order.getDepartureStation());
+        }
+        if (StrUtil.isNotBlank(order.getArrivalStation())) {
+            wrapper.like(TcOrder::getArrivalStation, order.getArrivalStation());
+        }
+        if (StrUtil.isNotBlank(order.getProductType())) {
+            wrapper.eq(TcOrder::getProductType, order.getProductType());
+        }
+        if (order.getServicerId() != null) {
+            wrapper.eq(TcOrder::getServicerId, order.getServicerId());
+        }
+        if (order.getSalesId() != null) {
+            wrapper.eq(TcOrder::getSalesId, order.getSalesId());
+        }
+        if (order.getCreatorId() != null) {
+            wrapper.eq(TcOrder::getCreatorId, order.getCreatorId());
+        }
+        if (StrUtil.isNotBlank(order.getBookingAgentName())) {
+            LambdaQueryWrapper<AfVPrmCoop> afVPrmCoopWrapper = Wrappers.<AfVPrmCoop>lambdaQuery();
+            if("TE".equals(bs)){
+                afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTE, "TE").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
+            }else{
+                afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTI, "TI").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
+            }
+            List<Integer> bookAgentIds = afVPrmCoopService.list(afVPrmCoopWrapper).stream().map(AfVPrmCoop::getCoopId).collect(Collectors.toList());
+            if (bookAgentIds.size() == 0) {
+                return true;
+            }
+            wrapper.in(TcOrder::getBookingAgentId, bookAgentIds);
+        }
+        if (order.getIncomeRecorded() != null && order.getIncomeRecorded()) {
+            wrapper.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded());
+        }
+        if (order.getIncomeRecorded() != null && !order.getIncomeRecorded()) {
+            wrapper.and(i -> i.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded()).or(j -> j.isNull(TcOrder::getIncomeRecorded)));
+        }
+        if (order.getCostRecorded() != null && order.getCostRecorded()) {
+            wrapper.eq(TcOrder::getCostRecorded, order.getCostRecorded());
+        }
+        if (order.getCostRecorded() != null && !order.getCostRecorded()) {
+            wrapper.and(i -> i.eq(TcOrder::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(TcOrder::getCostRecorded)));
+        }
+        if (order.getOrderPermission() != null && order.getOrderPermission() == 1) {
+            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())));
+        }
+        if (order.getOrderPermission() != null && order.getOrderPermission() == 2) {
+            List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
+            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())).or(m -> m.in(TcOrder::getWorkgroupId, WorkgroupIds)));
+        }
+        wrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcOrder::getBusinessScope,  bs).orderByDesc(TcOrder::getOrderId);
+        return false;
     }
 
     @Override
@@ -546,22 +585,22 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
                     tcOrder.setProductName(product.getProductName());
                 }
             }
+            tcOrder.setMsrType("单价");
             if (tcOrder.getMsrAmount() != null) {
                 tcOrder.setMsrPrice(tcOrder.getMsrAmount());
                 tcOrder.setMsrType("总价");
             }
             if (tcOrder.getMsrUnitprice() != null) {
                 tcOrder.setMsrPrice(tcOrder.getMsrUnitprice());
-                tcOrder.setMsrType("单价");
             }
 
+            tcOrder.setFreightType("单价");
             if (tcOrder.getFreightAmount() != null) {
                 tcOrder.setFreightPrice(tcOrder.getFreightAmount());
                 tcOrder.setFreightType("总价");
             }
             if (tcOrder.getFreightUnitprice() != null) {
                 tcOrder.setFreightPrice(tcOrder.getFreightUnitprice());
-                tcOrder.setFreightType("单价");
             }
         }
 
@@ -589,10 +628,11 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
         tcIncomeService.remove(incomeWrapper);
         tcCostService.remove(costWrapper);
         //日志
+        String bs = order.getBusinessScope();
         TcLog logBean = new TcLog();
-        logBean.setPageName("TE订单");
+        logBean.setPageName(bs+"订单");
         logBean.setPageFunction("强制关闭");
-        logBean.setBusinessScope("TE");
+        logBean.setBusinessScope(bs);
         logBean.setLogRemark(reason);
         logBean.setOrderNumber(order.getOrderCode());
         logBean.setOrderId(order.getOrderId());
@@ -603,7 +643,7 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
         logBean.setOrgId(SecurityUtils.getUser().getOrgId());
         logService.save(logBean);
         //HRS日志
-        baseMapper.insertHrsLog("TE订单", "订单号:" + order.getOrderCode(),
+        baseMapper.insertHrsLog(bs+"订单", "订单号:" + order.getOrderCode(),
                 SecurityUtils.getUser().getId(), LocalDateTime.now(), SecurityUtils.getUser().getOrgId(), SecurityUtils.getUser().getDeptId());
 
     }
@@ -758,10 +798,11 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
         }
         //5.修改日志
         TcLog logBean = new TcLog();
-        logBean.setPageName("TE订单");
+        String bs = order.getBusinessScope();
+        logBean.setPageName(bs+"订单");
         logBean.setPageFunction("订单编辑");
         logBean.setLogRemark(this.getLogRemarkTE(bean, order));
-        logBean.setBusinessScope("TE");
+        logBean.setBusinessScope(bs);
         logBean.setOrderNumber(order.getOrderCode());
         logBean.setOrderId(order.getOrderId());
         logBean.setOrderUuid(order.getOrderUuid());
@@ -875,89 +916,107 @@ public class TcOrderServiceImpl extends ServiceImpl<TcOrderMapper, TcOrder> impl
     @Override
     public void exportExcelListTe(TcOrder order) {
         LambdaQueryWrapper<TcOrder> wrapper = Wrappers.<TcOrder>lambdaQuery();
-        if (StrUtil.isNotBlank(order.getCoopName())) {
-            List<Integer> coopIds = remoteCoopService.listByCoopName(order.getCoopName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
-            wrapper.in(TcOrder::getCoopId, coopIds);
-        }
-        if (StrUtil.isNotBlank(order.getCustomerNumber())) {
-            wrapper.like(TcOrder::getCustomerNumber, order.getCustomerNumber());
-        }
-        if (StrUtil.isNotBlank(order.getContainerMethod())) {
-            wrapper.eq(TcOrder::getContainerMethod, order.getContainerMethod());
-        }
-        if (order.getExpectDepartureStart() != null) {
-            wrapper.ge(TcOrder::getExpectDeparture, order.getExpectDepartureStart());
-        }
-        if (order.getExpectDepartureEnd() != null) {
-            wrapper.le(TcOrder::getExpectDeparture, order.getExpectDepartureEnd());
-        }
-        if (order.getCreatTimeStart() != null) {
-            wrapper.ge(TcOrder::getCreateTime, order.getCreatTimeStart());
-        }
-        if (order.getCreatTimeEnd() != null) {
-            wrapper.le(TcOrder::getCreateTime, LocalDateTime.of(order.getCreatTimeEnd(), LocalTime.parse("23:59:59")));
-        }
-        wrapper.ne(TcOrder::getOrderStatus, "强制关闭");
-        if ("未锁账".equals(order.getOrderStatus())) {
-            wrapper.ne(TcOrder::getOrderStatus, "财务锁账");
-        }
-        if ("已锁账".equals(order.getOrderStatus())) {
-            wrapper.eq(TcOrder::getOrderStatus, "财务锁账");
-        }
-        if (StrUtil.isNotBlank(order.getRwbNumber())) {
-            wrapper.like(TcOrder::getRwbNumber, order.getRwbNumber());
-        }
-        if (StrUtil.isNotBlank(order.getOrderCode())) {
-            wrapper.like(TcOrder::getOrderCode, order.getOrderCode());
-        }
-        if (StrUtil.isNotBlank(order.getDepartureStation())) {
-            wrapper.like(TcOrder::getDepartureStation, order.getDepartureStation());
-        }
-        if (StrUtil.isNotBlank(order.getArrivalStation())) {
-            wrapper.like(TcOrder::getArrivalStation, order.getArrivalStation());
-        }
-        if (StrUtil.isNotBlank(order.getProductType())) {
-            wrapper.eq(TcOrder::getProductType, order.getProductType());
-        }
-        if (order.getServicerId() != null) {
-            wrapper.eq(TcOrder::getServicerId, order.getServicerId());
-        }
-        if (order.getSalesId() != null) {
-            wrapper.eq(TcOrder::getSalesId, order.getSalesId());
-        }
-        if (order.getCreatorId() != null) {
-            wrapper.eq(TcOrder::getCreatorId, order.getCreatorId());
-        }
-        if (StrUtil.isNotBlank(order.getBookingAgentName())) {
-            LambdaQueryWrapper<AfVPrmCoop> afVPrmCoopWrapper = Wrappers.<AfVPrmCoop>lambdaQuery();
-            afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTE, "TE").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
-            List<Integer> bookAgentIds = afVPrmCoopService.list(afVPrmCoopWrapper).stream().map(AfVPrmCoop::getCoopId).collect(Collectors.toList());
-            wrapper.in(TcOrder::getBookingAgentId, bookAgentIds);
-        }
-        if (order.getIncomeRecorded() != null && order.getIncomeRecorded()) {
-            wrapper.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded());
-        }
-        if (order.getIncomeRecorded() != null && !order.getIncomeRecorded()) {
-            wrapper.and(i -> i.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded()).or(j -> j.isNull(TcOrder::getIncomeRecorded)));
-        }
-        if (order.getCostRecorded() != null && order.getCostRecorded()) {
-            wrapper.eq(TcOrder::getCostRecorded, order.getCostRecorded());
-        }
-        if (order.getCostRecorded() != null && !order.getCostRecorded()) {
-            wrapper.and(i -> i.eq(TcOrder::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(TcOrder::getCostRecorded)));
-        }
-        if (order.getOrderPermission() == 1) {
-            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())));
-        }
-        if (order.getOrderPermission() == 2) {
-            List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
-            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())).or(m -> m.in(TcOrder::getWorkgroupId, WorkgroupIds)));
-        }
-        if (StrUtil.isNotBlank(order.getBookingNumber())) {
-            wrapper.like(TcOrder::getBookingNumber, order.getBookingNumber());
-        }
-        wrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcOrder::getBusinessScope, "TE").orderByDesc(TcOrder::getOrderId);
-        List<TcOrder> list = baseMapper.selectList(wrapper);
+
+//        String bs = order.getBusinessScope();
+//        if (StrUtil.isNotBlank(order.getCoopName())) {
+//            List<Integer> coopIds = remoteCoopService.listByCoopName(order.getCoopName()).getData().stream().map(coopVo -> coopVo.getCoop_id()).collect(Collectors.toList());
+//            wrapper.in(TcOrder::getCoopId, coopIds);
+//        }
+//        if (StrUtil.isNotBlank(order.getCustomerNumber())) {
+//            wrapper.like(TcOrder::getCustomerNumber, order.getCustomerNumber());
+//        }
+//        if (StrUtil.isNotBlank(order.getContainerMethod())) {
+//            wrapper.eq(TcOrder::getContainerMethod, order.getContainerMethod());
+//        }
+//
+//        if (order.getExpectDepartureStart() != null) {
+//            if("TE".equals(bs)){
+//                wrapper.ge(TcOrder::getExpectDeparture, order.getExpectDepartureStart());
+//            }else{
+//                wrapper.ge(TcOrder::getExpectArrival, order.getExpectDepartureStart());
+//            }
+//        }
+//        if (order.getExpectDepartureEnd() != null) {
+//            if("TE".equals(bs)){
+//                wrapper.le(TcOrder::getExpectDeparture, order.getExpectDepartureEnd());
+//            }else{
+//                wrapper.le(TcOrder::getExpectArrival, order.getExpectDepartureEnd());
+//            }
+//        }
+//
+//        if (order.getCreatTimeStart() != null) {
+//            wrapper.ge(TcOrder::getCreateTime, order.getCreatTimeStart());
+//        }
+//        if (order.getCreatTimeEnd() != null) {
+//            wrapper.le(TcOrder::getCreateTime, LocalDateTime.of(order.getCreatTimeEnd(), LocalTime.parse("23:59:59")));
+//        }
+//        wrapper.ne(TcOrder::getOrderStatus, "强制关闭");
+//        if ("未锁账".equals(order.getOrderStatus())) {
+//            wrapper.ne(TcOrder::getOrderStatus, "财务锁账");
+//        }
+//        if ("已锁账".equals(order.getOrderStatus())) {
+//            wrapper.eq(TcOrder::getOrderStatus, "财务锁账");
+//        }
+//        if (StrUtil.isNotBlank(order.getRwbNumber())) {
+//            wrapper.like(TcOrder::getRwbNumber, order.getRwbNumber());
+//        }
+//        if (StrUtil.isNotBlank(order.getOrderCode())) {
+//            wrapper.like(TcOrder::getOrderCode, order.getOrderCode());
+//        }
+//        if (StrUtil.isNotBlank(order.getDepartureStation())) {
+//            wrapper.like(TcOrder::getDepartureStation, order.getDepartureStation());
+//        }
+//        if (StrUtil.isNotBlank(order.getArrivalStation())) {
+//            wrapper.like(TcOrder::getArrivalStation, order.getArrivalStation());
+//        }
+//        if (StrUtil.isNotBlank(order.getProductType())) {
+//            wrapper.eq(TcOrder::getProductType, order.getProductType());
+//        }
+//        if (order.getServicerId() != null) {
+//            wrapper.eq(TcOrder::getServicerId, order.getServicerId());
+//        }
+//        if (order.getSalesId() != null) {
+//            wrapper.eq(TcOrder::getSalesId, order.getSalesId());
+//        }
+//        if (order.getCreatorId() != null) {
+//            wrapper.eq(TcOrder::getCreatorId, order.getCreatorId());
+//        }
+//        if (StrUtil.isNotBlank(order.getBookingAgentName())) {
+//            LambdaQueryWrapper<AfVPrmCoop> afVPrmCoopWrapper = Wrappers.<AfVPrmCoop>lambdaQuery();
+//            if("TE".equals(bs)){
+//                afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTE, "TE").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
+//            }else{
+//                afVPrmCoopWrapper.eq(AfVPrmCoop::getOrgId, SecurityUtils.getUser().getOrgId()).like(AfVPrmCoop::getCoopName, order.getBookingAgentName()).eq(AfVPrmCoop::getBusinessScopeTI, "TI").in(AfVPrmCoop::getCoopType, "互为代理", "海外代理");
+//            }
+//            List<Integer> bookAgentIds = afVPrmCoopService.list(afVPrmCoopWrapper).stream().map(AfVPrmCoop::getCoopId).collect(Collectors.toList());
+//            wrapper.in(TcOrder::getBookingAgentId, bookAgentIds);
+//        }
+//        if (order.getIncomeRecorded() != null && order.getIncomeRecorded()) {
+//            wrapper.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded());
+//        }
+//        if (order.getIncomeRecorded() != null && !order.getIncomeRecorded()) {
+//            wrapper.and(i -> i.eq(TcOrder::getIncomeRecorded, order.getIncomeRecorded()).or(j -> j.isNull(TcOrder::getIncomeRecorded)));
+//        }
+//        if (order.getCostRecorded() != null && order.getCostRecorded()) {
+//            wrapper.eq(TcOrder::getCostRecorded, order.getCostRecorded());
+//        }
+//        if (order.getCostRecorded() != null && !order.getCostRecorded()) {
+//            wrapper.and(i -> i.eq(TcOrder::getCostRecorded, order.getCostRecorded()).or(j -> j.isNull(TcOrder::getCostRecorded)));
+//        }
+//        if (order.getOrderPermission() == 1) {
+//            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())));
+//        }
+//        if (order.getOrderPermission() == 2) {
+//            List<Integer> WorkgroupIds = baseMapper.getWorkgroupIds(order.getCurrentUserId());
+//            wrapper.and(i -> i.eq(TcOrder::getCreatorId, order.getCurrentUserId()).or(j -> j.eq(TcOrder::getSalesId, order.getCurrentUserId())).or(k -> k.eq(TcOrder::getServicerId, order.getCurrentUserId())).or(m -> m.in(TcOrder::getWorkgroupId, WorkgroupIds)));
+//        }
+//        if (StrUtil.isNotBlank(order.getBookingNumber())) {
+//            wrapper.like(TcOrder::getBookingNumber, order.getBookingNumber());
+//        }
+//        wrapper.eq(TcOrder::getOrgId, SecurityUtils.getUser().getOrgId()).eq(TcOrder::getBusinessScope, bs).orderByDesc(TcOrder::getOrderId);
+        List<TcOrder> list = new ArrayList<>();
+        if (getWrapper(order, wrapper)) list = null;
+        list = baseMapper.selectList(wrapper);
         TcOrder total = this.getTETotal(order);
         if (list != null && list.size() > 0) {
             list.stream().forEach(tcOrder -> {

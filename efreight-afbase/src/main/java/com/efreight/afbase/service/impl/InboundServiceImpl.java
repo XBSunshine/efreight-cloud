@@ -53,7 +53,7 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(String number, String flag) {
+    public void delete(String number, String flag, String pageName) {
         //如果 该订单 或 主单下任意订单， 节点状态 财务锁账 = 是 ，则不允许 删除出重
 //        LambdaQueryWrapper<LogBean> logWrapper = Wrappers.<LogBean>lambdaQuery();
 //        logWrapper.eq(LogBean::getOrgId, SecurityUtils.getUser().getOrgId()).eq(LogBean::getNodeName, "财务锁账");
@@ -86,7 +86,11 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
 		order2.setOrderUuid(number);
 		List<Integer> list2 = afOrderService.getOrderStatus(order2);
 		if (list2.size() > 0) {
-			throw new RuntimeException("已经做过财务锁账");
+			if ("操作订单".equals(pageName)) {
+        		throw new RuntimeException("已操作完成");
+			} else {
+				throw new RuntimeException("已经做过财务锁账");
+			}
 		}
 
         //删除出重
@@ -140,7 +144,7 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
 //            logBean.setAwbNumber(order.getAwbNumber());
 //            logService.saveLog(logBean);
             LogBean logBean = new LogBean();
-    		logBean.setPageName("操作出重");
+    		logBean.setPageName(pageName);
     		logBean.setPageFunction("删除出重");
     		logBean.setBusinessScope("AE");
     		logBean.setOrderNumber(order.getOrderCode());
@@ -309,7 +313,8 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
 //            logBean.setCreatorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
 //            logService.update(logBean, logWrapper);
             LogBean logBean = new LogBean();
-    		logBean.setPageName("操作出重");
+//    		logBean.setPageName("操作出重");
+    		logBean.setPageName(inbound.getPageName());
     		logBean.setPageFunction("保存出重");
     		logBean.setBusinessScope("AE");
     		logBean.setOrderNumber(one.getOrderCode());
@@ -329,6 +334,7 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
             one.setOrderStatus("货物出重");
             one.setRowUuid(UUID.randomUUID().toString());
             one.setConfirmDensity(inbound.getOrderDimensions());
+            one.setConfirmDimensions(inbound.getOrderSize());
 
             afOrderService.update(one, wrapper);
 
@@ -596,7 +602,12 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
 		order.setOrderUuid(one.getOrderUuid());
         List<Integer> list = afOrderService.getOrderStatus(order);
         if (list.size() > 0) {
-            throw new RuntimeException("已经做过财务锁账");
+        	if ("操作订单".equals(inbound.getPageName())) {
+        		throw new RuntimeException("已操作完成");
+			} else {
+				throw new RuntimeException("已经做过财务锁账");
+			}
+            
         }
         //编辑出重
         if(one!=null) {
@@ -632,7 +643,7 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
 //            logBean.setAwbNumber(oneOrder.getAwbNumber());
 //            logService.saveLog(logBean);
             LogBean logBean = new LogBean();
-    		logBean.setPageName("操作出重");
+    		logBean.setPageName(inbound.getPageName());
     		logBean.setPageFunction("修改出重");
     		logBean.setLogRemark(this.getLogRemark(oneOrder, inbound));
     		logBean.setBusinessScope("AE");
@@ -655,6 +666,7 @@ public class InboundServiceImpl extends ServiceImpl<InboundMapper, Inbound> impl
             oneOrder.setEditTime(new Date());
             oneOrder.setRowUuid(UUID.randomUUID().toString());
             oneOrder.setConfirmDensity(inbound.getOrderDimensions());
+            oneOrder.setConfirmDimensions(inbound.getOrderSize());
             afOrderService.update(oneOrder, wrapperOrder);
 
             //修改签单信息

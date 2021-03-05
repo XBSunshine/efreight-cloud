@@ -267,7 +267,7 @@ public class SourceLoginOfEfServiceImpl  implements SourceLoginOfEfService{
 
 	@Override
 	public boolean efUserName(String phoneArea, String phone, String userName, Integer orgId) {
-		//查询该用户所在公司 的版本    创业版
+		//查询该用户所在公司 的版本 体验版
 		if("86".equals(phoneArea)) {//大陆
     		phoneArea = "00"+phoneArea;
     	}else {
@@ -281,12 +281,12 @@ public class SourceLoginOfEfServiceImpl  implements SourceLoginOfEfService{
 		if (user == null) {
             throw new RuntimeException("用户不存在");
         }
-		//查询企业信息 以及企业所在的版本  创业版 才修改  其他 忽略
+		//查询企业信息 以及企业所在的版本  体验版 才修改  其他 忽略
 		Org org = orgMapper.getOrgVersion(orgId);
 		if(org==null) {
 			throw new RuntimeException("所在签约公司或者签约用户不存在");
 		}
-		if("创业版".equals(org.getOrgName())) {
+		if("体验版".equals(org.getOrgName())) {
 		   User userUpdate = userMapper.selectById(user.getUserId());
 		   userUpdate.setUserName(userName);
 		   userUpdate.setUserEname(userName);

@@ -152,7 +152,9 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
         if (customsDeclaration.getCreateTimeEnd() != null) {
             wrapper.le(CustomsDeclaration::getCreateTime, customsDeclaration.getCreateTimeEnd());
         }
-        wrapper.eq(CustomsDeclaration::getOrgId, SecurityUtils.getUser().getOrgId()).orderByDesc(CustomsDeclaration::getCreateTime);
+        wrapper.eq(CustomsDeclaration::getBusinessScope, customsDeclaration.getBusinessScope())
+                .eq(CustomsDeclaration::getOrgId, SecurityUtils.getUser().getOrgId())
+                .orderByDesc(CustomsDeclaration::getCreateTime);
         return wrapper;
     }
 
@@ -164,23 +166,16 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
     @Override
     @Transactional(rollbackFor = Exception.class)
     public synchronized Integer insert(CustomsDeclaration customsDeclaration) {
-        //校验
-
         //保存
         //保存报关单
-        customsDeclaration.setBusinessScope("AE");
         customsDeclaration.setCreateTime(LocalDateTime.now());
         customsDeclaration.setCreatorId(SecurityUtils.getUser().getId());
         customsDeclaration.setCreatorName(SecurityUtils.getUser().buildOptName());
-
         customsDeclaration.setEditorId(customsDeclaration.getCreatorId());
         customsDeclaration.setEditorName(customsDeclaration.getCreatorName());
         customsDeclaration.setEditTime(customsDeclaration.getCreateTime());
-
         customsDeclaration.setOrgId(SecurityUtils.getUser().getOrgId());
-
         save(customsDeclaration);
-
         //保存报关单明细
         customsDeclaration.getDetailList().stream().forEach(customsDeclarationDetail -> {
             customsDeclarationDetail.setCustomsDeclarationId(customsDeclaration.getCustomsDeclarationId());
@@ -198,8 +193,6 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
         if (getById(customsDeclaration.getCustomsDeclarationId()) == null) {
             throw new RuntimeException("报关单不存在");
         }
-        //修改
-
         //修改报关单
         customsDeclaration.setEditTime(LocalDateTime.now());
         customsDeclaration.setEditorId(SecurityUtils.getUser().getId());
@@ -493,6 +486,6 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
         customsDeclaration.setDetailList(detailList);
         HashMap<String, Object> map = new HashMap<>();
         map.put("data", customsDeclaration);
-        JxlsUtils.exportExcelWithLocalModel(JxlsUtils.modelRootPath + "CUSTOMS_DECLARATION_AE.xls", map);
+        JxlsUtils.exportExcelWithLocalModel(JxlsUtils.modelRootPath + "CUSTOMS_DECLARATION_"+customsDeclaration.getBusinessScope()+".xls", map);
     }
 }
