@@ -29,7 +29,7 @@ public interface CoopBillMapper {
     void doFill(CoopBill billBean);
     void doFill1(CoopBill billBean);
 
-    void invoice(@Param("statement_id") Integer statement_id, @Param("invoiceNo") String invoiceNo, @Param("acturalCharge") Double acturalCharge,@Param("now") Date now,@Param("editorId") Integer editorId,
+    int invoice(@Param("rowUuid") String rowUuid, @Param("invoiceNo") String invoiceNo, @Param("acturalCharge") Double acturalCharge,@Param("now") Date now,@Param("editorId") Integer editorId,
                  @Param("editorName") String editorName,@Param("invoiceUserName") String invoiceUserName,@Param("invoiceTitle") String invoiceTitle,@Param("invoiceType") String invoiceType,
                  @Param("invoiceRemark") String invoiceRemark,@Param("expressCompany") String expressCompany,@Param("expressNumber") String expressNumber
                 ,@Param("invoiceDate") Date invoiceDate);
@@ -141,4 +141,8 @@ public interface CoopBillMapper {
     void updateBillByBillId(CoopUnConfirmBillDetail det);
 
     void updateOtherBillByBillId(CoopUnConfirmBillDetail det);
+
+    String getRowUuidByStatementId(Integer statementId);
+
+    void updateStatementRowUuid(@Param("statement_id") Integer statementId,@Param("row_uuid") String rowUuid);
 }

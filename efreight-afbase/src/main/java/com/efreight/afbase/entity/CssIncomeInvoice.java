@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -184,4 +186,10 @@ public class CssIncomeInvoice implements Serializable {
      */
     @TableField(exist = false)
     private String  busniessAmount;
+    @TableField(exist = false)
+    private String files;
+    @TableField(exist = false)
+    private Integer businessWriteoffComplete;
+    @TableField(exist = false)
+    private LocalDate invoiceDate;
 }

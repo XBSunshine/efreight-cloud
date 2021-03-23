@@ -104,9 +104,9 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
         	}else if(record.getWriteoffComplete()!=null&&record.getWriteoffComplete() == 0) {
         		record.setStatementStatus("部分核销");
         	}else {
-				if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==1) {
+				if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==1&&record.getWriteoffComplete()==null) {
 					record.setStatementStatus("开票完毕");
-				}else if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==0) {
+				}else if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==0&&record.getWriteoffComplete()==null) {
 					record.setStatementStatus("部分开票");
 				}else if(record.getInvoiceStatus()!=null&&record.getInvoiceStatus()==-1) {
 					record.setStatementStatus("待开票");
@@ -142,7 +142,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             	}
             }
             record.setWriteoffNum(writeoffNumbuffer.toString());
-            
+            DateTimeFormatter formatters = DateTimeFormatter.ofPattern("yyyy/MM/dd");
             //发票号
             LambdaQueryWrapper<CssIncomeInvoiceDetail> cssIncomeInvoiceDetailWrapper = Wrappers.<CssIncomeInvoiceDetail>lambdaQuery();
             cssIncomeInvoiceDetailWrapper.eq(CssIncomeInvoiceDetail::getStatementId, record.getStatementId()).eq(CssIncomeInvoiceDetail::getOrgId, SecurityUtils.getUser().getOrgId());
@@ -152,9 +152,13 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             	for (int i = 0; i < listCssIncomeInvoiceDetail.size(); i++) {
             		CssIncomeInvoiceDetail k = listCssIncomeInvoiceDetail.get(i);
             		invoiceNumbuffer.append(k.getInvoiceDetailId());
-            		invoiceNumbuffer.append(" ");
-            		invoiceNumbuffer.append(k.getInvoiceNum());
-            		invoiceNumbuffer.append("  ");
+            		invoiceNumbuffer.append("#");
+            		if(k.getInvoiceNum()!=null&&!"".equals(k.getInvoiceNum())){
+                    	invoiceNumbuffer.append(k.getInvoiceNum()+" "+"("+formatters.format(k.getInvoiceDate())+")");
+                    }else {
+                    	invoiceNumbuffer.append(k.getInvoiceNum());
+                    }
+            		invoiceNumbuffer.append("&");
             	}
             }
             record.setInvoiceNum(invoiceNumbuffer.toString());
@@ -1985,7 +1989,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             if ("E".equals(lang)) {
                 cell = new PdfPCell(new Phrase("Printer", contentFontDetail));
             } else if ("C".equals(lang)) {
-                cell = new PdfPCell(new Phrase("制单人   ：", contentFontDetail));
+                cell = new PdfPCell(new Phrase("打印人   ：", contentFontDetail));
             }
             cell.setFixedHeight(20f);
             cell.setBorderWidth(0f);
@@ -2001,7 +2005,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             if ("E".equals(lang)) {
                 cell = new PdfPCell(new Phrase("Date of Printing", contentFontDetail));
             } else if ("C".equals(lang)) {
-                cell = new PdfPCell(new Phrase("制单时间：", contentFontDetail));
+                cell = new PdfPCell(new Phrase("打印时间：", contentFontDetail));
             }
             cell.setFixedHeight(20f);
             cell.setBorderWidth(0f);
@@ -2168,7 +2172,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             if ("E".equals(lang)) {
                 cell = new PdfPCell(new Phrase("Printer", contentFont));
             } else if ("C".equals(lang)) {
-                cell = new PdfPCell(new Phrase("制单人", contentFont));
+                cell = new PdfPCell(new Phrase("打印人", contentFont));
             }
             cell.setFixedHeight(20f);
             table.addCell(cell);
@@ -2185,7 +2189,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
             if ("E".equals(lang)) {
                 cell = new PdfPCell(new Phrase("Printing Date", contentFont));
             } else if ("C".equals(lang)) {
-                cell = new PdfPCell(new Phrase("制单时间", contentFont));
+                cell = new PdfPCell(new Phrase("打印时间", contentFont));
             }
             cell.setFixedHeight(20f);
             table.addCell(cell);
@@ -2590,7 +2594,7 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
                             if (excel2.getWriteoffNum().contains("  ")) {
                                 String[] array = excel2.getWriteoffNum().split("  ");
                                 for (int k = 0; k < array.length; k++) {
-                                    sb.append(array[k].split(" ")[1]).append(" ");
+                                    sb.append(array[k].split(" ")[1]).append("\n");
                                 }
                                 mapTwo.put("writeoffNum", sb.toString());
                             } else {
@@ -2603,14 +2607,14 @@ public class StatementServiceImpl extends ServiceImpl<StatementMapper, Statement
                     }else if("invoiceNum".equals(colunmStrs[j])) {
                     	StringBuffer sb = new StringBuffer();
                         if (excel2.getInvoiceNum() != null && !"".equals(excel2.getInvoiceNum())) {
-                            if (excel2.getInvoiceNum().contains("  ")) {
-                                String[] array = excel2.getInvoiceNum().split("  ");
+                            if (excel2.getInvoiceNum().contains("&")) {
+                                String[] array = excel2.getInvoiceNum().split("&");
                                 for (int k = 0; k < array.length; k++) {
-                                    sb.append(array[k].split(" ")[1]).append(" ");
+                                    sb.append(array[k].split("#")[1]).append("\n");
                                 }
                                 mapTwo.put("invoiceNum", sb.toString());
                             } else {
-                                mapTwo.put("invoiceNum", excel2.getInvoiceNum().split(" ")[1]);
+                                mapTwo.put("invoiceNum", excel2.getInvoiceNum().split("#")[1]);
                             }
                         } else {
                             mapTwo.put("invoiceNum", "");

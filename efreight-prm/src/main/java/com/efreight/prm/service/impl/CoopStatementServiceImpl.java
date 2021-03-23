@@ -71,8 +71,8 @@ public class CoopStatementServiceImpl implements CoopStatementService {
     }
 
     @Override
-    public List<CoopStatementDetail> listDetailCoopStatement(Integer orgId, Integer coopId) {
-        return this.coopStatementDao.listDetailCoopStatement(orgId, coopId);
+    public List<CoopStatementDetail> listDetailCoopStatement(Integer orgId, Integer coopId, String billTemplate) {
+        return this.coopStatementDao.listDetailCoopStatement(orgId, coopId, billTemplate);
     }
 
 

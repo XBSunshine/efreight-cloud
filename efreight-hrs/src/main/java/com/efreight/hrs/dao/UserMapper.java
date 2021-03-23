@@ -163,7 +163,7 @@ public interface UserMapper extends BaseMapper<User> {
             " from hrs_user us " +
             " INNER JOIN hrs_org org ON us.org_id =org.org_id  " +
             " where " +
-            " us.org_id = #{orgId} AND isadmin =0" +
+            " us.org_id = #{orgId} AND isadmin =0 AND us.user_status=1" +
             "</script>"})
     User selectByOrgId(@Param("orgId") Integer orgId);
 

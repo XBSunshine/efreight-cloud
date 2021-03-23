@@ -26,5 +26,5 @@ public interface CoopStatementService {
      * @param coopId
      * @return
      */
-    List<CoopStatementDetail> listDetailCoopStatement(Integer orgId, Integer coopId);
+    List<CoopStatementDetail> listDetailCoopStatement(Integer orgId, Integer coopId, String billTemplate);
 }

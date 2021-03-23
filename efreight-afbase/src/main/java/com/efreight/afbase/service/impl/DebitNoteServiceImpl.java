@@ -187,7 +187,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             } else {
                 one.setIfWriteoff(false);
             }
-
+            DateTimeFormatter formatters = DateTimeFormatter.ofPattern("yyyy/MM/dd");
             StringBuffer writeoffNumbuffer = new StringBuffer("");
             StringBuffer invoiceNumbuffer = new StringBuffer("");
             if (one.getStatementId() != null) {
@@ -212,9 +212,13 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                     for (int i = 0; i < listCssIncomeInvoiceDetail.size(); i++) {
                         CssIncomeInvoiceDetail k = listCssIncomeInvoiceDetail.get(i);
                         invoiceNumbuffer.append(k.getInvoiceDetailId());
-                        invoiceNumbuffer.append(" ");
-                        invoiceNumbuffer.append(k.getInvoiceNum());
-                        invoiceNumbuffer.append("  ");
+                        invoiceNumbuffer.append("#");
+                        if(k.getInvoiceNum()!=null&&!"".equals(k.getInvoiceNum())){
+                        	invoiceNumbuffer.append(k.getInvoiceNum()+" "+"("+formatters.format(k.getInvoiceDate())+")");
+                        }else {
+                        	invoiceNumbuffer.append(k.getInvoiceNum());
+                        }
+                        invoiceNumbuffer.append("&");
                     }
                 }
             } else {
@@ -239,9 +243,13 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                     for (int i = 0; i < listCssIncomeInvoiceDetail.size(); i++) {
                         CssIncomeInvoiceDetail k = listCssIncomeInvoiceDetail.get(i);
                         invoiceNumbuffer.append(k.getInvoiceDetailId());
-                        invoiceNumbuffer.append(" ");
-                        invoiceNumbuffer.append(k.getInvoiceNum());
-                        invoiceNumbuffer.append("  ");
+                        invoiceNumbuffer.append("#");
+                        if(k.getInvoiceNum()!=null&&!"".equals(k.getInvoiceNum())){
+                        	invoiceNumbuffer.append(k.getInvoiceNum()+" "+"("+formatters.format(k.getInvoiceDate())+")");
+                        }else {
+                        	invoiceNumbuffer.append(k.getInvoiceNum());
+                        }
+                        invoiceNumbuffer.append("&");
                     }
                 }
             }
@@ -257,24 +265,25 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
             }
 
             //状态
-            if (one.getWriteoffComplete() != null && one.getWriteoffComplete() == 1) {
+            if ((one.getStatementId()!=null&&one.getStatementWriteoffComplete() != null && one.getStatementWriteoffComplete() == 1)
+            		|| (one.getStatementId()==null&&one.getWriteoffComplete() != null && one.getWriteoffComplete() == 1)) {
                 one.setDebitNoteStatus("核销完毕");
-            } else if (one.getWriteoffComplete() != null && one.getWriteoffComplete() == 0) {
+            } else if (one.getStatementId()!=null&&one.getStatementWriteoffComplete() != null && one.getStatementWriteoffComplete() == 0) {
                 one.setDebitNoteStatus("部分核销");
+            }else if(one.getStatementId()==null&&one.getWriteoffComplete() != null && one.getWriteoffComplete() == 0) {
+            	one.setDebitNoteStatus("部分核销");
             } else {
-                if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 1) {
-                    one.setDebitNoteStatus("开票完毕");
-                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 0) {
+            	if(one.getStatementId()!=null && one.getInvoiceStatus() != null && one.getInvoiceStatus() == 1 && one.getStatementWriteoffComplete() == null) {
+            		one.setDebitNoteStatus("开票完毕");
+            	}else if (one.getStatementId()==null && one.getInvoiceStatus() != null && one.getInvoiceStatus() == 1 && one.getWriteoffComplete() == null) {
+            		one.setDebitNoteStatus("开票完毕");
+                } else if (one.getStatementId()!=null &&one.getInvoiceStatus() != null && one.getInvoiceStatus() == 0 && one.getStatementWriteoffComplete() == null) {
+                    one.setDebitNoteStatus("部分开票");
+                }else if (one.getStatementId()==null && one.getInvoiceStatus() != null && one.getInvoiceStatus() == 0 && one.getWriteoffComplete() == null) {
                     one.setDebitNoteStatus("部分开票");
                 } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == -1) {
                     one.setDebitNoteStatus("待开票");
-                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 1) {
-                    one.setDebitNoteStatus("开票完毕");
-                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == 0) {
-                    one.setDebitNoteStatus("部分开票");
-                } else if (one.getInvoiceStatus() != null && one.getInvoiceStatus() == -1) {
-                    one.setDebitNoteStatus("待开票");
-                } else {
+                }else {
                     if (one.getStatementId() != null) {
                         one.setDebitNoteStatus("已制清单");
                     } else {
@@ -2052,7 +2061,7 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                                         if (excel2.getWriteoffNum().contains("  ")) {
                                             String[] array = excel2.getWriteoffNum().split("  ");
                                             for (int k = 0; k < array.length; k++) {
-                                                sb.append(array[k].split(" ")[1]).append(" ");
+                                                sb.append(array[k].split(" ")[1]).append("\n");
                                             }
                                             mapTwo.put("writeoffNum", sb.toString());
                                         } else {
@@ -2065,14 +2074,14 @@ public class DebitNoteServiceImpl extends ServiceImpl<DebitNoteMapper, DebitNote
                                 } else if ("invoiceNum".equals(colunmStrs[j])) {
                                     StringBuffer sb = new StringBuffer();
                                     if (excel2.getInvoiceNum() != null && !"".equals(excel2.getInvoiceNum())) {
-                                        if (excel2.getInvoiceNum().contains("  ")) {
-                                            String[] array = excel2.getInvoiceNum().split("  ");
+                                        if (excel2.getInvoiceNum().contains("&")) {
+                                            String[] array = excel2.getInvoiceNum().split("&");
                                             for (int k = 0; k < array.length; k++) {
-                                                sb.append(array[k].split(" ")[1]).append(" ");
+                                                sb.append(array[k].split("#")[1]).append("\n");
                                             }
                                             mapTwo.put("invoiceNum", sb.toString());
                                         } else {
-                                            mapTwo.put("invoiceNum", excel2.getInvoiceNum().split(" ")[1]);
+                                            mapTwo.put("invoiceNum", excel2.getInvoiceNum().split("#")[1]);
                                         }
                                     } else {
                                         mapTwo.put("invoiceNum", "");

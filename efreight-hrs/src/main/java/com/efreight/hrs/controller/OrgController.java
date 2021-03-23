@@ -442,7 +442,7 @@ public class OrgController {
             orgBankConfigService.deleteAndSave(org.getOrgBankConfigList());
             return MessageInfo.ok();
         } catch (Exception e) {
-            log.info(e.getMessage());
+            log.error(e.getMessage(), e);
             return MessageInfo.failed(e.getMessage());
         }
     }

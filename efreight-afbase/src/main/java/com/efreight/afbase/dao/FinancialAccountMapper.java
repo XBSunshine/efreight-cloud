@@ -4,7 +4,7 @@ package com.efreight.afbase.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.efreight.afbase.entity.FinancialAccount;
 import com.efreight.afbase.entity.FinancialAccountLevel;
-import com.efreight.afbase.entity.Service;
+import com.efreight.afbase.entity.WriteOffFinancialAccount;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
@@ -51,4 +51,14 @@ public interface FinancialAccountMapper extends BaseMapper<FinancialAccount> {
 					"\tA.financial_account_id = #{financialAccountId} \n",
 			"</script>"})
 	FinancialAccountLevel getFinancialAccountAllParent(@Param("financialAccountId") Integer financialAccountId);
+
+	@Select("SELECT financial_account_name AS accountName," +
+			"IF(MAX(subsidiary_account)='往来单位', '往来单位', IF(MAX(manage_mode)='子科目', '子科目', null)) AS accountType, financial_account_code AS accountCode " +
+			"FROM css_financial_account\n" +
+			"WHERE org_id= #{orgId}\n" +
+			"AND financial_account_class_02=1\n" +
+			"AND business_scope = 'EF'\n" +
+			"GROUP BY financial_account_name,financial_account_code\n" +
+			"ORDER BY financial_account_code ASC\n")
+	List<WriteOffFinancialAccount> listWriteOffAccount(@Param("orgId") Integer orgId);
 }

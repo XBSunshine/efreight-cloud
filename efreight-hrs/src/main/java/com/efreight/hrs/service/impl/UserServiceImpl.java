@@ -388,8 +388,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         baseMapper.updateById(user);
         //设置默认抄送人
         //先根据签约公司Id和当前操作人Id删除默认抄送人记录
-        baseMapper.removeUserMailCc(SecurityUtils.getUser().getOrgId(),SecurityUtils.getUser().getId());
-        if(userVo.getOrderTrackCcUser() != null && userVo.getOrderTrackCcUser().size() > 0){
+        baseMapper.removeUserMailCc(SecurityUtils.getUser().getOrgId(), SecurityUtils.getUser().getId());
+        if (userVo.getOrderTrackCcUser() != null && userVo.getOrderTrackCcUser().size() > 0) {
             List<Integer> orderTrackCcUser = userVo.getOrderTrackCcUser();
             for (int i = 0; i < orderTrackCcUser.size(); i++) {
                 UserMailCc userMailCcOrderTrack = new UserMailCc();
@@ -401,7 +401,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 baseMapper.insetUserMailCc(userMailCcOrderTrack);
             }
         }
-        if(userVo.getSendGoodsNotifyCcUser() != null && userVo.getSendGoodsNotifyCcUser().size() > 0){
+        if (userVo.getSendGoodsNotifyCcUser() != null && userVo.getSendGoodsNotifyCcUser().size() > 0) {
             List<Integer> sendGoodsNotifyCcUser = userVo.getSendGoodsNotifyCcUser();
             for (int i = 0; i < sendGoodsNotifyCcUser.size(); i++) {
                 UserMailCc userMailCcSendGoodsNotify = new UserMailCc();
@@ -413,7 +413,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 baseMapper.insetUserMailCc(userMailCcSendGoodsNotify);
             }
         }
-        if(userVo.getSendBillCcUser() != null && userVo.getSendBillCcUser().size() > 0){
+        if (userVo.getSendBillCcUser() != null && userVo.getSendBillCcUser().size() > 0) {
             List<Integer> sendBillCcUser = userVo.getSendBillCcUser();
             for (int i = 0; i < sendBillCcUser.size(); i++) {
                 UserMailCc userMailCcSendBill = new UserMailCc();
@@ -425,7 +425,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 baseMapper.insetUserMailCc(userMailCcSendBill);
             }
         }
-        if(userVo.getSendInventoryCcUser() != null && userVo.getSendInventoryCcUser().size() > 0){
+        if (userVo.getSendInventoryCcUser() != null && userVo.getSendInventoryCcUser().size() > 0) {
             List<Integer> sendInventoryCcUser = userVo.getSendInventoryCcUser();
             for (int i = 0; i < sendInventoryCcUser.size(); i++) {
                 UserMailCc userMailCcSendInventory = new UserMailCc();
@@ -596,10 +596,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         uv.setRoleIds(roleIds);
         //ui.setRoles(ArrayUtil.toArray(roleIds, Integer.class));
         //根据签约公司ID和操作人id默认抄送人信息
-        List<Integer> orderTrackCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(),SecurityUtils.getUser().getId(),"订单跟踪码");
-        List<Integer> sendGoodsNotifyCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(),SecurityUtils.getUser().getId(),"送货通知码");
-        List<Integer> sendBillCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(),SecurityUtils.getUser().getId(),"发送账单");
-        List<Integer> sendInventoryCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(),SecurityUtils.getUser().getId(),"发送清单");
+        List<Integer> orderTrackCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(), SecurityUtils.getUser().getId(), "订单跟踪码");
+        List<Integer> sendGoodsNotifyCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(), SecurityUtils.getUser().getId(), "送货通知码");
+        List<Integer> sendBillCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(), SecurityUtils.getUser().getId(), "发送账单");
+        List<Integer> sendInventoryCcUser = baseMapper.getUserIdCc(SecurityUtils.getUser().getOrgId(), SecurityUtils.getUser().getId(), "发送清单");
         uv.setOrderTrackCcUser(orderTrackCcUser);
         uv.setSendGoodsNotifyCcUser(sendGoodsNotifyCcUser);
         uv.setSendBillCcUser(sendBillCcUser);
@@ -718,6 +718,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         if (ifBlackList(userId)) {
             throw new RuntimeException("该用户已列入黑名单，不可修改！");
+        }
+        User userCheck = getByOrgId(SecurityUtils.getUser().getOrgId());
+        if (userCheck != null) {
+            if (userCheck.getUserCount() >= userCheck.getOrgUserCount()) {
+                throw new RuntimeException("用户数量已经达到最大值（" + userCheck.getOrgUserCount() + "),不允许复职");
+            }
         }
         baseMapper.resume(userId, SecurityUtils.getUser().getOrgId());
         User user = baseMapper.selectById(userId);
@@ -1031,7 +1037,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User getUserAboutKeepDecimalPlaces() {
         LambdaQueryWrapper<User> wrapper = Wrappers.<User>lambdaQuery();
-        wrapper.select(User::getUserId, User::getOrderAeDigitsWeight, User::getOrderAeDigitsVolume, User::getOrderAeDigitsChargeWeight, User::getOrderAiDigitsWeight, User::getOrderAiDigitsVolume, User::getOrderAiDigitsChargeWeight, User::getOrderSeDigitsWeight, User::getOrderSeDigitsVolume, User::getOrderSeDigitsChargeWeight, User::getOrderSiDigitsWeight, User::getOrderSiDigitsVolume, User::getOrderSiDigitsChargeWeight, User::getOrderTeDigitsWeight, User::getOrderTeDigitsVolume, User::getOrderTeDigitsChargeWeight, User::getOrderLcDigitsWeight, User::getOrderLcDigitsVolume, User::getOrderLcDigitsChargeWeight).eq(User::getUserId, SecurityUtils.getUser().getId());
+        wrapper.select(User::getUserId, User::getOrderAeDigitsWeight, User::getOrderAeDigitsVolume, User::getOrderAeDigitsChargeWeight, User::getOrderAiDigitsWeight, User::getOrderAiDigitsVolume, User::getOrderAiDigitsChargeWeight, User::getOrderSeDigitsWeight, User::getOrderSeDigitsVolume, User::getOrderSeDigitsChargeWeight, User::getOrderSiDigitsWeight, User::getOrderSiDigitsVolume, User::getOrderSiDigitsChargeWeight,
+                User::getOrderTeDigitsWeight, User::getOrderTeDigitsVolume, User::getOrderTeDigitsChargeWeight,
+                User::getOrderTiDigitsWeight, User::getOrderTiDigitsVolume, User::getOrderTiDigitsChargeWeight,
+                User::getOrderIoDigitsWeight, User::getOrderIoDigitsVolume, User::getOrderIoDigitsChargeWeight,
+                User::getOrderLcDigitsWeight, User::getOrderLcDigitsVolume, User::getOrderLcDigitsChargeWeight)
+                .eq(User::getUserId, SecurityUtils.getUser().getId());
         return getOne(wrapper);
     }
 
@@ -1042,20 +1053,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserBaseVO findByUserPhone(String phone, String internationalCountryCode) {
-        if(StringUtils.isBlank(phone)){
+        if (StringUtils.isBlank(phone)) {
             return null;
         }
         LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery();
         wrapper.eq(User::getPhoneNumber, phone);
         wrapper.eq(User::getIsadmin, false);
         wrapper.eq(User::getUserStatus, true);
-        if(StringUtils.isNotBlank(internationalCountryCode)){
+        if (StringUtils.isNotBlank(internationalCountryCode)) {
             wrapper.eq(User::getInternationalCountryCode, internationalCountryCode);
         }
 
         User dbUser = this.baseMapper.selectOne(wrapper);
         UserBaseVO userBaseVO = null;
-        if(null != dbUser){
+        if (null != dbUser) {
             userBaseVO = new UserBaseVO();
             userBaseVO.setUserId(dbUser.getUserId());
             userBaseVO.setOrgId(dbUser.getOrgId());

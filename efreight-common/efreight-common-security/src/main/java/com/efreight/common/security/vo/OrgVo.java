@@ -77,4 +77,7 @@ public class OrgVo implements Serializable {
     private transient Integer blackValid;
     private transient Integer coopStatus;
 
+    private String financialVoucherOutType;
+    private String financialVoucherOutCurrency;
+
 }

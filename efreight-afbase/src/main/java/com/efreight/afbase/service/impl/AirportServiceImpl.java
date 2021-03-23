@@ -221,7 +221,15 @@ public class AirportServiceImpl extends ServiceImpl<AirportMapper, Airport> impl
 		return airportMapper.queryNationWithNationCodeThreeIsNotNull();
 	}
 
-	//计算时间差，以小时为单位。如：2018-08-08 和 2018-08-07 相差24h
+    @Override
+    public List<Airport> airportListForApi(String enKey, String cnKey) {
+		if(StringUtils.isBlank(enKey) && StringUtils.isBlank(cnKey)){
+			return Collections.emptyList();
+		}
+		return this.airportMapper.searchForApi(enKey,cnKey);
+    }
+
+    //计算时间差，以小时为单位。如：2018-08-08 和 2018-08-07 相差24h
     public double getDistanceTime2(Date startTime, Date endTime) {
         double hour = 0;
         long time1 = startTime.getTime();

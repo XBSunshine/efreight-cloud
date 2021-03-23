@@ -312,4 +312,6 @@ public class DebitNote implements Serializable {
      */
     @TableField(exist = false)
     private String applyRemark;
+    @TableField(exist = false)
+    private Integer statementWriteoffComplete;
 }

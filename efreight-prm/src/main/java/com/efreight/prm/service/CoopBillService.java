@@ -26,9 +26,9 @@ public interface CoopBillService {
     void verify(Integer statement_id,Double acturalCharge,String invoiceWriteoffDate) throws ParseException;
 
     void fill(Integer billId, Double acturalCharge);
-    void doFill(CoopBill bean);
+    String doFill(CoopBill bean);
 
-    void invoice(String invoiceNo,Integer statement_id,Double acturalCharge,String invoiceTitle,String invoiceType,String invoiceRemark,String expressCompany,String expressNumber,Date invoiceDate);
+    void invoice(CoopBillStatement coopBillStatement);
 
     Map<String, Object> getPage(Integer current, Integer size, CoopBill coopBill);
 
@@ -61,7 +61,7 @@ public interface CoopBillService {
 
     void updateAmountReceivable(CoopUnConfirmBillGroup coopUnConfirmBillGroup);
 
-    void customerConfirmBill(Integer statementId,Integer settlementId);
+    void customerConfirmBill(Integer statementId,Integer settlementId,String rowUuid);
 
     Map<String,Object> searchUnConfirmBill_detail(CoopUnConfirmBillDetail coopUnConfirmBillDetail, Integer currentPage, Integer pageSize);
 

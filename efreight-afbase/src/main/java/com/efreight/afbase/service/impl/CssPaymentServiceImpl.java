@@ -214,7 +214,7 @@ public class CssPaymentServiceImpl extends ServiceImpl<CssPaymentMapper, CssPaym
                 lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=0 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
             }
             if (cssPayment.getWriteoffCompletes().contains("5")) {
-                lastSql.append(" payment_id in (select payment_id from css_cost_invoice where invoice_status=1 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
+                lastSql.append(" writeoff_complete is null and payment_id in (select payment_id from css_cost_invoice where invoice_status=1 and org_id=").append(SecurityUtils.getUser().getOrgId()).append(") or");
             }
             if (cssPayment.getWriteoffCompletes().contains("0")) {
                 lastSql.append(" writeoff_complete=0 or");

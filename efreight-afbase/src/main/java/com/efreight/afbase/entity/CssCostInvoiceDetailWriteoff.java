@@ -8,6 +8,7 @@ import java.time.LocalDate;
 
 import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
@@ -180,5 +181,8 @@ public class CssCostInvoiceDetailWriteoff implements Serializable {
 
     @TableField(exist = false)
     private LocalDate invoiceDateEnd;
+
+    @TableField(exist = false)
+    private List<CssCostFiles> filesList;
 }
 

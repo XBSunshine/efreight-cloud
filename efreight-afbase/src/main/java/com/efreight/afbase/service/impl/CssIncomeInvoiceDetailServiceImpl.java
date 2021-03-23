@@ -2,6 +2,7 @@ package com.efreight.afbase.service.impl;
 
 import com.efreight.afbase.entity.CssDebitNote;
 import com.efreight.afbase.entity.CssDebitNoteCurrency;
+import com.efreight.afbase.entity.CssIncomeFiles;
 import com.efreight.afbase.entity.CssIncomeInvoice;
 import com.efreight.afbase.entity.CssIncomeInvoiceDetail;
 import com.efreight.afbase.entity.CssIncomeInvoiceDetailWriteoff;
@@ -9,6 +10,7 @@ import com.efreight.afbase.entity.DebitNote;
 import com.efreight.afbase.entity.Statement;
 import com.efreight.afbase.entity.StatementCurrency;
 import com.efreight.afbase.dao.CssDebitNoteCurrencyMapper;
+import com.efreight.afbase.dao.CssIncomeFilesMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceDetailMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceDetailWriteoffMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceMapper;
@@ -55,6 +57,7 @@ public class CssIncomeInvoiceDetailServiceImpl extends ServiceImpl<CssIncomeInvo
     private final StatementCurrencyMapper statementCurrencyMapper;
     private final CssIncomeInvoiceDetailWriteoffMapper cssIncomeInvoiceDetailWriteoffMapper;
     private final CssIncomeInvoiceDetailWriteoffService cssIncomeInvoiceDetailWriteoffService;
+    private final CssIncomeFilesMapper filesMapper;
 	
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -285,6 +288,16 @@ public class CssIncomeInvoiceDetailServiceImpl extends ServiceImpl<CssIncomeInvo
 			throw new RuntimeException("开票申请信息有变更 不可删除");
 		}
 		baseMapper.deleteById(detail);
+		//删除发票对应的附件
+		LambdaQueryWrapper<CssIncomeFiles> cssIncomeFilesWrapper = new LambdaQueryWrapper<CssIncomeFiles>();
+		cssIncomeFilesWrapper.eq(CssIncomeFiles::getInvoiceDetailId, detail.getInvoiceDetailId());
+		List<CssIncomeFiles> list = filesMapper.selectList(cssIncomeFilesWrapper);
+		if(list!=null&&list.size()>0) {
+			list.stream().forEach(o->{
+				filesMapper.deleteById(o);
+			});
+		}
+		
 		//更新逻辑
 		this.updateAll(detail);
 		return true;

@@ -72,6 +72,7 @@ security:
         - /org/sourceLoginOfEf/**
         - /tact/tactinfo/**
         - /ef/**
+        - /api/**
         - /identify/audit/**
     resource:
       loadBalanced: true

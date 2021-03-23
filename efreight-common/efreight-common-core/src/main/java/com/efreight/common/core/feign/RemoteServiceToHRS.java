@@ -49,5 +49,6 @@ public interface RemoteServiceToHRS {
      * @return
      */
     @GetMapping("/user/phone/{phone}")
-    MessageInfo<UserBaseVO> findUserByPhone(@PathVariable("phone") String phone,  @RequestHeader(SecurityConstants.FROM) String from);
+    MessageInfo<UserBaseVO> findUserByPhone(@PathVariable("phone") String phone,  @RequestParam("internationalCountryCode")String internationalCountryCode,
+                                            @RequestHeader(SecurityConstants.FROM) String from);
 }

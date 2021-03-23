@@ -152,6 +152,12 @@ public class User implements Serializable {
     private Integer orderLcDigitsWeight;
     private Integer orderLcDigitsVolume;
     private Integer orderLcDigitsChargeWeight;
+    private Integer orderTiDigitsWeight;
+    private Integer orderTiDigitsVolume;
+    private Integer orderTiDigitsChargeWeight;
+    private Integer orderIoDigitsWeight;
+    private Integer orderIoDigitsVolume;
+    private Integer orderIoDigitsChargeWeight;
 
     private Integer orderPermission;
 }

@@ -1,7 +1,12 @@
 package com.efreight.prm.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.druid.util.StringUtils;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.efreight.common.core.utils.ExcelExportUtils;
 import com.efreight.common.core.utils.ExportExcel;
+import com.efreight.common.core.utils.FieldValUtils;
 import com.efreight.common.security.util.MessageInfo;
 import com.efreight.prm.entity.*;
 import com.efreight.prm.service.CoopBillService;
@@ -13,6 +18,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.BeanUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,10 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 账单
@@ -275,8 +278,8 @@ public class CoopBillController {
     @PreAuthorize("@pms.hasPermission('sys_coop_bill_fill')")
 	public MessageInfo doFill(@ModelAttribute("bean") CoopBill bean) {
     	try {
-            coopBillService.doFill(bean);
-            return MessageInfo.ok();
+            String rowUuidNew = coopBillService.doFill(bean);
+            return MessageInfo.ok(rowUuidNew);
         } catch (Exception e) {
             log.info(e.getMessage());
             return MessageInfo.failed(e.getMessage());
@@ -292,8 +295,7 @@ public class CoopBillController {
     @PreAuthorize("@pms.hasPermission('sys_coop_bill_invoice')")
     public MessageInfo invoice(CoopBillStatement coopBillStatement) {
         try {
-            coopBillService.invoice(coopBillStatement.getInvoiceNumber(),coopBillStatement.getStatement_id(),coopBillStatement.getActuralCharge(),coopBillStatement.getInvoiceTitle(),coopBillStatement.getInvoiceType(),
-                    coopBillStatement.getInvoiceRemark(),coopBillStatement.getExpressCompany(),coopBillStatement.getExpressNumber(),coopBillStatement.getInvoiceDate());
+            coopBillService.invoice(coopBillStatement);
             return MessageInfo.ok();
         } catch (Exception e) {
             log.info(e.getMessage());
@@ -642,10 +644,52 @@ public class CoopBillController {
     @RequestMapping(value = "/exportSettleExcel", method = RequestMethod.POST)
     public void exportExcel(HttpServletResponse response, @ModelAttribute("bean") CoopBillSettle bean) throws IOException {
         List<CoopBillSettleExcel> list = coopBillService.queryListForExcel(bean);
-        ExportExcel<CoopBillSettleExcel> ex = new ExportExcel<CoopBillSettleExcel>();
-        String[] headers = {"序号", "期间", "客户名称", "分组名称", "一级科目", "二级科目", "口岸", "结算周期/计费模式", "数量", "单价", "金额"
-                , "业务区域", "账单状态", "客户负责人" , "销售负责人" , "协同销售人" , "客户确认时间" , "核销人" ,"核销日期" ,  "首次收费月份" ,"新业务", "生效日期" , "截止日期" , "IT编码"};
-        ex.exportExcel(response, "导出EXCEL", headers, list, "Export");
+
+        if (!StringUtils.isEmpty(bean.getColumnStrs())) {
+            String[] colunmStrs = null;
+            String[] headers = null;
+            List<LinkedHashMap> listExcel = new ArrayList<LinkedHashMap>();
+            //转json为数组
+            JSONArray jsonArr = JSONArray.parseArray(bean.getColumnStrs());
+            int num = jsonArr.size() + 3;
+            headers = new String[num];
+            colunmStrs = new String[num];
+            headers[0] = "序号";
+            colunmStrs[0] = "billNumber";
+            headers[1] = "期间";
+            colunmStrs[1] = "statementDate";
+            headers[2] = "客户名称";
+            colunmStrs[2] = "coopName";
+            //生成表头跟字段
+            if (jsonArr != null && jsonArr.size() > 0) {
+                int numStr = 3;
+                for (int i = 0; i < jsonArr.size(); i++) {
+                    JSONObject job = jsonArr.getJSONObject(i);
+                    colunmStrs[numStr] = job.getString("prop");
+                    headers[numStr] = job.getString("label");
+                    numStr++;
+                }
+            }
+            //遍历结果集 区相应字段封装 linkedHashMap后存储list发往工具类
+            if (list != null && list.size() > 0) {
+                for (CoopBillSettleExcel coopExcel : list) {
+                    LinkedHashMap map = new LinkedHashMap();
+                    for (int j = 0; j < colunmStrs.length; j++) {
+                        map.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j], coopExcel));
+                    }
+                    listExcel.add(map);
+                }
+            }
+
+            ExcelExportUtils u = new ExcelExportUtils();
+            u.exportExcelLinkListMap(response, "导出EXCEL", headers, listExcel, "Export");
+
+        }else{
+            ExportExcel<CoopBillSettleExcel> ex = new ExportExcel<CoopBillSettleExcel>();
+            String[] headers = {"序号", "期间", "客户名称", "分组名称", "一级科目", "二级科目", "口岸", "结算周期/计费模式", "数量", "单价", "金额"
+                    , "业务区域", "账单状态", "客户负责人" , "销售负责人" , "协同销售人" , "客户确认时间" , "核销人" ,"核销日期" ,  "首次收费月份" ,"新业务", "生效日期" , "截止日期" , "IT编码"};
+            ex.exportExcel(response, "导出EXCEL", headers, list, "Export");
+        }
     }
 
     /**
@@ -730,11 +774,11 @@ public class CoopBillController {
      * @param statementId
      * @return
      */
-    @PostMapping("/customerConfirmBill/{statementId}/{settlementId}")
+    @PostMapping("/customerConfirmBill/{statementId}/{settlementId}/{rowUuid}")
     @PreAuthorize("@pms.hasPermission('sys_coop_bill_customerconfirm')")
-    public MessageInfo customerConfirmBill(@PathVariable Integer statementId,@PathVariable Integer settlementId) {
+    public MessageInfo customerConfirmBill(@PathVariable Integer statementId,@PathVariable Integer settlementId,@PathVariable String rowUuid) {
         try {
-            coopBillService.customerConfirmBill(statementId,settlementId);
+            coopBillService.customerConfirmBill(statementId,settlementId,rowUuid);
             return MessageInfo.ok();
         } catch (Exception e) {
             log.info(e.getMessage());
@@ -763,7 +807,7 @@ public class CoopBillController {
     /**
      * 手工账单
      *
-     * @param coopManualBill
+     * @param
      */
     @RequestMapping("/saveManualBill")
     @PreAuthorize("@pms.hasPermission('sys_coop_bill_manual')")

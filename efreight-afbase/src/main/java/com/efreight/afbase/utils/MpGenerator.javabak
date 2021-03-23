@@ -44,7 +44,7 @@ public class MpGenerator {
         strategy.setColumnNaming(NamingStrategy.underline_to_camel);
         strategy.setEntityLombokModel(true);
         strategy.setRestControllerStyle(true);
-        strategy.setInclude("css_financial_account");
+        strategy.setInclude("css_cost_files");
         strategy.setSuperEntityColumns(new String[]{"id"});
         strategy.setControllerMappingHyphenStyle(true);
         mpg.setStrategy(strategy);

@@ -75,5 +75,6 @@ public class CoopBill implements Serializable {
     private String aircraftClassification;
     private String itCode;
     private String remarkSaler;
+    private String rowUuid;
     
 }

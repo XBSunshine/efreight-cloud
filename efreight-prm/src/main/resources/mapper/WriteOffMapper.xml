@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.WriteOffDao">
+    <select id="writeOffInfo" resultType="com.efreight.prm.entity.writeoff.WriteOffInfo" parameterType="java.lang.Integer">
+        SELECT
+            PCS.statement_id AS statementId,
+            CONCAT(PC.coop_name, '(', PCS.statement_name, ')') AS statementName,
+            PCS.statement_date AS statementDate,
+            PCS.invoice_title AS invoiceTitle,
+            CONCAT(PCS.invoice_number, ' (', DATE_FORMAT(PCS.invoice_date,'%Y/%m/%d'), ')') AS invoiceNumber,
+            FORMAT(PCS.invoice_amount, 2) AS invoiceAmount,
+            FORMAT(IFNULL(PCS.invoice_writeoff_amount, 0), 2) AS invoiceWriteOffAmount,
+            FORMAT(PCS.invoice_amount - IFNULL(PCS.invoice_writeoff_amount, 0), 2) AS unwrittenAmount
+        FROM prm_coop_statement PCS
+        INNER JOIN prm_coop PC ON PCS.coop_id = PC.coop_id AND PCS.statement_id = #{statementId}
+    </select>
+
+    <select id="amountWrittenOff" resultType="java.math.BigDecimal" parameterType="java.lang.Integer">
+        select IFNULL(sum(amount_writeoff), 0) from prm_coop_statement_writeoff where statement_id = #{statementId}
+    </select>
+
+    <select id="maxSerialNumber" resultType="java.lang.String" parameterType="java.lang.Integer">
+        select right(max(writeoff_num), 4) from prm_coop_statement_writeoff where DATE_FORMAT(create_time,'%Y%m%d') = DATE_FORMAT(now(),'%Y%m%d') and org_id = #{orgId}
+    </select>
+
+    <insert id="insert" parameterType="com.efreight.prm.entity.writeoff.CoopStatementWriteOff">
+        insert into prm_coop_statement_writeoff(
+            statement_id, org_id, coop_id, writeoff_num, writeoff_date, currency, amount_writeoff, writeoff_remark,
+            creator_id, create_time, creator_name, financial_account_name, financial_account_code, financial_account_type, row_uuid
+        )
+        values (
+                #{statementId},
+                #{orgId},
+                #{coopId},
+                #{writeOffNum},
+                #{writeOffDate},
+                #{currency},
+                #{amountWriteOff},
+                #{writeOffRemark},
+                #{creatorId},
+                #{createTime},
+                #{creatorName},
+                #{financialAccountName},
+                #{financialAccountCode},
+                #{financialAccountType},
+                #{rowUuid}
+               )
+    </insert>
+    <sql id="write_off_query_list_condition">
+        <where>
+            <choose>
+                <when test="statementDateBegin != null and statementDateBegin !='' and statementDateEnd != null and statementDateEnd !='' ">
+                    AND <![CDATA[PCS.statement_date >= #{statementDateBegin} AND PCS.statement_date <= #{statementDateBegin} ]]>
+                </when>
+                <when test="statementDateBegin != null and statementDateBegin !='' ">
+                    AND <![CDATA[PCS.statement_date >= #{statementDateBegin}]]>
+                </when>
+                <when test="statementDateEnd != null and statementDateEnd !='' ">
+                    AND <![CDATA[PCS.statement_date <= #{statementDateEnd}]]>
+                </when>
+            </choose>
+
+            <if test="coopName != null and coopName != ''">
+                AND PC.coop_name like concat('%', #{coopName}, '%')
+            </if>
+
+            <choose>
+                <when test="writeOffTimeBegin != null and writeOffTimeBegin !='' and writeOffTimeEnd != null and writeOffTimeEnd !='' ">
+                    AND <![CDATA[PCSW.writeoff_date >= #{writeOffTimeBegin} AND PCSW.writeoff_date <= #{writeOffTimeEnd} ]]>
+                </when>
+                <when test="writeOffTimeBegin != null and writeOffTimeBegin !=''">
+                    AND <![CDATA[PCSW.writeoff_date >= #{writeOffTimeBegin}]]>
+                </when>
+                <when test="writeOffTimeEnd != null and writeOffTimeEnd !='' ">
+                    AND <![CDATA[PCSW.writeoff_date <= #{writeOffTimeEnd}]]>
+                </when>
+            </choose>
+
+            <if test="zoneCode != null and zoneCode != ''">
+                AND PCS.bill_template  = #{zoneCode}
+            </if>
+
+            <if test="invoiceNumber != null and invoiceNumber != '' ">
+                AND PCS.invoice_number like concat('%', #{invoiceNumber}, '%')
+
+            </if>
+            <if test="statementName != null and statementName != ''">
+                AND PCS.statement_name  like concat('%', #{statementName}, '%')
+            </if>
+            <choose>
+                <when test="optTimeBegin != null and  optTimeBegin !='' and optTimeEnd != null and optTimeEnd !='' ">
+                    AND <![CDATA[DATE_FORMAT(PCSW.create_time, '%Y-%m-%d') >= #{optTimeBegin} AND DATE_FORMAT(PCSW.create_time, '%Y-%m-%d') <= #{optTimeEnd} ]]>
+                </when>
+                <when test="optTimeBegin != null and optTimeBegin != ''">
+                    AND <![CDATA[DATE_FORMAT(PCSW.create_time, '%Y-%m-%d') >= #{optTimeBegin}]]>
+                </when>
+                <when test="optTimeEnd != null and optTimeEnd !=''">
+                    AND <![CDATA[DATE_FORMAT(PCSW.create_time, '%Y-%m-%d') <= #{optTimeEnd}]]>
+                </when>
+            </choose>
+            <if test="writeOffUser != null and writeOffUser != ''">
+                AND PCS.invoice_writeoff_user_name  like concat('%', #{writeOffUser}, '%')
+            </if>
+            <if test="writeOffNum != null and writeOffNum != ''">
+                AND PCSW.writeoff_num  like concat('%', #{writeOffNum}, '%')
+            </if>
+            <if test="invoiceTitle != null and invoiceTitle != '' ">
+                AND PCS.invoice_title  like concat('%', #{invoiceTitle}, '%')
+            </if>
+            <choose>
+                <when test="invoiceDateEnd != null and invoiceDateEnd !='' and invoiceDateBegin != null and invoiceDateBegin !='' ">
+                    AND <![CDATA[PCS.invoice_date >= #{invoiceDateBegin} AND PCS.invoice_date <= #{invoiceDateEnd} ]]>
+                </when>
+                <when test="invoiceDateBegin != null and invoiceDateBegin != ''">
+                    AND <![CDATA[PCS.invoice_date >= #{invoiceDateBegin}]]>
+                </when>
+                <when test="invoiceDateEnd != null and invoiceDateEnd != ''">
+                    AND <![CDATA[PCS.invoice_date <= #{invoiceDateEnd}]]>
+                </when>
+            </choose>
+        </where>
+    </sql>
+    <select id="queryList" resultType="com.efreight.prm.entity.writeoff.WriteOffList" parameterType="com.efreight.prm.entity.writeoff.WriteOffQuery">
+        SELECT
+            PCSW.writeoff_id AS writeOffId,
+            PCSW.row_uuid AS rowUuid,
+            PCS.row_uuid AS statementRowUuid,
+            PCSW.writeoff_num AS writeOffNum,
+            CONCAT(PC.coop_name, ' (', PCS.statement_name, ')') AS statementName,
+            PCS.statement_date AS statementDate,
+            PCS.bill_template AS zoneCode,
+            CASE PCS.bill_template WHEN 'BJS' THEN '华北' WHEN 'CAN' THEN '华南' WHEN 'SHA' THEN '华东' WHEN 'XIY' THEN '西北' WHEN 'EFT' THEN '总部' ELSE'' END   as zoneName,
+            PCS.invoice_number AS invoiceNumber,
+            PCS.invoice_title AS invoiceTitle,
+            DATE_FORMAT(PCS.invoice_date, '%Y-%m-%d') AS invoiceDate,
+            PCS.amount_received AS amountReceived,
+            PCSW.amount_writeoff AS amountWriteOff,
+            DATE_FORMAT(PCSW.writeoff_date, '%Y-%m-%d') AS writeOffDate,
+            REPLACE(PCSW.creator_name,SUBSTRING_INDEX(PCSW.creator_name, ' ', -1), '') AS writeOffUser,
+            DATE_FORMAT(PCSW.create_time, '%Y-%m-%d %H:%i:%s') AS optTime,
+            PCSW.financial_account_code AS financialAccountCode,
+            PCSW.financial_account_name AS financialAccountName,
+            PCSW.writeoff_remark AS writeOffRemark
+        FROM `prm_coop_statement_writeoff` PCSW
+        INNER JOIN prm_coop_statement PCS ON PCSW.statement_id = PCS.statement_id
+        INNER JOIN prm_coop PC ON PCSW.coop_id = PC.coop_id
+        <include refid="write_off_query_list_condition"></include>
+        order by PCSW.writeoff_num desc
+        <if test="current != null and size != null">
+            limit #{offset}, #{size}
+        </if>
+    </select>
+    <select id="countQueryList" resultType="java.lang.Integer" parameterType="com.efreight.prm.entity.writeoff.WriteOffQuery">
+        select count(*)
+        FROM `prm_coop_statement_writeoff` PCSW
+        INNER JOIN prm_coop_statement PCS ON PCSW.statement_id = PCS.statement_id
+        INNER JOIN prm_coop PC ON PCS.coop_id = PC.coop_id
+        <include refid="write_off_query_list_condition"></include>
+    </select>
+    <select id="findByRowId" resultType="com.efreight.prm.entity.writeoff.CoopStatementWriteOff" parameterType="java.lang.String">
+        select
+            writeoff_id AS writeOffId,
+            org_id AS orgId,
+            statement_id AS statementId,
+            writeoff_num AS writeOffNum,
+            coop_id AS coopId,
+            writeoff_date AS writeOffDate,
+            currency AS currency,
+            amount_writeoff AS amountWriteOff,
+            writeoff_remark AS writeOffRemark,
+            creator_id AS creatorId,
+            creator_name AS creatorName,
+            create_time AS createTime,
+            voucher_date AS voucherDate,
+            voucher_number AS voucherNumber,
+            voucher_creator_id AS voucherCreatorId,
+            voucher_creator_name AS voucherCreatorName,
+            voucher_create_time AS voucherCreateTime,
+            financial_account_name AS financialAccountName,
+            financial_account_code AS financialAccountCode,
+            financial_account_type AS financialAccountType,
+            row_uuid AS rowUuid
+        from prm_coop_statement_writeoff where row_uuid  = #{rowId}
+    </select>
+    <delete id="deleteByRowId" parameterType="java.lang.String">
+        delete from prm_coop_statement_writeoff where  row_uuid = #{rowId}
+    </delete>
+</mapper>

@@ -41,6 +41,8 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
 
     private final AirportService airportService;
 
+    private final WarehouseService warehouseService;
+
     private final PrmCategoryEciqService prmCategoryEciqService;
 
     private final VPrmCategoryService vPrmCategoryService;
@@ -49,7 +51,6 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
 
     @Override
     public IPage getPage(Page page, CustomsDeclaration customsDeclaration) {
-
         //拼接查询条件
         Wrapper wrapper = this.getWrapper(customsDeclaration);
         IPage result = page(page, wrapper);
@@ -125,7 +126,7 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
             //离境口岸
             if (StrUtil.isNotBlank(customsDeclaration.getExportImportPort())) {
                 LambdaQueryWrapper<VPrmCategory> vPrmCategoryWrapper = Wrappers.<VPrmCategory>lambdaQuery();
-                vPrmCategoryWrapper.eq(VPrmCategory::getCategoryType, 23).eq(VPrmCategory::getEdicode1, customsDeclaration.getExportImportPort());
+                vPrmCategoryWrapper.eq(VPrmCategory::getCategoryType, 29).eq(VPrmCategory::getEdicode1, customsDeclaration.getExportImportPort());
                 VPrmCategory vPrmCategory = vPrmCategoryService.getOne(vPrmCategoryWrapper);
                 if (vPrmCategory != null) {
                     customsDeclaration.setExportImportPortName(vPrmCategory.getParamText());
@@ -166,7 +167,6 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
     @Override
     @Transactional(rollbackFor = Exception.class)
     public synchronized Integer insert(CustomsDeclaration customsDeclaration) {
-        //保存
         //保存报关单
         customsDeclaration.setCreateTime(LocalDateTime.now());
         customsDeclaration.setCreatorId(SecurityUtils.getUser().getId());
@@ -301,10 +301,28 @@ public class CustomsDeclarationServiceImpl extends ServiceImpl<CustomsDeclaratio
                 customsDeclaration.setCountryDepartureArrival1Name(airports.get(0).getNationNameCn());
             }
         }
+        //启运港
+        if (StrUtil.isNotBlank(customsDeclaration.getPortDepartureArrival())) {
+            LambdaQueryWrapper<Airport> airportWrapper = Wrappers.<Airport>lambdaQuery();
+            airportWrapper.eq(Airport::getApStatus, 1).eq(Airport::getNationCodeThree, customsDeclaration.getPortDepartureArrival());
+            List<Airport> airports = airportService.list(airportWrapper);
+            if (!airports.isEmpty()) {
+                customsDeclaration.setPortDepartureArrivalName(airports.get(0).getNationNameCn());
+            }
+        }
+        //货物存放地点
+        if (customsDeclaration.getWarehouseId() != null) {
+            LambdaQueryWrapper<Warehouse> warehouseWrapper = Wrappers.<Warehouse>lambdaQuery();
+            warehouseWrapper.eq(Warehouse::getOrgId, SecurityUtils.getUser().getOrgId()).eq(Warehouse::getWarehouseId, customsDeclaration.getWarehouseId()).eq(Warehouse::getWarehouseStatus,1);
+            List<Warehouse> warehouses = warehouseService.list(warehouseWrapper);
+            if (!warehouses.isEmpty()) {
+                customsDeclaration.setWarehouseNameCn(warehouses.get(0).getWarehouseNameCn());
+            }
+        }
         //离境口岸
         if (StrUtil.isNotBlank(customsDeclaration.getExportImportPort())) {
             LambdaQueryWrapper<VPrmCategory> vPrmCategoryWrapper = Wrappers.<VPrmCategory>lambdaQuery();
-            vPrmCategoryWrapper.eq(VPrmCategory::getCategoryType, 23).eq(VPrmCategory::getEdicode1, customsDeclaration.getExportImportPort());
+            vPrmCategoryWrapper.eq(VPrmCategory::getCategoryType, 29).eq(VPrmCategory::getEdicode1, customsDeclaration.getExportImportPort());
             VPrmCategory vPrmCategory = vPrmCategoryService.getOne(vPrmCategoryWrapper);
             if (vPrmCategory != null) {
                 customsDeclaration.setExportImportPortName(vPrmCategory.getParamText());

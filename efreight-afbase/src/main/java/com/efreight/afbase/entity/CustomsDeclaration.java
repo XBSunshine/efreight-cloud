@@ -42,6 +42,8 @@ public class CustomsDeclaration implements Serializable {
     private Integer orgId;
 
     private Integer warehouseId;
+    @TableField(exist = false)
+    private String warehouseNameCn;
 
     /**
      * 业务范畴
@@ -158,6 +160,10 @@ public class CustomsDeclaration implements Serializable {
      * 合同协议号
      */
     private String contractNumber;
+
+    private String portDepartureArrival;
+    @TableField(exist = false)
+    private String portDepartureArrivalName;
 
     /**
      * 贸易国别

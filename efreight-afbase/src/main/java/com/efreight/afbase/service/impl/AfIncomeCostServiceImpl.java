@@ -189,8 +189,8 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
     		        	a.setCustomerName(awbN.getAwbFromName());
         		     }
         			 a.setCostId(-1);
-        			 a.setCostQuantity(new BigDecimal(sign.getIncomeWeight()));
-        			 a.setCostUnitPrice(sign.getMsrUnitprice());
+        			 a.setCostQuantity(new BigDecimal(sign.getMsrUnitprice()==null?1:sign.getIncomeWeight()));
+        			 a.setCostUnitPrice(sign.getMsrUnitprice()==null?sign.getMsrAmount():sign.getMsrUnitprice());
         			 a.setCostCurrency("CNY");
         			 a.setCostExchangeRate(new BigDecimal(1));
         			 a.setCostAmountNotTax(sign.getMsrFunctionalAmount());
@@ -522,7 +522,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
         	    	if(o.getMsrUnitprice()!=null) {
         	    		ss.setMsrUnitprice(o.getMsrUnitprice());
         	    	}else {
-        	    		ss.setMsrUnitprice(BigDecimal.ZERO);
+        	    		ss.setMsrUnitprice(null);
         	    	}
         	    	ss.setMsrFunctionalAmount(ss.getMsrUnitprice());
         	    	ss.setIncomeWeight(1.0);
@@ -534,7 +534,7 @@ public class AfIncomeCostServiceImpl extends ServiceImpl<AfIncomeCostMapper, AfI
         	    	if(o!=null&&o.getMsrUnitprice()!=null) {
         	    		sign.setMsrUnitprice(o.getMsrUnitprice());
         	    	}else {
-        	    		sign.setMsrUnitprice(BigDecimal.ZERO);
+        	    		sign.setMsrUnitprice(null);
         	    	}
         	    	sign.setMsrFunctionalAmount(sign.getMsrUnitprice());
         	    	sign.setIncomeWeight(1.0);

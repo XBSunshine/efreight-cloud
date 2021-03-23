@@ -156,4 +156,22 @@ public interface AirportMapper extends BaseMapper<Airport> {
 
 	@Select("select nation_code_three,max(nation_name_cn) nation_name_cn from af_airport where ap_status=1 and nation_code_three is not null group by nation_code_three order by nation_code_three")
 	List<Airport> queryNationWithNationCodeThreeIsNotNull();
+	/**
+	 * 使用关键字进行搜索
+	 * @param enKey
+	 * @param cnKey
+	 * @return
+	 */
+	@Select({"<script>",
+			"SELECT *  FROM af_airport",
+			"  WHERE ap_status = 1" ,
+			"<when test='enKey!=null and enKey!=\"\"'>" ,
+			" and (UPPER(ap_code) LIKE concat('%',UPPER(#{enKey}), '%') or UPPER(city_code) LIKE concat('%', UPPER(#{enKey}),'%'))",
+			"</when>",
+			"<when test='cnKey!=null and cnKey!=\"\"'>" ,
+			" and (UPPER(ap_name_cn) LIKE concat('%',UPPER(#{cnKey}), '%') or UPPER(city_name_cn) LIKE concat('%', UPPER(#{cnKey}),'%'))",
+			"</when>" ,
+			"  ORDER BY ap_code",
+			"</script>"})
+	List<Airport> searchForApi(@Param("enKey") String enKey,@Param("cnKey") String cnKey);
 }

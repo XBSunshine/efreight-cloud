@@ -70,6 +70,9 @@ public class CoopStatementController {
                 for (CoopStatementList item : list) {
                     LinkedHashMap map = new LinkedHashMap();
                     item.setNo(String.valueOf(index++));
+                    if(!"".equals(item.getWhitelistDate()) && item.getWhitelistDate() != null){
+                        item.setWhitelistDate("√");
+                    }
                     for (int j = 0; j < colunmStrs.size(); j++) {
                         map.put(colunmStrs.get(j), FieldValUtils.getFieldValueByFieldName(colunmStrs.get(j), item));
                     }
@@ -101,11 +104,11 @@ public class CoopStatementController {
         }
     }
 
-    @GetMapping("/detail/{coopId}")
-    public MessageInfo detail(@PathVariable("coopId")Integer coopId){
+    @GetMapping("/detail/{coopId}/{billTemplate}")
+    public MessageInfo detail(@PathVariable("coopId")Integer coopId,@PathVariable("billTemplate")String billTemplate){
         try{
             Integer orgId = SecurityUtils.getUser().getOrgId();
-            List<CoopStatementDetail> coopStatementDetailList = coopStatementService.listDetailCoopStatement(orgId, coopId);
+            List<CoopStatementDetail> coopStatementDetailList = coopStatementService.listDetailCoopStatement(orgId, coopId, billTemplate);
             return MessageInfo.ok(coopStatementDetailList);
         }catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -113,8 +116,8 @@ public class CoopStatementController {
         }
     }
 
-    @PostMapping("exportDetail/{coopId}")
-    public void exportDetail(HttpServletResponse response, @PathVariable("coopId") Integer coopId, @RequestParam("columnStr") String columnStr){
+    @PostMapping("exportDetail/{coopId}/{billTemplate}")
+    public void exportDetail(HttpServletResponse response, @PathVariable("coopId") Integer coopId,@PathVariable("billTemplate")String billTemplate, @RequestParam("columnStr") String columnStr){
         Integer orgId = SecurityUtils.getUser().getOrgId();
 
         if (!StringUtils.isEmpty(columnStr)) {
@@ -134,7 +137,7 @@ public class CoopStatementController {
             }
 
 
-            List<CoopStatementDetail> list = coopStatementService.listDetailCoopStatement(orgId, coopId);
+            List<CoopStatementDetail> list = coopStatementService.listDetailCoopStatement(orgId, coopId, billTemplate);
             if (list != null && list.size() > 0) {
                 int index = 1;
                 for (CoopStatementDetail item : list) {

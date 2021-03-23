@@ -66,6 +66,7 @@ public class UserVo implements Serializable {
     private LocalDateTime editTime;
 
     private Integer orgId;
+    private String orgUuid;
 
     private Integer deptId;
 
@@ -145,9 +146,15 @@ public class UserVo implements Serializable {
     private Integer orderTeDigitsWeight;
     private Integer orderTeDigitsVolume;
     private Integer orderTeDigitsChargeWeight;
+    private Integer orderTiDigitsWeight;
+    private Integer orderTiDigitsVolume;
+    private Integer orderTiDigitsChargeWeight;
     private Integer orderLcDigitsWeight;
     private Integer orderLcDigitsVolume;
     private Integer orderLcDigitsChargeWeight;
+    private Integer orderIoDigitsWeight;
+    private Integer orderIoDigitsVolume;
+    private Integer orderIoDigitsChargeWeight;
 
     //签约公司失效时间
     private LocalDateTime stopDate;

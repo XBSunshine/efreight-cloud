@@ -34,6 +34,11 @@ public class CoopStatementList implements Serializable {
     private String coopName;
 
     /**
+     * 业务区域
+     */
+    private String billTemplate;
+
+    /**
      * 客户负责人
      */
     private String customerResponsible;
@@ -126,13 +131,14 @@ public class CoopStatementList implements Serializable {
         this.setCoopId(bean.getCoopId());
         this.setCoopCode(bean.getCoopCode());
         this.setCoopName(bean.getCoopName());
+        this.setBillTemplate(bean.getBillTemplate());
         this.setCustomerResponsible(bean.getCustomerResponsible());
         this.setWhitelistDate(bean.getWhitelistDate());
         this.setCreditLevel(bean.getCreditLevel());
         this.setCreditLimit(bean.getCreditLimit());
         this.setSettlementPeriod(bean.getSettlementPeriod());
         this.setCreditDuration(bean.getCreditDuration());
-        this.setOverdueDays(bean.getOverdueDays());
+        this.setOverdueDays(bean.getOverdueDays() < 0 ? 0:bean.getOverdueDays());
         this.setAmountReceived(formatBigDecimal(decimalFormat, bean.getAmountReceived()));
         this.setAccountPeriodAmount(formatBigDecimal(decimalFormat, bean.getAccountPeriodAmount()));
         this.setOverdueAmount(formatBigDecimal(decimalFormat, bean.getOverdueAmount()));

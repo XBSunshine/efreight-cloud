@@ -2,14 +2,16 @@ package com.efreight.afbase.controller;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.efreight.afbase.entity.*;
+import com.efreight.afbase.entity.FinancialAccount;
+import com.efreight.afbase.entity.FinancialAccountTree;
+import com.efreight.afbase.entity.TreeNode;
+import com.efreight.afbase.entity.WriteOffFinancialAccount;
 import com.efreight.afbase.service.FinancialAccountService;
+import com.efreight.common.security.service.EUserDetails;
 import com.efreight.common.security.util.MessageInfo;
 import com.efreight.common.security.util.SecurityUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -138,6 +140,22 @@ public class FinancialAccountController {
             return MessageInfo.ok();
         } catch (Exception e) {
             log.info(e.getMessage());
+            return MessageInfo.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * 列出发票核销单-科目
+     * @return
+     */
+    @GetMapping("listWriteOffAccount")
+    public MessageInfo listWriteOffAccount(){
+        try{
+            EUserDetails userDetails = SecurityUtils.getUser();
+            List<WriteOffFinancialAccount> financialAccountBeans = financialAccountService.listWriteOffAccount(userDetails.getOrgId());
+            return MessageInfo.ok(financialAccountBeans);
+        }catch (Exception e){
+            log.error(e.getMessage(), e);
             return MessageInfo.failed(e.getMessage());
         }
     }

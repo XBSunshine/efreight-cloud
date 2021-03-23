@@ -8,6 +8,7 @@ import java.time.LocalDate;
 
 import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.util.List;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -260,5 +261,8 @@ public class CssCostInvoiceDetail implements Serializable {
     private String financialAccountCode;
     @TableField(exist = false)
     private String financialAccountType;
+
+    @TableField(exist = false)
+    private List<CssCostFiles> filesList;
 
 }

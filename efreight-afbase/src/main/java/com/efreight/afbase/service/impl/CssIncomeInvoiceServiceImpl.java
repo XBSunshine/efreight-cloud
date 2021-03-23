@@ -1,6 +1,7 @@
 package com.efreight.afbase.service.impl;
 
 import com.efreight.afbase.entity.CssDebitNoteCurrency;
+import com.efreight.afbase.entity.CssIncomeFiles;
 import com.efreight.afbase.entity.CssIncomeInvoice;
 import com.efreight.afbase.entity.CssIncomeInvoiceDetail;
 import com.efreight.afbase.entity.CssIncomeInvoiceDetailWriteoff;
@@ -9,6 +10,7 @@ import com.efreight.afbase.entity.Statement;
 import com.efreight.afbase.entity.StatementCurrency;
 import com.efreight.afbase.dao.CssCostWriteoffMapper;
 import com.efreight.afbase.dao.CssDebitNoteCurrencyMapper;
+import com.efreight.afbase.dao.CssIncomeFilesMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceDetailMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceMapper;
 import com.efreight.afbase.dao.DebitNoteMapper;
@@ -78,6 +80,7 @@ public class CssIncomeInvoiceServiceImpl extends ServiceImpl<CssIncomeInvoiceMap
       private final StatementCurrencyMapper statementCurrencyMapper;
       private final DebitNoteMapper debitNoteMapper;
       private final CssIncomeInvoiceDetailMapper detailMapper;
+      private final CssIncomeFilesMapper filesMapper;
       
 	
 	@Override
@@ -294,9 +297,9 @@ public class CssIncomeInvoiceServiceImpl extends ServiceImpl<CssIncomeInvoiceMap
 				record.setInvoiceStatusStr("核销完毕");
 			}else if(record.getWriteoffComplete()!=null&&record.getWriteoffComplete()==0) {
 				record.setInvoiceStatusStr("部分核销");
-			}else if(record.getInvoiceStatus()==0) {
+			}else if(record.getInvoiceStatus()==0&&record.getBusinessWriteoffComplete()==null) {
 				record.setInvoiceStatusStr("部分开票");
-			}else if(record.getInvoiceStatus()==1) {
+			}else if(record.getInvoiceStatus()==1&&record.getBusinessWriteoffComplete()==null) {
 				record.setInvoiceStatusStr("开票完毕");
 			}else {
 				//invoice_status = -1 
@@ -309,6 +312,23 @@ public class CssIncomeInvoiceServiceImpl extends ServiceImpl<CssIncomeInvoiceMap
 				record.setBusniessAmount(buffer2.toString());
 			}
 			
+			//附件
+			if(record.getInvoiceDetailId()!=null) {
+				StringBuffer sb = new StringBuffer();
+				LambdaQueryWrapper<CssIncomeFiles> cssIncomeFilesWrapper = new LambdaQueryWrapper<CssIncomeFiles>();
+				cssIncomeFilesWrapper.eq(CssIncomeFiles::getInvoiceDetailId, record.getInvoiceDetailId());
+				cssIncomeFilesWrapper.isNull(CssIncomeFiles::getInvoiceDetailWriteoffId);
+				List<CssIncomeFiles> list = filesMapper.selectList(cssIncomeFilesWrapper);
+				if(list!=null&&list.size()>0) {
+					for(CssIncomeFiles files:list) {
+						sb.append(files.getFileUrl());
+						sb.append(" ");
+						sb.append(files.getFileName());
+						sb.append("  ");
+					}
+					record.setFiles(sb.toString());
+				}
+			}
 		});
 		return iPage;
 	}
@@ -429,7 +449,23 @@ public class CssIncomeInvoiceServiceImpl extends ServiceImpl<CssIncomeInvoiceMap
 	                     } else {
 	                         mapTwo.put("createTime", "");
 	                     }
-                    }else if("openInvoiceTime".equals(colunmStrs[j])){
+                    }else if("files".equals(colunmStrs[j])){
+	              		 StringBuffer sb = new StringBuffer();
+	                     if (excel2.getFiles() != null && !"".equals(excel2.getFiles())) {
+	                         if (excel2.getFiles().contains("  ")) {
+	                             String[] array = excel2.getFiles().split("  ");
+	                             for (int k = 0; k < array.length; k++) {
+	                                 sb.append(array[k].split(" ")[0]).append("\n");
+	                             }
+	                             mapTwo.put("files", sb.toString());
+	                         } else {
+	                             mapTwo.put("files", excel2.getFiles().split(" ")[0]);
+	                         }
+	                     } else {
+	                         mapTwo.put("files", "");
+	                     }
+                    }
+                    else if("openInvoiceTime".equals(colunmStrs[j])){
 	                   	 if (excel2.getOpenInvoiceTime()!=null) {
 	                         mapTwo.put("openInvoiceTime", df.format(excel2.getOpenInvoiceTime()));
 	                     } else {

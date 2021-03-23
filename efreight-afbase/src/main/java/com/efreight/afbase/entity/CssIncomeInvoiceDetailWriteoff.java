@@ -183,5 +183,7 @@ public class CssIncomeInvoiceDetailWriteoff implements Serializable {
     private String invoiceRemark;
     @TableField(exist = false)
     private String titleName;
+    @TableField(exist = false)
+    private String files;
 
 }

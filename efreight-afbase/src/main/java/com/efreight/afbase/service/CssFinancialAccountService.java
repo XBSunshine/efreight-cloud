@@ -2,6 +2,9 @@ package com.efreight.afbase.service;
 
 import com.efreight.afbase.entity.CssFinancialAccount;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.efreight.afbase.entity.FinancialAccount;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +16,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface CssFinancialAccountService extends IService<CssFinancialAccount> {
 
+    List<FinancialAccount> getList(String businessScope);
 }

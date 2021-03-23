@@ -2,6 +2,7 @@ package com.efreight.afbase.service.impl;
 
 import com.efreight.afbase.entity.AfIncome;
 import com.efreight.afbase.entity.CssDebitNoteCurrency;
+import com.efreight.afbase.entity.CssIncomeFiles;
 import com.efreight.afbase.entity.CssIncomeInvoice;
 import com.efreight.afbase.entity.CssIncomeInvoiceDetail;
 import com.efreight.afbase.entity.CssIncomeInvoiceDetailWriteoff;
@@ -9,6 +10,7 @@ import com.efreight.afbase.entity.DebitNote;
 import com.efreight.afbase.entity.Statement;
 import com.efreight.afbase.entity.StatementCurrency;
 import com.efreight.afbase.dao.CssDebitNoteCurrencyMapper;
+import com.efreight.afbase.dao.CssIncomeFilesMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceDetailMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceDetailWriteoffMapper;
 import com.efreight.afbase.dao.CssIncomeInvoiceMapper;
@@ -64,6 +66,7 @@ public class CssIncomeInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssIn
 	private final DebitNoteMapper debitNoteMapper;
     private final StatementMapper statementMapper;
     private final StatementCurrencyMapper statementCurrencyMapper;
+    private final CssIncomeFilesMapper filesMapper;
 	
 	
 	@Override
@@ -380,6 +383,24 @@ public class CssIncomeInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssIn
 	public IPage getPage(Page page, CssIncomeInvoiceDetailWriteoff bean) {
 		bean.setOrgId(SecurityUtils.getUser().getOrgId());
 		IPage<CssIncomeInvoiceDetailWriteoff> iPage = baseMapper.getPage(page, bean);
+		if(iPage!=null&&iPage.getRecords()!=null&&iPage.getRecords().size()>0) {
+			iPage.getRecords().stream().forEach(record -> {
+				StringBuffer sb = new StringBuffer();
+				//附件
+				LambdaQueryWrapper<CssIncomeFiles> cssIncomeFilesWrapper = new LambdaQueryWrapper<CssIncomeFiles>();
+				cssIncomeFilesWrapper.eq(CssIncomeFiles::getInvoiceDetailWriteoffId, record.getInvoiceDetailWriteoffId());
+				List<CssIncomeFiles> list = filesMapper.selectList(cssIncomeFilesWrapper);
+				if(list!=null&&list.size()>0) {
+					for(CssIncomeFiles files:list) {
+						sb.append(files.getFileUrl());
+						sb.append(" ");
+						sb.append(files.getFileName());
+						sb.append("  ");
+					}
+					record.setFiles(sb.toString());
+				}
+			});
+		}
 		return iPage;
 	}
 
@@ -448,7 +469,23 @@ public class CssIncomeInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssIn
                          } else {
                              mapTwo.put("financialAccountName", "");
                          }
-                    }else {
+                    }else if("files".equals(colunmStrs[j])){
+	              		 StringBuffer sb = new StringBuffer();
+	                     if (excel2.getFiles() != null && !"".equals(excel2.getFiles())) {
+	                         if (excel2.getFiles().contains("  ")) {
+	                             String[] array = excel2.getFiles().split("  ");
+	                             for (int k = 0; k < array.length; k++) {
+	                                 sb.append(array[k].split(" ")[0]).append("\n");
+	                             }
+	                             mapTwo.put("files", sb.toString());
+	                         } else {
+	                             mapTwo.put("files", excel2.getFiles().split(" ")[0]);
+	                         }
+	                     } else {
+	                         mapTwo.put("files", "");
+	                     }
+                    }
+                    else {
                     	 mapTwo.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j], excel2));
                     }
 
@@ -476,6 +513,15 @@ public class CssIncomeInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssIn
 			throw new RuntimeException("删除失败，数据有变化，请刷新再试");
 		}
 		baseMapper.deleteById(info);
+		//删除核销单对应的附件
+		LambdaQueryWrapper<CssIncomeFiles> cssIncomeFilesWrapper = new LambdaQueryWrapper<CssIncomeFiles>();
+		cssIncomeFilesWrapper.eq(CssIncomeFiles::getInvoiceDetailWriteoffId, info.getInvoiceDetailWriteoffId());
+		List<CssIncomeFiles> list = filesMapper.selectList(cssIncomeFilesWrapper);
+		if(list!=null&&list.size()>0) {
+			list.stream().forEach(o->{
+				filesMapper.deleteById(o);
+			});
+		}
 		//更新
 		this.updateAll(info);
 		return true;

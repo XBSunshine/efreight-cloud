@@ -116,7 +116,7 @@ public class SendServiceImpl extends ServiceImpl<SendMapper, AfOrder> implements
 	public Map<String, Object> doEsdDecleareFHL(String orderUUID, String letterIds) {
 		Map<String,Object> map = new HashMap<String,Object>();
 		EUserDetails user = SecurityUtils.getUser();
-		String apiType = APIType.ALL_WORK;
+		String apiType = APIType.AE_ESD_POST_MAWB;
 		String type = APIType.getAPIType(apiType);
 		OrgInterface config = baseMapper.getShippingBillConfig(user.getOrgId(), apiType);
 		if (config == null ) {

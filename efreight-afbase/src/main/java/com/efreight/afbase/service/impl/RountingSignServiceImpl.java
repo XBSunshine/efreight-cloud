@@ -121,8 +121,13 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 	    	  order.setEditorId(SecurityUtils.getUser().getId());
 	    	  order.setEditorName(SecurityUtils.getUser().buildOptName());
 	    	  order.setEditTime(new Date());
-	    	  order.setMsrUnitprice(Double.valueOf(bean.getMsrUnitprice().toString()));
-	    	  order.setMsrAmount(null);
+	    	  if("单价".equals(bean.getMsrPriceType())) {
+	    		  order.setMsrUnitprice(Double.valueOf(bean.getMsrUnitprice().toString()));
+		    	  order.setMsrAmount(null);
+	    	  }else {
+	    		  order.setMsrUnitprice(null);
+		    	  order.setMsrAmount(Double.valueOf(bean.getMsrUnitprice().toString()));
+	    	  }
 	    	  order.setMsrCurrecnyCode("CNY");
 	    	  afOrderMapper.updateById(order);
 	      }
@@ -140,14 +145,26 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 	    	ss.setEditorId(SecurityUtils.getUser().getId());
 	    	ss.setEditorName(SecurityUtils.getUser().buildOptName());
 	    	ss.setEditTime(LocalDateTime.now());
-	    	ss.setMsrFunctionalAmount(bean.getMsrFunctionalAmount());
-	    	ss.setMsrUnitprice(bean.getMsrUnitprice());
 	    	ss.setIncomeWeight(bean.getIncomeWeight());
+	    	ss.setCostWeight(bean.getCostQuantity());
+	    	if("单价".equals(bean.getMsrPriceType())) {
+	    		 ss.setMsrUnitprice(bean.getMsrUnitprice());
+	    		 ss.setMsrAmount(null);
+	    	}else {
+	    		 ss.setMsrUnitprice(null);
+	    		 ss.setMsrAmount(bean.getMsrUnitprice());
+	    	}
+	    	if("单价".equals(bean.getCostPriceType())) {
+	    		 ss.setCuAmount(null);
+	    		 ss.setCuUnitprice(bean.getCostUnitPrice());
+	    	}else {
+	    		 ss.setCuUnitprice(null);
+	    		 ss.setCuAmount(bean.getCostUnitPrice());
+	    	}
+	    	ss.setMsrFunctionalAmount(bean.getMsrFunctionalAmount());
 	    	ss.setRoutingPersonName(bean.getRoutingPersonName());
 	    	ss.setRoutingPersonId(bean.getRoutingPersonId());
-	    	ss.setCuUnitprice(bean.getCostUnitPrice());
 	    	ss.setCuFunctionalAmount(bean.getCostAmount());
-	    	ss.setCostWeight(bean.getCostQuantity());
 	    	baseMapper.updateById(ss);
 	    }else {
 	    	//新增
@@ -155,7 +172,20 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 	    	bean.setBusinessScope("AE");
 	    	bean.setOrgId(SecurityUtils.getUser().getOrgId());
 	    	bean.setRowUuid(UUID.randomUUID().toString());
-	    	bean.setCuUnitprice(bean.getCostUnitPrice());
+//	    	bean.setCuUnitprice(bean.getCostUnitPrice());
+	    	if("单价".equals(bean.getMsrPriceType())) {
+	    		 bean.setMsrAmount(null);
+	    	}else {
+	    		 bean.setMsrUnitprice(null);
+	    		 bean.setMsrAmount(bean.getMsrUnitprice());
+	    	}
+	    	if("单价".equals(bean.getCostPriceType())) {
+	    		 bean.setCuAmount(null);
+	    		 bean.setCuUnitprice(bean.getCostUnitPrice());
+	    	}else {
+	    		 bean.setCuUnitprice(null);
+	    		 bean.setCuAmount(bean.getCostUnitPrice());
+	    	}
 	    	bean.setCuFunctionalAmount(bean.getCostAmount());
 	    	bean.setCostWeight(bean.getCostQuantity());
 	    	bean.setEditorId(SecurityUtils.getUser().getId());
@@ -191,8 +221,13 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 		    	cost.setServiceNote("航线签单");
 			    
 		    }
-		    cost.setCostQuantity(bean.getCostQuantity());
-		    cost.setCostUnitPrice(bean.getCostUnitPrice());
+		    if("单价".equals(bean.getCostPriceType())) {
+		    	cost.setCostQuantity(bean.getCostQuantity());
+		    	cost.setCostUnitPrice(bean.getCostUnitPrice());
+	    	}else {
+	    		cost.setCostQuantity(new BigDecimal(1));
+	    		cost.setCostUnitPrice(bean.getCostAmount());
+	    	}
 		    cost.setCostAmount(bean.getCostAmount());
 		    cost.setCostFunctionalAmount(bean.getCostAmount());
 		    cost.setCostCurrency("CNY");
@@ -259,6 +294,8 @@ public class RountingSignServiceImpl extends ServiceImpl<RountingSignMapper, Rou
 		sign.setRowUuid(UUID.randomUUID().toString());
 		sign.setMsrFunctionalAmount(null);
 		sign.setMsrUnitprice(null);
+		sign.setMsrAmount(null);
+		sign.setCuAmount(null);
 		sign.setCuFunctionalAmount(null);
 		sign.setCuUnitprice(null);
 		baseMapper.updateById(sign);

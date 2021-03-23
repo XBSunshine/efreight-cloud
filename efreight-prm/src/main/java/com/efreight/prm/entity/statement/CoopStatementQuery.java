@@ -31,6 +31,9 @@ public class CoopStatementQuery implements Serializable {
      */
     private String coopName;
 
+    // 业务区域
+    private String billTemplate;
+
     // 客户负责人
     private String customerResponsible;
 

@@ -32,20 +32,28 @@ public class BudgetServiceImpl implements BudgetService {
         zone.put("EFT", "总部");
         zone.put("aggregate", "合计");
     }
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal(100);
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("###,##0.00");
 
     @Override
     public List<BudgetListBean> queryList(BudgetQuery budgetQuery) {
-        BigDecimal oneHundred = new BigDecimal(100);
-        DecimalFormat decimalFormat = new DecimalFormat("###,##0.00");
-
         String saleIdsStr = budgetQuery.getSaleIds().stream().map(String::valueOf).collect(Collectors.joining(","));
         budgetQuery.setSaleIdsStr(saleIdsStr);
 
         List<BudgetListBean> list = budgetDao.budgetList(budgetQuery);
+
+        //根据服务ID来添加合计数据
+        aggregateByServiceId(list);
+
+        //根据区域代码来添加合计数据
+        List<BudgetListBean> aggregateByZoneCodeList = aggregateByZoneCode(list);
+
+        //将总部数据后移
         List<BudgetListBean> eftList = new ArrayList<>();
         List<BudgetListBean> result = new ArrayList<>();
-        for (BudgetListBean item : list) {
-            fillRate(item, oneHundred, decimalFormat);
+        for (BudgetListBean item : aggregateByZoneCodeList) {
+            item.setZoneName(zone.get(item.getZoneCode()));
+            fillRate(item);
             if("EFT".equals(item.getZoneCode())){
                 eftList.add(item);
             }else{
@@ -54,71 +62,84 @@ public class BudgetServiceImpl implements BudgetService {
         }
         result.addAll(eftList);
 
-        Map<Integer, List<BudgetListBean>> map = result.stream().collect(Collectors.groupingBy(BudgetListBean::getServiceId, Collectors.toList()));
-
+        return result;
+    }
+    private void aggregateByServiceId(List<BudgetListBean> list){
+        Map<Integer, List<BudgetListBean>> map = list.stream().collect(Collectors.groupingBy(BudgetListBean::getServiceId, Collectors.toList()));
         List<BudgetListBean> aggregateList = new ArrayList<>();
         map.forEach((key, value)->{
-            BudgetListBean budgetListBean = new BudgetListBean();
+            BudgetListBean budgetListBean = buildTotal(value);
             budgetListBean.setZoneCode("aggregate");
             budgetListBean.setZoneName("合计");
             budgetListBean.setServiceId(key);
             budgetListBean.setServiceName(value.get(0).getServiceName());
             budgetListBean.setServiceCode(value.get(0).getServiceCode());
-
-            BigDecimal[] aggregate = aggregate(value);
-            budgetListBean.setOldActuralCharge(format(aggregate[0], decimalFormat));
-            budgetListBean.setNewActuralCharge(format(aggregate[1], decimalFormat));
-            budgetListBean.setTotalActuralCharge(format(aggregate[2], decimalFormat));
-            budgetListBean.setOldBudget(format(aggregate[3], decimalFormat));
-            budgetListBean.setNewBudget(format(aggregate[4], decimalFormat));
-            budgetListBean.setTotalBudget(format(aggregate[5], decimalFormat));
-            budgetListBean.setSamePeriod(format(aggregate[6], decimalFormat));
-            //完成率
-            budgetListBean.setOldFillRate(
-                    BigDecimal.ZERO.compareTo(aggregate[3]) != 0 ?
-                            format(aggregate[0].divide(aggregate[3], 4, BigDecimal.ROUND_HALF_UP).multiply(oneHundred), decimalFormat)+" %" : "0.00 %"
-            );
-            budgetListBean.setNewFillRate(
-                    BigDecimal.ZERO.compareTo(aggregate[4]) != 0 ?
-                            format(aggregate[1].divide(aggregate[4], 4, BigDecimal.ROUND_HALF_UP).multiply(oneHundred), decimalFormat)+" %" : "0.00 %");
-            budgetListBean.setTotalFillRate(
-                    BigDecimal.ZERO.compareTo(aggregate[5]) != 0 ?
-                            format(aggregate[2].divide(aggregate[5], 4, BigDecimal.ROUND_HALF_UP).multiply(oneHundred), decimalFormat)+" %" : "0.00 %");
-            //增长率
-            budgetListBean.setGrowthRate(
-                    BigDecimal.ZERO.compareTo(aggregate[6]) != 0 ?
-                            format((aggregate[2].subtract(aggregate[6]).divide(aggregate[6], 4, BigDecimal.ROUND_HALF_UP)).multiply(oneHundred), decimalFormat)+" %" : "0.00 %");
             aggregateList.add(budgetListBean);
         });
         Collections.sort(aggregateList, Comparator.comparing(BudgetListBean::getServiceCode));
-        result.addAll(aggregateList);
+        list.addAll(aggregateList);
+    }
+
+    // 根据业务区域进行合计
+    private List<BudgetListBean> aggregateByZoneCode(List<BudgetListBean> list) {
+        Map<String, List<BudgetListBean>> map = list.stream().collect(Collectors.groupingBy(BudgetListBean::getZoneCode, Collectors.toList()));
+        List<BudgetListBean> result = new ArrayList<>();
+
+        map.forEach((key, values)->{
+            BudgetListBean total = buildTotal(values);
+            total.setZoneCode(key);
+            total.setZoneName(zone.get(key));
+            total.setServiceName("汇总");
+            result.addAll(values);
+            result.add(total);
+        });
         return result;
     }
 
-    private void fillRate(BudgetListBean item, BigDecimal oneHundred, DecimalFormat decimalFormat) {
-        item.setOldFillRate(fillRate(item.getOldActuralCharge(), item.getOldBudget(), oneHundred, decimalFormat));
-        item.setNewFillRate(fillRate(item.getNewActuralCharge(), item.getNewBudget(), oneHundred, decimalFormat));
-        item.setTotalFillRate(fillRate(item.getTotalActuralCharge(), item.getTotalBudget(), oneHundred, decimalFormat));
+    private BudgetListBean buildTotal(List<BudgetListBean> budgetListBeanList){
+        String[] aggregate = aggregate(budgetListBeanList);
 
-        if("0.00".equals(item.getTotalActuralCharge()) || "0.00".equals(item.getSamePeriod())){
-            item.setGrowthRate("0.00 %");
-        }else{
-            item.setGrowthRate(fillRate(
-                    format(new BigDecimal(item.getTotalActuralCharge()).subtract(new BigDecimal(item.getSamePeriod())), decimalFormat),
-                    item.getSamePeriod(),
-                    oneHundred,
-                    decimalFormat
-            ));
-        }
+        BudgetListBean budgetListBean = new BudgetListBean();
+        budgetListBean.setOldActuralCharge(aggregate[0]);
+        budgetListBean.setNewActuralCharge(aggregate[1]);
+        budgetListBean.setTotalActuralCharge(aggregate[2]);
+        budgetListBean.setOldBudget(aggregate[3]);
+        budgetListBean.setNewBudget(aggregate[4]);
+        budgetListBean.setTotalBudget(aggregate[5]);
+        budgetListBean.setSamePeriod(aggregate[6]);
+        fillRate(budgetListBean);
+        return budgetListBean;
     }
 
-    private String fillRate(String real, String budget, BigDecimal fixed, DecimalFormat decimalFormat){
-        if("0.00".equals(real) || "0.00".equals(budget)){
+    private void fillRate(BudgetListBean item) {
+        item.setOldFillRate(fillFinishRate(item.getOldActuralCharge(), item.getOldBudget()));
+        item.setNewFillRate(fillFinishRate(item.getNewActuralCharge(), item.getNewBudget()));
+        item.setTotalFillRate(fillFinishRate(item.getTotalActuralCharge(), item.getTotalBudget()));
+        item.setGrowthRate(growthRate(item.getTotalActuralCharge(), item.getSamePeriod()));
+    }
+
+    //计算完成率
+    private String fillFinishRate(String real, String budget){
+        if("0.00".equals(real)){
             return "0.00 %";
+        }
+        if("0.00".equals(budget)){
+            return "100.00 %";
         }
         real = real.replaceAll(",", "");
         budget = budget.replaceAll(",", "");
-        return format(new BigDecimal(real).divide(new BigDecimal(budget), 4, BigDecimal.ROUND_HALF_UP).multiply(fixed), decimalFormat) + " %";
+        return format(new BigDecimal(real).divide(new BigDecimal(budget), 4, BigDecimal.ROUND_HALF_UP).multiply(ONE_HUNDRED), DECIMAL_FORMAT) + " %";
+    }
+
+    //计算增长率
+    private String growthRate(String real, String samePeriod){
+        if("0.00".equals(real)){
+            return "0.00".equals(samePeriod) ? "0.00 %" : "-100.00 %";
+        }
+        if("0.00".equals(samePeriod)){
+            return "100.00 %";
+        }
+        return format(new BigDecimal(real).subtract(new BigDecimal(samePeriod)).divide(new BigDecimal(samePeriod), 4, BigDecimal.ROUND_HALF_UP).multiply(ONE_HUNDRED), DECIMAL_FORMAT) + " %";
     }
 
     @Override
@@ -126,12 +147,12 @@ public class BudgetServiceImpl implements BudgetService {
         return this.budgetDao.budgetService();
     }
 
-    private BigDecimal[] aggregate(List<BudgetListBean> list){
+    //合计数据
+    private String[] aggregate(List<BudgetListBean> list){
         BigDecimal[] bigDecimals = new BigDecimal[7];
         Arrays.fill(bigDecimals, BigDecimal.ZERO);
 
         list.stream().forEach(item -> {
-            item.setZoneName(zone.get(item.getZoneCode()));
             //实际-老业务
             bigDecimals[0] = bigDecimals[0].add(new BigDecimal(item.getOldActuralCharge().replaceAll(",", "")));
             //实际-新业务
@@ -147,7 +168,16 @@ public class BudgetServiceImpl implements BudgetService {
             //同期
             bigDecimals[6] = bigDecimals[6].add(new BigDecimal(item.getSamePeriod().replaceAll(",", "")));
         });
-        return bigDecimals;
+
+        String[] result = new String[7];
+        result[0] = format(bigDecimals[0], DECIMAL_FORMAT);
+        result[1] = format(bigDecimals[1], DECIMAL_FORMAT);
+        result[2] = format(bigDecimals[2], DECIMAL_FORMAT);
+        result[3] = format(bigDecimals[3], DECIMAL_FORMAT);
+        result[4] = format(bigDecimals[4], DECIMAL_FORMAT);
+        result[5] = format(bigDecimals[5], DECIMAL_FORMAT);
+        result[6] = format(bigDecimals[6], DECIMAL_FORMAT);
+        return result;
     }
 
     private String format(BigDecimal decimal, DecimalFormat decimalFormat){

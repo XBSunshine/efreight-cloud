@@ -8,11 +8,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.efreight.afbase.dao.CssCostInvoiceDetailMapper;
-import com.efreight.afbase.dao.CssCostInvoiceMapper;
-import com.efreight.afbase.dao.CssPaymentMapper;
+import com.efreight.afbase.dao.*;
 import com.efreight.afbase.entity.*;
-import com.efreight.afbase.dao.CssCostInvoiceDetailWriteoffMapper;
 import com.efreight.afbase.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.afbase.utils.LoginUtils;
@@ -55,6 +52,7 @@ public class CssCostInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssCost
     private final AfOrderService afOrderService;
     private final LcOrderService lcOrderService;
     private final IoOrderService ioOrderService;
+    private final CssCostFilesMapper cssCostFilesMapper;
 
     @Override
     public IPage getPage(Page page, CssCostInvoiceDetailWriteoff cssCostInvoiceDetailWriteoff) {
@@ -115,6 +113,9 @@ public class CssCostInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssCost
         if (cssCostInvoiceDetailWriteoff.getCreateTimeEnd() != null) {
             wrapper.le(CssCostInvoiceDetailWriteoff::getCreateTime, cssCostInvoiceDetailWriteoff.getCreateTimeEnd());
         }
+        if (StrUtil.isNotBlank(cssCostInvoiceDetailWriteoff.getFinancialAccountCode())) {
+            wrapper.like(CssCostInvoiceDetailWriteoff::getFinancialAccountCode, cssCostInvoiceDetailWriteoff.getFinancialAccountCode());
+        }
         wrapper.orderByDesc(CssCostInvoiceDetailWriteoff::getInvoiceDetailWriteoffId);
         IPage<CssCostInvoiceDetailWriteoff> result = page(page, wrapper);
         result.getRecords().stream().forEach(item -> {
@@ -126,6 +127,9 @@ public class CssCostInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssCost
             item.setInvoiceAmount(cssCostInvoiceDetail.getAmount());
             item.setInvoiceAmountStr(FormatUtils.formatWithQWF(item.getInvoiceAmount(), 2) + " (" + item.getCurrency() + ")");
             item.setAmountWriteoffStr(FormatUtils.formatWithQWF(item.getAmountWriteoff(), 2) + " (" + item.getCurrency() + ")");
+            LambdaQueryWrapper<CssCostFiles> cssCostFilesLambdaQueryWrapper = Wrappers.<CssCostFiles>lambdaQuery();
+            cssCostFilesLambdaQueryWrapper.eq(CssCostFiles::getInvoiceDetailWriteoffId, item.getInvoiceDetailWriteoffId()).eq(CssCostFiles::getOrgId, SecurityUtils.getUser().getOrgId());
+            item.setFilesList(cssCostFilesMapper.selectList(cssCostFilesLambdaQueryWrapper));
         });
         //拼接合计
         if (result.getRecords().size() != 0) {
@@ -602,6 +606,10 @@ public class CssCostInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssCost
                 ioOrderService.updateById(order);
             }
         });
+        //删除附件
+        LambdaQueryWrapper<CssCostFiles> wrapper = Wrappers.<CssCostFiles>lambdaQuery();
+        wrapper.eq(CssCostFiles::getInvoiceDetailWriteoffId, invoiceDetailWriteoffId).eq(CssCostFiles::getOrgId, SecurityUtils.getUser().getOrgId());
+        cssCostFilesMapper.delete(wrapper);
     }
 
     @Override
@@ -654,6 +662,16 @@ public class CssCostInvoiceDetailWriteoffServiceImpl extends ServiceImpl<CssCost
                         } else if ("invoiceAmount".equals(colunmStrs[j]) || "amountWriteoff".equals(colunmStrs[j])) {
                             if (StrUtil.isNotBlank(FieldValUtils.getFieldValueByFieldName(colunmStrs[j], writeoff))) {
                                 map.put(colunmStrs[j], FieldValUtils.getFieldValueByFieldName(colunmStrs[j] + "Str", writeoff).replaceAll("\\|", "\n"));
+                            } else {
+                                map.put(colunmStrs[j], "");
+                            }
+                        } else if ("filesList".equals(colunmStrs[j])) {
+                            if (writeoff.getFilesList() != null && !writeoff.getFilesList().isEmpty()) {
+                                StringBuilder stringBuilder = new StringBuilder();
+                                writeoff.getFilesList().stream().forEach(item -> {
+                                    stringBuilder.append(item.getFileUrl()).append("\n");
+                                });
+                                map.put(colunmStrs[j], stringBuilder.toString());
                             } else {
                                 map.put(colunmStrs[j], "");
                             }

@@ -54,5 +54,6 @@ public class CoopBillSettle implements Serializable {
     private String salesCollaborativeName;
     private String startChargeTime;
     private Boolean isNewBusiness;
-
+    private Boolean showZeroFlag;
+    private String columnStrs;
 }

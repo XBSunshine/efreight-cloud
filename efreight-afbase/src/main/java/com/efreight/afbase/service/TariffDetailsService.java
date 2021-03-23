@@ -25,4 +25,6 @@ public interface TariffDetailsService extends IService<TariffDetails> {
     List<TariffDetails> getList(String productName);
 
 	TariffDetails view(String productCode);
+
+	List<TariffDetails> getListForApi(String keyName);
 }

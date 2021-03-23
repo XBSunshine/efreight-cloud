@@ -51,4 +51,6 @@ public interface AirportService extends IService<Airport> {
     List<AirportCitySearch> searchCity(String searchKey);
 
     List<Airport> queryNationWithNationCodeThreeIsNotNull();
+
+    List<Airport> airportListForApi(String enKey, String cnKey);
 }

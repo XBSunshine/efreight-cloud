@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.efreight.prm.dao.CoopStatementDao">
+    <resultMap id="BaseResultMap" type="com.efreight.prm.entity.statement.CoopStatement">
+
+    </resultMap>
+    <select id="selectById" parameterType="java.lang.Integer" resultType="com.efreight.prm.entity.statement.CoopStatement">
+        select
+            statement_id                AS  statementId,
+            org_id                      AS  orgId,
+            coop_id                     AS  coopId,
+            settlement_id               AS  settlementId,
+            statement_name              AS  statementName,
+            statement_status            AS  statementStatus,
+            statement_number            AS  statementNumber,
+            statement_date              AS  statementDate,
+            statement_mail_date         AS  statementMailDate,
+            statement_mail_sender_id    AS  statementMailSenderId,
+            statement_mail_sender_name  AS  statementMailSenderName,
+            amount_receivable           AS  amountReceivable,
+            amount_received             AS  amountReceived,
+            amount_received_discount    AS  amountReceivedDiscount,
+            min_charge                  AS  minCharge,
+            max_charge                  AS  maxCharge,
+            invoice_amount              AS  invoiceAmount,
+            invoice_number              AS  invoiceNumber,
+            invoice_date                AS  invoiceDate,
+            invoice_user_name           AS  invoiceUserName,
+            invoice_writeoff_amount     AS  invoiceWriteoffAmount,
+            invoice_writeoff_date       AS  invoiceWriteoffDate,
+            invoice_writeoff_user_name  AS  invoiceWriteoffUserName,
+            creator_id                  AS  creatorId,
+            creator_name                AS  creatorName,
+            create_time                 AS  createTime,
+            editor_id                   AS  editorId,
+            editor_name                 AS  editorName,
+            edit_time                   AS  editTime,
+            modify_saler                AS  modifySaler,
+            confirm_head_office_name    AS  confirmHeadOfficeName,
+            confirm_head_office_time    AS  confirmHeadOfficeTime,
+            confirm_saler_name          AS  confirmSalerName,
+            confirm_saler_time          AS  confirmSalerTime,
+            confirm_customer_name       AS  confirmCustomerName,
+            confirm_customer_time       AS  confirmCustomerTime,
+            invoice_title               AS  invoiceTitle,
+            invoice_type                AS  invoiceType,
+            invoice_remark              AS  invoiceRemark,
+            invoice_mail_to             AS  invoiceMailTo,
+            bill_manual_mail_to         AS  billManualMailTo,
+            express_company             AS  expressCompany,
+            express_number              AS  expressNumber,
+            mail_send_time              AS  mailSendTime,
+            bill_template               AS  billTemplate,
+            row_uuid                    AS  rowUuid
+        from prm_coop_statement where statement_id = #{statementId}
+    </select>
+</mapper>

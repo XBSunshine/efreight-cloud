@@ -48,7 +48,7 @@ public interface CssCostInvoiceDetailMapper extends BaseMapper<CssCostInvoiceDet
             " and A.invoice_status=-1" +
             "</when>" +
             " <when test='cssCostInvoiceDetail.status!=null and cssCostInvoiceDetail.status!=\"\" and cssCostInvoiceDetail.status==\"部分收票\"'>" +
-            " and A.invoice_status=0 and B.writeoff_complete is null" +
+            " and A.invoice_status=0" +
             "</when>" +
             " <when test='cssCostInvoiceDetail.status!=null and cssCostInvoiceDetail.status!=\"\" and cssCostInvoiceDetail.status==\"收票完毕\"'>" +
             " and A.invoice_status=1 and B.writeoff_complete is null" +

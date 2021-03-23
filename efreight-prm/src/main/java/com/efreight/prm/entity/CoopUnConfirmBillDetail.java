@@ -70,4 +70,5 @@ public class CoopUnConfirmBillDetail implements Serializable {
     private Date billFillDate;
     private Integer isSendMailAuto;
     private BigDecimal settlementCharge;
+    private String rowUuid;
 }

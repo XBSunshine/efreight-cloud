@@ -138,6 +138,19 @@ public class Org implements Serializable {
     private boolean orderFinanceLockView;
 
     /**
+     * 公司简介
+     */
+    private String companyProfile;
+    /**
+     * 优势介绍
+     */
+    private String companyAdvantage;
+    /**
+     * 联系方式
+     */
+    private String companyContactInfo;
+
+    /**
      * 企业配置信息
      */
     @TableField(exist = false)

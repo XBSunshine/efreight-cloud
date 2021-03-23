@@ -1,0 +1,69 @@
+#-------------开发环境------------
+server:
+  port: 8086
+
+
+spring:
+  application:
+    name: efreight-mns
+  # 配置中心
+  cloud:
+    config:
+      fail-fast: true
+      name: ${spring.application.name}
+      profile: dev
+      discovery:
+        enabled: true
+        service-id: efreight-config
+  main:
+    allow-bean-definition-overriding: true
+
+  freemarker:
+    allow-request-override: false
+    cache: false
+    check-template-location: true
+    charset: UTF-8
+    content-type: text/html; charset=utf-8
+    expose-request-attributes: false
+    expose-session-attributes: false
+    expose-spring-macro-helpers: false
+    suffix: .ftl
+    template-loader-path: classpath:/templates
+
+# 注册中心配置
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+#      defaultZone: http://127.0.0.1:9001/eureka/
+      defaultZone: http://101.200.170.232:9001/eureka/
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+
+---
+
+#-------------测试环境------------
+spring:
+  # 配置中心
+  cloud:
+    config:
+      profile: ${spring.profiles.active}
+  profiles: dev
+eureka:
+  client:
+    service-url:
+      defaultZone: http://10.66.178.186:9001/eureka/
+---
+#-------------生产环境------------
+spring:
+  # 配置中心
+  cloud:
+    config:
+      profile: ${spring.profiles.active}
+  profiles: prod
+eureka:
+  client:
+    service-url:
+      defaultZone: http://10.66.204.44:9001/eureka/

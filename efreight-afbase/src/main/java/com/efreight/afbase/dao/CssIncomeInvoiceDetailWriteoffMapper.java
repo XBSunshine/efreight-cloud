@@ -114,7 +114,7 @@ public interface CssIncomeInvoiceDetailWriteoffMapper extends BaseMapper<CssInco
  void updateIncomeAmountWriteoffTwo(@Param("incomeId") Integer incomeId,@Param("incomeAmountWriteoff") BigDecimal incomeAmountWriteoff,@Param("rowUuid") String rowUuid,@Param("businessScope") String businessScope);
 	 
 		@Select({"<script>",
-			"select a.*,b.invoice_num,b.amount,b.invoice_date,  ",
+			"select a.*,b.invoice_num,b.amount,b.invoice_date,b.invoice_title,  ",
 			"IFNULL(c.debit_note_num,d.statement_num) AS business_num ",
 			" from ",
 			" css_income_invoice_detail_writeoff a ",
@@ -142,6 +142,12 @@ public interface CssIncomeInvoiceDetailWriteoffMapper extends BaseMapper<CssInco
 	        "</when>",
 	        "<when test='bean.invoiceNum!=null and bean.invoiceNum!=\"\"'>",
 	        " AND b.invoice_num like \"%\"#{bean.invoiceNum}\"%\"",
+	        "</when>",
+	        "<when test='bean.invoiceTitle!=null and bean.invoiceTitle!=\"\"'>",
+	        " AND b.invoice_title like \"%\"#{bean.invoiceTitle}\"%\"",
+	        "</when>",
+			"<when test='bean.financialAccountCode!=null and bean.financialAccountCode!=\"\"'>",
+	        " AND a.financial_account_code like \"%\"#{bean.financialAccountCode}\"%\"",
 	        "</when>",
 	        "<when test='bean.writeoffNum!=null and bean.writeoffNum!=\"\"'>",
 	        " AND a.writeoff_num like \"%\"#{bean.writeoffNum}\"%\"",

@@ -1,8 +1,8 @@
 package com.efreight.prm.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-
 import com.efreight.common.core.jms.MailSendService;
+import com.efreight.common.security.service.EUserDetails;
 import com.efreight.common.security.util.SecurityUtils;
 import com.efreight.prm.dao.CoopBillMapper;
 import com.efreight.prm.entity.*;
@@ -14,10 +14,8 @@ import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.pdf.BadPdfFormatException;
-
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -210,11 +208,19 @@ public class CoopBillServiceImpl implements CoopBillService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void doFill(CoopBill billBean) {
+    public String doFill(CoopBill billBean) {
         CoopBill coopBill = coopBillMapper.selectById(billBean.getBillId());
         if (coopBill == null) {
             throw new RuntimeException("该账单不存在");
         }
+        //比较账单表的row_uuid是否发生了变化
+        String rowUuid = coopBillMapper.getRowUuidByStatementId(billBean.getStatementId());
+        if(!"".equals(rowUuid) && rowUuid != null && !rowUuid.equals(billBean.getRowUuid())){
+            throw new RuntimeException("账单数据发生变化，请刷新后重试。");
+        }
+        //修改账单表的row_uuid
+        String rowUuidNew = UUID.randomUUID().toString();
+        coopBillMapper.updateStatementRowUuid(billBean.getStatementId(),rowUuidNew);
         billBean.setFillUser(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
         billBean.setBillFillDate(new Date());
         if (billBean.getIsDetail() == "detail" || "detail".equals(billBean.getIsDetail())) {//说明是从账单明细进来的
@@ -266,6 +272,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         } catch (Exception e) {
             throw new RuntimeException("翌飞账单数据填充成功,日志更新失败!");
         }
+        return rowUuidNew;
     }
 
     @Override
@@ -673,19 +680,18 @@ public class CoopBillServiceImpl implements CoopBillService {
     }
 
     @Override
-    public void invoice(String invoiceNo, Integer statement_id, Double acturalCharge, String invoiceTitle, String invoiceType, String invoiceRemark, String expressCompany, String expressNumber, Date invoiceDate) {
-        /*CoopBill coopBill = coopBillMapper.selectById(statement_id);
-        if (coopBill == null) {
-            throw new RuntimeException("该账单不存在");
-        }*/
-//        if (!"已确认".equals(coopBill.getBillStatus())) {
-//            throw new RuntimeException("只有已确认的账单才可以开发票");
-//        }
-        /*if ("未操作".equals(coopBill.getBillStatus())|| "已核销".equals(coopBill.getBillStatus())|| "已填充".equals(coopBill.getBillStatus())) {
-    		throw new RuntimeException("当前账单状态不可以数据填充");
-    	}*/
-        coopBillMapper.invoice(statement_id, invoiceNo, acturalCharge, new Date(), SecurityUtils.getUser().getId(), SecurityUtils.getUser().getUserCname(), SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail(),
-                invoiceTitle, invoiceType, invoiceRemark, expressCompany, expressNumber, invoiceDate);
+    public void invoice(CoopBillStatement coopBillStatement) {
+        Assert.hasLength(coopBillStatement.getRowUuid(), "数据不存在");
+        EUserDetails loginUser = SecurityUtils.getUser();
+        int result = coopBillMapper.invoice(
+                coopBillStatement.getRowUuid(), coopBillStatement.getInvoiceNumber(), coopBillStatement.getActuralCharge(),
+                new Date(), loginUser.getId(), loginUser.getUserCname(), loginUser.buildOptName(),
+                coopBillStatement.getInvoiceTitle(), coopBillStatement.getInvoiceType(), coopBillStatement.getInvoiceRemark(),
+                coopBillStatement.getExpressCompany(), coopBillStatement.getExpressNumber(), coopBillStatement.getInvoiceDate());
+
+        if(result == 0){
+            throw new RuntimeException("账单数据发生变化，请刷新后重试。");
+        }
 
         try {
             LogBean bean = new LogBean();
@@ -697,7 +703,7 @@ public class CoopBillServiceImpl implements CoopBillService {
             bean.setOp_type("账单开发票");
             bean.setOp_level("高");
             bean.setOp_name("翌飞账单");
-            bean.setOp_info("账单号" + statement_id + "已开发票");
+            bean.setOp_info("账单号" + coopBillStatement.getStatement_id() + "已开发票");
             logService.doSave(bean);
         } catch (Exception e) {
             throw new RuntimeException("翌飞账单开发票成功,日志更新失败!");
@@ -1136,6 +1142,7 @@ public class CoopBillServiceImpl implements CoopBillService {
                     for (int j = 0; j < coopUnConfirmBillDetailList.size(); j++) {
                         coopUnConfirmBillDetailList.get(j).setId(UUID.randomUUID().toString());
                         coopUnConfirmBillDetailList.get(j).setIsSendMailAuto(paramList.get(i).getIsSendMailAuto());
+                        coopUnConfirmBillDetailList.get(j).setRowUuid(paramList.get(i).getRowUuid());
                     }
                     paramList.get(i).setCoopUnConfirmBillDetail(coopUnConfirmBillDetailList);
                 } else {
@@ -1179,6 +1186,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         paramMap.put("invoiceWriteoffDateEnd", coopBillSettle.getInvoiceWriteoffDateEnd());
         paramMap.put("paymentMethod", coopBillSettle.getPaymentMethod());
         paramMap.put("isNewBusiness", coopBillSettle.getIsNewBusiness());
+        paramMap.put("showZeroFlag", coopBillSettle.getShowZeroFlag());
         if (coopBillSettle.getServiceNameOne() != null && !"".equals(coopBillSettle.getServiceNameOne()))
             paramMap.put("serviceNameOne", coopBillSettle.getServiceNameOne().split(","));
         if (coopBillSettle.getServiceNameTwo() != null && !"".equals(coopBillSettle.getServiceNameTwo()))
@@ -1189,6 +1197,19 @@ public class CoopBillServiceImpl implements CoopBillService {
         HashMap<String, Object> resultMap = new HashMap<>();
         resultMap.put("totalNum", totalNum);
         resultMap.put("paramList", paramList);
+        //查询总计
+        List<CoopBillSettle> list = coopBillMapper.searchCoopBillSettleList(paramMap);
+        BigDecimal acturalChargeTotal = new BigDecimal(0);
+        if (list != null && list.size() > 0) {
+            for (int i = 0; i < list.size(); i++) {
+                //计算实收金额合计
+                CoopBillSettle afOrder = list.get(i);
+                if (afOrder.getActuralCharge() != null) {
+                    acturalChargeTotal = acturalChargeTotal.add(afOrder.getActuralCharge());
+                }
+            }
+        }
+        resultMap.put("acturalChargeTotal", acturalChargeTotal);
         return resultMap;
     }
 
@@ -1211,6 +1232,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         paramMap.put("invoiceWriteoffDateEnd", coopBillSettle.getInvoiceWriteoffDateEnd());
         paramMap.put("paymentMethod", coopBillSettle.getPaymentMethod());
         paramMap.put("isNewBusiness", coopBillSettle.getIsNewBusiness());
+        paramMap.put("showZeroFlag", coopBillSettle.getShowZeroFlag());
         if (coopBillSettle.getServiceNameOne() != null && !"".equals(coopBillSettle.getServiceNameOne()))
             paramMap.put("serviceNameOne", coopBillSettle.getServiceNameOne().split(","));
         if (coopBillSettle.getServiceNameTwo() != null && !"".equals(coopBillSettle.getServiceNameTwo()))
@@ -1229,15 +1251,7 @@ public class CoopBillServiceImpl implements CoopBillService {
                 if (afOrder.getActuralCharge() != null) {
                     acturalChargeTotal = acturalChargeTotal.add(afOrder.getActuralCharge());
                 }
-                //账单实收金额合计去重
-                // resultMap.put(afOrder.getStatementId(),afOrder.getAmountReceived());
             }
-            //计算账单实收金额合计
-            /*for(BigDecimal val : resultMap.values()) {
-                if(val!=null){
-                    amountReceivedTotal = amountReceivedTotal.add(val);
-                }
-            }*/
         }
 
         order.setActuralChargeTotal(acturalChargeTotal);
@@ -1264,6 +1278,7 @@ public class CoopBillServiceImpl implements CoopBillService {
         paramMap.put("invoiceWriteoffDateEnd", bean.getInvoiceWriteoffDateEnd());
         paramMap.put("paymentMethod", bean.getPaymentMethod());
         paramMap.put("isNewBusiness", bean.getIsNewBusiness());
+        paramMap.put("showZeroFlag", bean.getShowZeroFlag());
         if (bean.getServiceNameOne() != null && !"".equals(bean.getServiceNameOne()))
             paramMap.put("serviceNameOne", bean.getServiceNameOne().split(","));
         if (bean.getServiceNameTwo() != null && !"".equals(bean.getServiceNameTwo()))
@@ -1306,7 +1321,15 @@ public class CoopBillServiceImpl implements CoopBillService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void refuseConfirmBill(CoopUnConfirmBillGroup coopUnConfirmBillGroup) {
+        //比较账单表的row_uuid是否发生了变化
+        String rowUuid = coopBillMapper.getRowUuidByStatementId(coopUnConfirmBillGroup.getStatementId());
+        if(!"".equals(rowUuid) && rowUuid != null && !rowUuid.equals(coopUnConfirmBillGroup.getRowUuid())){
+            throw new RuntimeException("账单数据发生变化，请刷新后重试。");
+        }
+        //修改账单表的row_uuid
+        String rowUuidNew = UUID.randomUUID().toString();
         //修改状态为“数据已填充
+        coopUnConfirmBillGroup.setRowUuid(rowUuidNew);
         coopUnConfirmBillGroup.setEditorId(SecurityUtils.getUser().getId());
         coopUnConfirmBillGroup.setEditTime(new Date());
         coopUnConfirmBillGroup.setEditorName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
@@ -1328,6 +1351,14 @@ public class CoopBillServiceImpl implements CoopBillService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void confirmBill(CoopUnConfirmBillGroup coopUnConfirmBillGroup) {
+        //比较账单表的row_uuid是否发生了变化
+        String rowUuid = coopBillMapper.getRowUuidByStatementId(coopUnConfirmBillGroup.getStatementId());
+        if(!"".equals(rowUuid) && rowUuid != null && !rowUuid.equals(coopUnConfirmBillGroup.getRowUuid())){
+            throw new RuntimeException("账单数据发生变化，请刷新后重试。");
+        }
+        //修改账单表的row_uuid
+        String rowUuidNew = UUID.randomUUID().toString();
+        coopBillMapper.updateStatementRowUuid(coopUnConfirmBillGroup.getStatementId(),rowUuidNew);
         //更新 账单明细 的 结算金额2021-03-02添加
         //1.如果账单金额 = SUM(明细金额)
         if(coopUnConfirmBillGroup.getActuralCharge().equals(coopUnConfirmBillGroup.getActuralChargeAll())){
@@ -1593,13 +1624,21 @@ public class CoopBillServiceImpl implements CoopBillService {
 
     @Override
     //@Transactional(rollbackFor = Exception.class)
-    public void customerConfirmBill(Integer statementId,Integer settlementId) {
+    public void customerConfirmBill(Integer statementId,Integer settlementId,String rowUuid) {
+        //比较账单表的row_uuid是否发生了变化
+        String rowUuidCurrent = coopBillMapper.getRowUuidByStatementId(statementId);
+        if(!"".equals(rowUuidCurrent) && rowUuidCurrent != null && !rowUuidCurrent.equals(rowUuid)){
+            throw new RuntimeException("账单数据发生变化，请刷新后重试。");
+        }
+        //修改账单表的row_uuid
+        String rowUuidNew = UUID.randomUUID().toString();
         CoopUnConfirmBillGroup coopUnConfirmBillGroup = new CoopUnConfirmBillGroup();
         coopUnConfirmBillGroup.setStatementId(statementId);
         coopUnConfirmBillGroup.setConfirmCustomerTime(new Date());
         coopUnConfirmBillGroup.setConfirmCustomerName(SecurityUtils.getUser().getUserCname() + " " + SecurityUtils.getUser().getUserEmail());
         coopUnConfirmBillGroup.setStatementStatus("客户已确认");
         coopUnConfirmBillGroup.setSettlementId(settlementId);
+        coopUnConfirmBillGroup.setRowUuid(rowUuidNew);
         coopBillMapper.customerConfirmBill(coopUnConfirmBillGroup);
         //如果 对应的模板 的 首次收费月份 =NULL，则 将 当前时间（精确到秒） 更新到 对应模板的 start_charge_time 字段；（暂时不要了）
         //coopBillMapper.updateSettlementBySettlementId(coopUnConfirmBillGroup);
@@ -1728,6 +1767,7 @@ public class CoopBillServiceImpl implements CoopBillService {
             coopBillStatement.setInvoiceRemark(coopManualBill.getInvoiceRemark());
             coopBillStatement.setBillManualMailTo(coopManualBill.getBillManualMailTo());
             coopBillStatement.setBillTemplate(coopManualBill.getBillTemplate());
+            coopBillStatement.setRowUuid(UUID.randomUUID().toString());
             //获取选择月份下属于本签约公司的账单号的最大值
             String currentBillNumber = coopBillMapper.getCurrentBillStatementNumber(coopBillStatement);
             String billNumber = "";
@@ -1755,6 +1795,7 @@ public class CoopBillServiceImpl implements CoopBillService {
             coopUnConfirmBillDetail.setOriginalCharge(coopManualBill.getTotalCharge());
             coopUnConfirmBillDetail.setPlanCharge(coopManualBill.getTotalCharge());
             coopUnConfirmBillDetail.setActuralCharge(coopManualBill.getTotalCharge());
+            coopUnConfirmBillDetail.setSettlementCharge(coopManualBill.getTotalCharge());
             coopUnConfirmBillDetail.setBillFillDate(new Date());
             coopUnConfirmBillDetail.setBillStatus("数据已填充");
             coopUnConfirmBillDetail.setCreatorId(SecurityUtils.getUser().getId());

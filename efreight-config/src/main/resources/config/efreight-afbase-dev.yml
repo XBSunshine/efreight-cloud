@@ -37,3 +37,4 @@ ignore:
     - /actuator/**
     - /user/info/*
     - /log/**
+    - /api/**

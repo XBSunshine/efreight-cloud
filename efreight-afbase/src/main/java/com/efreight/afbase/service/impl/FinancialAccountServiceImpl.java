@@ -1,26 +1,20 @@
 package com.efreight.afbase.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.efreight.afbase.dao.FinancialAccountMapper;
-import com.efreight.afbase.dao.ServiceMapper;
-import com.efreight.afbase.entity.*;
+import com.efreight.afbase.entity.FinancialAccount;
+import com.efreight.afbase.entity.FinancialAccountLevel;
+import com.efreight.afbase.entity.WriteOffFinancialAccount;
 import com.efreight.afbase.service.FinancialAccountService;
 import com.efreight.afbase.service.LogService;
-import com.efreight.afbase.service.ServiceService;
-import com.efreight.afbase.service.VPrmCategoryService;
-import com.efreight.afbase.utils.FormatUtils;
 import com.efreight.common.security.util.SecurityUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 @AllArgsConstructor
@@ -112,6 +106,11 @@ public class FinancialAccountServiceImpl extends ServiceImpl<FinancialAccountMap
                }
            }
        }
+    }
+
+    @Override
+    public List<WriteOffFinancialAccount> listWriteOffAccount(Integer orgId) {
+        return this.baseMapper.listWriteOffAccount(orgId);
     }
 
 }

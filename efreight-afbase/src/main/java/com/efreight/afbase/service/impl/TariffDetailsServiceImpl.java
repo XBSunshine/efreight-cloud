@@ -54,4 +54,14 @@ public class TariffDetailsServiceImpl extends ServiceImpl<TariffDetailsMapper, T
         wrapper.eq(TariffDetails::getProductCode, productCode);
         return getOne(wrapper);
     }
+
+    @Override
+    public List<TariffDetails> getListForApi(String keyName) {
+
+        LambdaQueryWrapper<TariffDetails> wrapper = Wrappers.<TariffDetails>lambdaQuery();
+        if (StrUtil.isNotBlank(keyName)&&!keyName.equals("null")) {
+            wrapper.like(TariffDetails::getProductCode, keyName).or().like(TariffDetails::getProductName, keyName);
+        }
+        return list(wrapper);
+    }
 }

@@ -142,6 +142,14 @@ public class RountingSign implements Serializable {
     private BigDecimal costQuantity;
     @TableField(exist = false)
     private BigDecimal costAmount;
+    @TableField(exist = false)
+    private String msrPriceType;
+    @TableField(exist = false)
+    private String costPriceType;
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private BigDecimal msrAmount;
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private BigDecimal cuAmount;
     
 
 }

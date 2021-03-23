@@ -28,7 +28,7 @@ public interface OrgCouldUserMapper extends BaseMapper<OrgCouldUser>{
 	      "left join (select count(*) AS af_order_num,af.org_id,MAX(af.create_time) AS create_time_af from af_order af  group by af.org_id ) a on t.org_id = a.org_id ",
 	      //where sc.order_status not in ('强制关闭')
 	      "left join (select count(*) AS sc_order_num,sc.org_id,MAX(sc.create_time) AS create_time_sc  from sc_order sc  group by sc.org_id ) s on t.org_id = s.org_id ",
-	      "left join (select count(*) AS h_user_num,h.org_id  from hrs_user h where h.isadmin=0 group by h.org_id ) hu  on t.org_id=hu.org_id ",
+	      "left join (select count(*) AS h_user_num,h.org_id  from hrs_user h where h.isadmin=0 and h.user_status = 1 group by h.org_id ) hu  on t.org_id=hu.org_id ",
 	      "left join hrs_user u on t.demand_person_id=u.user_id ",
 	      "left join hrs_org p2 on t.org_edition_id=p2.org_id ",
 		  "left join (SELECT count(*) AS subscription_num,org_id,MAX(create_time) AS subscription_time FROM af_awb_subscription GROUP BY org_id ) subscription on t.org_id = subscription.org_id ",
@@ -91,7 +91,7 @@ public interface OrgCouldUserMapper extends BaseMapper<OrgCouldUser>{
 	      "left join (select count(*) AS af_order_num,af.org_id,MAX(af.create_time) AS create_time_af from af_order af  group by af.org_id ) a on t.org_id = a.org_id ",
 	      //where sc.order_status not in ('强制关闭')
 	      "left join (select count(*) AS sc_order_num,sc.org_id,MAX(sc.create_time) AS create_time_sc  from sc_order sc  group by sc.org_id ) s on t.org_id = s.org_id ",
-	      "left join (select count(*) AS h_user_num,h.org_id  from hrs_user h where h.isadmin=0 group by h.org_id ) hu  on t.org_id=hu.org_id ",
+	      "left join (select count(*) AS h_user_num,h.org_id  from hrs_user h where h.isadmin=0 and h.user_status = 1 group by h.org_id ) hu  on t.org_id=hu.org_id ",
 	      "left join hrs_user u on t.demand_person_id=u.user_id ",
 	      "left join hrs_org p2 on t.org_edition_id=p2.org_id ",
 		  "left join (SELECT count(*) AS subscription_num,org_id,MAX(create_time) AS subscription_time FROM af_awb_subscription GROUP BY org_id ) subscription on t.org_id = subscription.org_id ",

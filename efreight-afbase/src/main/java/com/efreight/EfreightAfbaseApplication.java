@@ -20,9 +20,6 @@ import java.time.format.DateTimeFormatter;
 @SpringCloudApplication
 @EnableEftFeignClients
 @EnableEftResourceServer
-//生态云生产专用（天樾不要）
-//@ServletComponentScan
-//@Import(SpringUtil.class)
 public class EfreightAfbaseApplication {
 	
 	public static void main(String[] args) {
